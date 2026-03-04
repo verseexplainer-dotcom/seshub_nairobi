@@ -1,0 +1,132 @@
+---
+interface Props {
+  product: any;
+}
+
+const { product } = Astro.props;
+---
+
+<div class="sticky-atc" id="sticky-atc">
+  <div class="container sticky-atc-content">
+    <div class="sticky-info">
+      <img src={product.images[0]} alt="" class="sticky-thumb" />
+      <div class="sticky-text">
+        <h3 class="sticky-title">{product.title}</h3>
+        <p class="sticky-price">KSh {product.price_kes.toLocaleString()}</p>
+      </div>
+    </div>
+    
+    <div class="sticky-actions">
+      <a 
+        href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I'm interested in: ${product.title} — https://sesicthub.co.ke/product/${product.slug}`)}`} 
+        class="pill-button accent"
+      >
+        WhatsApp
+      </a>
+      <button 
+        class="pill-button primary add-to-cart-btn"
+        data-id={product.id} 
+        data-title={product.title} 
+        data-price={product.price_kes}
+        data-slug={product.slug}
+        data-image={product.images[0]}
+      >
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sticky-atc {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--white);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: var(--space-sm) 0;
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sticky-atc.visible {
+    transform: translateY(0);
+  }
+
+  .sticky-atc-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .sticky-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .sticky-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    background-color: #f1f5f9;
+    border-radius: var(--radius-sm);
+  }
+
+  .sticky-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  .sticky-price {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .sticky-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .sticky-atc-content {
+      gap: 0.5rem;
+    }
+    
+    .sticky-info {
+      display: none;
+    }
+    
+    .sticky-actions {
+      width: 100%;
+    }
+    
+    .sticky-actions .pill-button {
+      flex: 1;
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.875rem;
+    }
+  }
+</style>
+
+<script>
+  const sticky = document.getElementById('sticky-atc');
+  
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) {
+      sticky?.classList.add('visible');
+    } else {
+      sticky?.classList.remove('visible');
+    }
+  });
+</script>

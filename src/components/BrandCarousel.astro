@@ -1,0 +1,62 @@
+---
+const brands = [
+  { name: 'HP', logo: '/brands/hp.svg' },
+  { name: 'Lenovo', logo: '/brands/lenovo.svg' },
+  { name: 'Apple', logo: '/brands/apple.svg' },
+  { name: 'Dell', logo: '/brands/dell.svg' },
+  { name: 'Samsung', logo: '/brands/samsung.svg' },
+  { name: 'Asus', logo: '/brands/asus.svg' },
+];
+---
+
+<section class="brand-carousel">
+  <div class="container">
+    <div class="brand-track">
+      {brands.map(brand => (
+        <a href={`/category/all?brand=${brand.name}`} class="brand-item">
+          <!-- In a real app, these would be proper logos from Supabase storage -->
+          <div class="brand-logo-placeholder">{brand.name}</div>
+        </a>
+      ))}
+      <!-- Duplicate for seamless loop if using CSS animation, but for now simple grid -->
+    </div>
+  </div>
+</section>
+
+<style>
+  .brand-carousel {
+    padding: var(--space-lg) 0;
+    background-color: var(--white);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .brand-track {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 640px) {
+    .brand-track {
+      gap: var(--space-md);
+      justify-content: center;
+    }
+  }
+
+  .brand-logo-placeholder {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+  }
+
+  .brand-item:hover .brand-logo-placeholder {
+    opacity: 1;
+    color: var(--primary);
+  }
+</style>

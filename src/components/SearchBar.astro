@@ -1,0 +1,141 @@
+---
+---
+<div class="search-container">
+  <div class="search-box">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input 
+      type="text" 
+      id="predictive-search" 
+      placeholder="Search for laptops, printers, or brands..." 
+      aria-label="Search products"
+      autocomplete="off"
+    />
+  </div>
+  <div id="search-suggestions" class="search-suggestions hidden"></div>
+</div>
+
+<style>
+  .search-container {
+    max-width: 600px;
+    margin: -30px auto var(--space-xl);
+    position: relative;
+    z-index: 80;
+    padding: 0 var(--space-md);
+  }
+
+  .search-box {
+    background-color: var(--white);
+    border-radius: var(--radius-full);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+  }
+
+  .search-icon {
+    color: var(--text-muted);
+  }
+
+  input {
+    border: none;
+    background: none;
+    flex: 1;
+    font-size: 1rem;
+    color: var(--text-main);
+    outline: none;
+  }
+
+  .search-suggestions {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: var(--space-md);
+    right: var(--space-md);
+    background-color: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .search-container {
+      margin-top: -15px;
+    }
+  }
+</style>
+
+<script>
+  const searchInput = document.getElementById('predictive-search') as HTMLInputElement;
+  const suggestionsBox = document.getElementById('search-suggestions');
+  let debounceTimer: ReturnType<typeof setTimeout>;
+
+  searchInput?.addEventListener('input', (e) => {
+    const query = (e.target as HTMLInputElement).value;
+    clearTimeout(debounceTimer);
+    
+    if (query.length < 2) {
+      if (suggestionsBox) suggestionsBox.classList.add('hidden');
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`);
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        renderSuggestions(data);
+      } catch (err) {
+        console.error('Search error:', err);
+      }
+    }, 300);
+  });
+
+  function renderSuggestions(data: any) {
+    if (!suggestionsBox) return;
+    
+    if (data.products.length === 0 && data.categories.length === 0) {
+      suggestionsBox.innerHTML = '<div class="suggestion-item no-results">No matches found</div>';
+    } else {
+      let html = '';
+      
+      if (data.categories.length > 0) {
+        html += '<div class="suggestion-section"><div class="section-title">Categories</div>';
+        data.categories.forEach((cat: string) => {
+          html += `<a href="/category/${cat}" class="suggestion-item category-item">${cat}</a>`;
+        });
+        html += '</div>';
+      }
+
+      if (data.products.length > 0) {
+        html += '<div class="suggestion-section"><div class="section-title">Products</div>';
+        data.products.forEach((prod: any) => {
+          html += `<a href="/product/${prod.slug}" class="suggestion-item product-item">
+            <div class="prod-title">${prod.title}</div>
+            <div class="prod-price">KSh ${prod.price_kes.toLocaleString()}</div>
+          </a>`;
+        });
+        html += '</div>';
+      }
+      
+      suggestionsBox.innerHTML = html;
+    }
+    
+    suggestionsBox.classList.remove('hidden');
+  }
+
+  // Close suggestions when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!searchInput?.contains(e.target as Node) && !suggestionsBox?.contains(e.target as Node)) {
+      suggestionsBox?.classList.add('hidden');
+    }
+  });
+</script>

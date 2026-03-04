@@ -1,0 +1,78 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const faqs = [
+  {
+    q: "Where is your physical shop located?",
+    a: "We are at Tembo Cooperative House, 3rd Floor, Room 1, Moi Avenue, Nairobi. We are opposite Bihi Towers."
+  },
+  {
+    q: "Do you offer warranty?",
+    a: "Yes! All our brand-new and certified refurbished devices come with a 3, 6, or 12-month warranty depending on the item."
+  },
+  {
+    q: "What are your delivery charges?",
+    a: "Delivery within Nairobi CBD is often free or at a small fee (KES 200). Outside Nairobi, we use couriers like G4S and charges depend on your location."
+  },
+  {
+    q: "How do I pay for my order?",
+    a: "We accept M-PESA Cash on Delivery for Nairobi. For outside Nairobi, we typically require payment via M-PESA before dispatch."
+  },
+  {
+    q: "Is there a return policy?",
+    a: "Yes, we have a 7-day return/exchange window for functional defects that were not disclosed at the time of purchase."
+  }
+];
+---
+
+<Layout title="FAQ">
+  <section class="faq-page">
+    <div class="container">
+      <h1 class="page-title">Frequently Asked Questions</h1>
+      
+      <div class="faq-grid">
+        {faqs.map(faq => (
+          <div class="faq-item">
+            <h3>{faq.q}</h3>
+            <p>{faq.a}</p>
+          </div>
+        ))}
+      </div>
+
+      <div class="faq-cta">
+        <p>Still have questions?</p>
+        <a href="https://wa.me/254720480475" class="pill-button primary">Chat with us on WhatsApp</a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .faq-page { padding: var(--space-xl) 0; }
+  .page-title { font-size: 2.5rem; font-weight: 800; margin-bottom: var(--space-xl); text-align: center; }
+  
+  .faq-grid { 
+    max-width: 800px; 
+    margin: 0 auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: var(--space-lg);
+  }
+
+  .faq-item {
+    background-color: var(--white);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+
+  .faq-item h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--primary); }
+  .faq-item p { color: var(--text-muted); line-height: 1.6; }
+
+  .faq-cta {
+    margin-top: var(--space-xl);
+    text-align: center;
+  }
+
+  .faq-cta p { margin-bottom: 1rem; color: var(--text-muted); }
+</style>

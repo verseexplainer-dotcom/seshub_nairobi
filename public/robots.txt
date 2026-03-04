@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sesicthub.co.ke/sitemap.xml

@@ -1,0 +1,219 @@
+---
+const navLinks = [
+  { name: 'Home', href: '/' },
+  { name: 'Laptops', href: '/category/laptops' },
+  { name: 'Printers', href: '/category/printers' },
+  { name: 'Phones', href: '/category/phones' },
+  { name: 'Accessories', href: '/category/accessories' },
+  { name: 'Deals', href: '/category/deals' },
+  { name: 'Track', href: '/track' },
+  { name: 'Contact', href: '/contact' },
+];
+---
+
+<header class="header">
+  <div class="container header-content">
+    <a href="/" class="logo">
+      <span class="logo-hub">SES</span> <span class="logo-ict">ICT HUB</span>
+    </a>
+
+    <nav class="nav" aria-label="Main Navigation">
+      <ul class="nav-list">
+        {navLinks.map(link => (
+          <li><a href={link.href} class="nav-link">{link.name}</a></li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a href="/category/deals" class="pill-button primary header-cta">Shop Deals</a>
+      <a href="/cart" class="cart-link" aria-label="View Cart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cart-icon"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.1-5.38a.5.5 0 0 0-.49-.6H6.14"/></svg>
+        <span id="cart-badge" class="cart-badge">0</span>
+      </a>
+      <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Toggle Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobile-menu" class="mobile-menu">
+    <div class="container">
+      <ul class="mobile-nav-list">
+        {navLinks.map(link => (
+          <li><a href={link.href} class="mobile-nav-link">{link.name}</a></li>
+        ))}
+        <li><a href="/category/deals" class="pill-button primary mobile-cta">Shop Deals</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<style>
+  .header {
+    background-color: var(--white);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 40px; /* Below announcement strip */
+    z-index: 90;
+    height: 70px;
+    display: flex;
+    align-items: center;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .logo-hub { color: var(--text-main); }
+  .logo-ict { color: var(--primary); }
+
+  .nav {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .nav {
+      display: block;
+    }
+  }
+
+  .nav-list {
+    display: flex;
+    list-style: none;
+    gap: var(--space-md);
+  }
+
+  .nav-link {
+    font-weight: 500;
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--primary);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .header-cta {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .header-cta {
+      display: inline-flex;
+    }
+  }
+
+  .cart-link {
+    position: relative;
+    color: var(--text-main);
+  }
+
+  .cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--accent);
+    color: var(--white);
+    font-size: 0.75rem;
+    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-menu-toggle {
+    display: block;
+    color: var(--text-main);
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-menu-toggle {
+      display: none;
+    }
+  }
+
+  .mobile-menu {
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-md) 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .mobile-menu.active {
+    display: block;
+  }
+
+  .mobile-nav-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .mobile-nav-link {
+    font-size: 1.125rem;
+    font-weight: 600;
+    display: block;
+    padding: var(--space-xs) 0;
+  }
+
+  .mobile-cta {
+    margin-top: var(--space-sm);
+    width: 100%;
+    justify-content: center;
+  }
+</style>
+
+<script>
+  // Mobile Menu Toggle
+  const toggle = document.getElementById('mobile-menu-toggle');
+  const menu = document.getElementById('mobile-menu');
+
+  toggle?.addEventListener('click', () => {
+    menu?.classList.toggle('active');
+  });
+
+  // Cart Badge Update
+  function updateCartBadge() {
+    const cart = JSON.parse(localStorage.getItem('ses_cart') || '[]');
+    const badge = document.getElementById('cart-badge');
+    if (badge) {
+      badge.textContent = cart.reduce((acc: number, item: any) => acc + item.qty, 0).toString();
+    }
+  }
+
+  // Initial update
+  updateCartBadge();
+
+  // Listen for storage changes (for multiple tabs)
+  window.addEventListener('storage', updateCartBadge);
+  
+  // Custom event for same-tab updates
+  window.addEventListener('cart-updated', updateCartBadge);
+</script>

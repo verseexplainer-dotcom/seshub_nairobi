@@ -1,0 +1,204 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import SearchBar from '../components/SearchBar.astro';
+import CategoryCards from '../components/CategoryCards.astro';
+import BrandCarousel from '../components/BrandCarousel.astro';
+import TrustBar from '../components/TrustBar.astro';
+import Newsletter from '../components/Newsletter.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { supabase } from '../lib/supabase';
+
+// Fetch Featured Products (8 items: 6 laptops + 2 printers)
+const { data: featuredProducts } = await supabase
+  .from('products')
+  .select('*')
+  .eq('featured_home', true)
+  .order('featured_rank', { ascending: true })
+  .limit(8);
+
+// Fetch Refurbished Deals
+const { data: refurbishedDeals } = await supabase
+  .from('products')
+  .select('*')
+  .eq('condition', 'refurbished')
+  .limit(4);
+
+// Fetch Testimonials
+const { data: testimonials } = await supabase
+  .from('testimonials')
+  .select('*')
+  .eq('approved', true)
+  .limit(6);
+---
+
+<Layout title="Home">
+  <Hero />
+  <SearchBar />
+  <CategoryCards />
+
+  <!-- Curated Collections -->
+  <section class="collections">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Refurbished Deals</h2>
+        <a href="/category/all?condition=refurbished" class="text-link">Shop all refurbished &rarr;</a>
+      </div>
+      
+      <div class="product-grid">
+        {refurbishedDeals && refurbishedDeals.length > 0 ? (
+          refurbishedDeals.map(product => <ProductCard product={product} />)
+        ) : (
+          <p class="empty-msg">No refurbished deals available right now. Check back soon!</p>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <BrandCarousel />
+
+  <!-- Featured Grid -->
+  <section class="featured-products">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Featured for You</h2>
+        <p class="section-subtitle">Top picks from our laptops and printers collection.</p>
+      </div>
+      
+      <div class="product-grid">
+        {featuredProducts && featuredProducts.length > 0 ? (
+          featuredProducts.map(product => <ProductCard product={product} />)
+        ) : (
+          <p class="empty-msg">Our featured products are coming soon!</p>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <TrustBar />
+
+  <!-- Testimonials -->
+  {testimonials && testimonials.length > 0 && (
+    <section class="testimonials">
+      <div class="container">
+        <h2 class="section-title text-center">What our customers say</h2>
+        <div class="testimonial-grid">
+          {testimonials.map(item => (
+            <div class="testimonial-card">
+              <div class="stars">{"★".repeat(item.rating)}{"☆".repeat(5-item.rating)}</div>
+              <p class="quote">"{item.quote}"</p>
+              <div class="author">
+                <strong>{item.name}</strong>
+                <span class="persona">{item.persona}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <Newsletter />
+</Layout>
+
+<style>
+  .section-header {
+    margin-bottom: var(--space-lg);
+  }
+
+  .section-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+  }
+
+  .text-center {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .section-subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-top: 0.25rem;
+  }
+
+  .collections, .featured-products, .testimonials {
+    padding: var(--space-xl) 0;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .product-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .product-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .empty-msg {
+    text-align: center;
+    padding: var(--space-xl);
+    background-color: var(--white);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+  }
+
+  .testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 768px) {
+    .testimonial-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .testimonial-card {
+    background-color: var(--white);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stars {
+    color: #FBBF24;
+    margin-bottom: 0.5rem;
+  }
+
+  .quote {
+    font-style: italic;
+    color: var(--text-main);
+    margin-bottom: var(--space-md);
+    line-height: 1.6;
+  }
+
+  .author {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .persona {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  .text-link {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+</style>

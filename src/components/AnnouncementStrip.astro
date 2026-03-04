@@ -1,0 +1,78 @@
+---
+---
+<aside class="announcement-strip" aria-live="polite">
+  <div class="announcement-track" id="announcement-track">
+    <div class="announcement-item">
+      <span>2-hour Nairobi delivery (where available) | M-PESA | Cash on Delivery</span>
+    </div>
+    <div class="announcement-item">
+      <span>📍 Moi Avenue, Tembo Cooperative House</span>
+    </div>
+  </div>
+</aside>
+
+<style>
+  .announcement-strip {
+    background-color: var(--primary);
+    color: var(--white);
+    font-size: 0.875rem;
+    font-weight: 500;
+    height: 40px;
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .announcement-track {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.5s ease-in-out;
+    height: 100%;
+    width: 100%;
+  }
+
+  .announcement-item {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-align: center;
+    padding: 0 var(--space-md);
+  }
+
+  @media (max-width: 640px) {
+    .announcement-item {
+      font-size: 0.75rem;
+    }
+  }
+</style>
+
+<script>
+  const track = document.getElementById('announcement-track');
+  const items = track?.querySelectorAll('.announcement-item');
+  let currentIndex = 0;
+  let interval: ReturnType<typeof setInterval>;
+
+  function startRotation() {
+    interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % (items?.length || 1);
+      if (track) {
+        track.style.transform = `translateY(-${currentIndex * 40}px)`;
+      }
+    }, 4000);
+  }
+
+  function stopRotation() {
+    clearInterval(interval);
+  }
+
+  track?.addEventListener('mouseenter', stopRotation);
+  track?.addEventListener('mouseleave', startRotation);
+
+  startRotation();
+</script>

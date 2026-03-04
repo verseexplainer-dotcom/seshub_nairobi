@@ -1,0 +1,155 @@
+---
+const today = new Date();
+const year = today.getFullYear();
+---
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a href="/" class="logo">
+        <span class="logo-hub">SES</span> <span class="logo-ict">ICT HUB</span>
+      </a>
+      <p class="brand-tagline">Quality brand-new and certified refurbished electronics in Nairobi. Delivering countrywide.</p>
+    </div>
+
+    <div class="footer-group">
+      <h3 class="footer-title">Contact Us</h3>
+      <ul class="footer-links">
+        <li>
+          <span class="footer-icon">📍</span>
+          <span>Tembo Cooperative House, 3rd Floor, Room 1, Moi Avenue, Opposite Bihi Towers, Nairobi</span>
+        </li>
+        <li>
+          <span class="footer-icon">📞</span>
+          <a href="tel:+254716253365">+254 716 253365</a>
+        </li>
+        <li>
+          <span class="footer-icon">📧</span>
+          <a href="mailto:sales@sesicthub.co.ke">sales@sesicthub.co.ke</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="footer-group">
+      <h3 class="footer-title">Business Hours</h3>
+      <ul class="footer-links">
+        <li>Mon – Fri: 09:00 – 19:00</li>
+        <li>Sat: 09:00 – 17:00</li>
+        <li>Sun: Closed</li>
+      </ul>
+    </div>
+
+    <div class="footer-group">
+      <h3 class="footer-title">Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="/category/laptops">Laptops</a></li>
+        <li><a href="/category/printers">Printers</a></li>
+        <li><a href="/track">Track Order</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="container footer-bottom-content">
+      <p>&copy; {year} SES ICT HUB. All rights reserved.</p>
+      <div class="footer-trust">
+        <span>2-hour Nairobi delivery</span>
+        <span>|</span>
+        <span>M-PESA / Cash on Delivery</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background-color: var(--white);
+    border-top: 1px solid var(--border);
+    padding: var(--space-xl) 0 0;
+    margin-top: var(--space-xl);
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    padding-bottom: var(--space-xl);
+  }
+
+  @media (min-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1.5fr 1fr 1fr 0.8fr;
+    }
+  }
+
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .logo-hub { color: var(--text-main); }
+  .logo-ict { color: var(--primary); }
+
+  .brand-tagline {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    max-width: 300px;
+  }
+
+  .footer-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    color: var(--text-main);
+  }
+
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .footer-links a:hover {
+    color: var(--primary);
+  }
+
+  .footer-icon {
+    margin-right: var(--space-xs);
+  }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding: var(--space-md) 0;
+    background-color: var(--background);
+  }
+
+  .footer-bottom-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: 768px) {
+    .footer-bottom-content {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+
+  .footer-trust {
+    display: flex;
+    gap: var(--space-xs);
+  }
+</style>

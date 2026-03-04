@@ -1,0 +1,86 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Contact Us">
+  <section class="contact-page">
+    <div class="container">
+      <h1 class="page-title">Contact SES ICT HUB</h1>
+      
+      <div class="contact-grid">
+        <div class="contact-info">
+          <div class="info-item">
+            <span class="icon">📍</span>
+            <div>
+              <h3>Our Location</h3>
+              <p>Tembo Cooperative House, 3rd Floor, Room 1, Moi Avenue, Opposite Bihi Towers, Nairobi</p>
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <span class="icon">📞</span>
+            <div>
+              <h3>Call / WhatsApp</h3>
+              <p>Sales: +254 716 253365</p>
+              <p>Support: +254 720 480475</p>
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <span class="icon">📧</span>
+            <div>
+              <h3>Email</h3>
+              <p>sales@sesicthub.co.ke</p>
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <span class="icon">🕒</span>
+            <div>
+              <h3>Business Hours</h3>
+              <p>Mon – Fri: 09:00 – 19:00</p>
+              <p>Sat: 09:00 – 17:00</p>
+              <p>Sun: Closed</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="whatsapp-prompt">
+          <div class="prompt-card">
+            <h2>Instant Response?</h2>
+            <p>Chat with our sales team directly on WhatsApp for stock availability and pricing.</p>
+            <a href="https://wa.me/254720480475" class="pill-button" style="background-color: #25D366; color: white;">
+              Chat on WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .contact-page { padding: var(--space-xl) 0; }
+  .page-title { font-size: 2.5rem; font-weight: 800; margin-bottom: var(--space-xl); text-align: center; }
+  .contact-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-xl); }
+  
+  @media (min-width: 768px) {
+    .contact-grid { grid-template-columns: 1.2fr 0.8fr; }
+  }
+
+  .contact-info { display: flex; flex-direction: column; gap: var(--space-lg); }
+  .info-item { display: flex; gap: var(--space-md); align-items: start; }
+  .info-item h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .info-item .icon { font-size: 1.5rem; width: 40px; }
+
+  .prompt-card { 
+    background-color: #f1f5f9; 
+    padding: var(--space-xl); 
+    border-radius: var(--radius-lg); 
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .prompt-card h2 { margin-bottom: 1rem; }
+  .prompt-card p { margin-bottom: var(--space-lg); color: var(--text-muted); }
+  .prompt-card .pill-button { width: 100%; justify-content: center; padding: 1rem; font-size: 1.125rem; }
+</style>

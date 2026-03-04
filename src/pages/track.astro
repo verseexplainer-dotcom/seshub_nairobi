@@ -1,0 +1,174 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Track Order">
+  <section class="track-page">
+    <div class="container">
+      <div class="track-card">
+        <h1 class="page-title">Track Your Order</h1>
+        <p class="track-intro">Orders at SES ICT HUB are processed and tracked via WhatsApp for the fastest support.</p>
+        
+        <div class="track-steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h3>Check your WhatsApp</h3>
+              <p>Once you checkout, a message is sent to our sales team with your Ref ID.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h3>Send your Ref ID</h3>
+              <p>If you haven't already, send your order details to our WhatsApp number.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h3>Quick Support</h3>
+              <p>Our team will provide real-time updates on your delivery or pickup status.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="track-action">
+          <div class="ref-input-group">
+            <label for="order-ref">Have a Reference ID?</label>
+            <input type="text" id="order-ref" placeholder="e.g. SES-1234" />
+          </div>
+          <button id="track-btn" class="pill-button primary lg">
+            Track via WhatsApp
+          </button>
+        </div>
+
+        <div class="contact-box">
+          <p>Need immediate help? Call us at <a href="tel:+254716253365"><strong>+254 716 253365</strong></a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .track-page {
+    padding: var(--space-xl) 0;
+    background-color: var(--background);
+  }
+
+  .track-card {
+    background-color: var(--white);
+    padding: var(--space-xl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    max-width: 700px;
+    margin: 0 auto;
+    box-shadow: var(--shadow-md);
+  }
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .track-intro {
+    text-align: center;
+    color: var(--text-muted);
+    margin-bottom: var(--space-xl);
+  }
+
+  .track-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  .step {
+    display: flex;
+    gap: var(--space-md);
+    align-items: start;
+  }
+
+  .step-num {
+    width: 32px;
+    height: 32px;
+    background-color: var(--primary);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .step-content h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .step-content p {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+  }
+
+  .track-action {
+    background-color: #f1f5f9;
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .ref-input-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .ref-input-group input {
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+
+  .pill-button.lg {
+    width: 100%;
+    justify-content: center;
+    padding: 1rem;
+    font-size: 1.125rem;
+  }
+
+  .contact-box {
+    margin-top: var(--space-lg);
+    text-align: center;
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+  }
+
+  .contact-box a { color: var(--primary); }
+</style>
+
+<script>
+  const trackBtn = document.getElementById('track-btn');
+  const refInput = document.getElementById('order-ref') as HTMLInputElement;
+
+  trackBtn?.addEventListener('click', () => {
+    const ref = refInput.value.trim();
+    const message = ref 
+      ? `Hi SES ICT HUB, I want to follow up order Ref: ${ref}`
+      : `Hi SES ICT HUB, I want to follow up on my order.`;
+    
+    window.location.href = `https://wa.me/254720480475?text=${encodeURIComponent(message)}`;
+  });
+</script>

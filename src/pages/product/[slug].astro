@@ -1,0 +1,440 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import StickyATC from '../../components/StickyATC.astro';
+import { supabase } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  const { data: products } = await supabase.from('products').select('slug');
+  return products?.map(p => ({ params: { slug: p.slug } })) || [];
+}
+
+const { slug } = Astro.params;
+
+// Fetch product details
+const { data: product } = await supabase
+  .from('products')
+  .select('*')
+  .eq('slug', slug)
+  .single();
+
+if (!product) {
+  return Astro.redirect('/404');
+}
+
+// Fetch related products (same category)
+const { data: related } = await supabase
+  .from('products')
+  .select('*')
+  .eq('category', product.category)
+  .neq('id', product.id)
+  .limit(4);
+
+const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.price_kes;
+---
+
+<Layout title={product.title} description={product.description || product.short_specs}>
+  <div class="product-page">
+    <div class="container breadcrumbs">
+      <a href="/">Home</a> / <a href={`/category/${product.category}`}>{product.category}</a> / <span>{product.title}</span>
+    </div>
+
+    <div class="container product-main">
+      <!-- Media Gallery -->
+      <div class="product-gallery">
+        <div class="main-image">
+          <img src={product.images[0] || '/product-placeholder.jpg'} alt={product.title} id="main-prod-img" />
+        </div>
+        {product.images.length > 1 && (
+          <div class="thumbnails">
+            {product.images.map((img: string, idx: number) => (
+              <button class={`thumb ${idx === 0 ? 'active' : ''}`} data-src={img}>
+                <img src={img} alt="" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <!-- Content -->
+      <div class="product-details">
+        <div class="product-header">
+          <div class="badges">
+            {product.condition && <span class={`badge condition ${product.condition}`}>{product.condition.replace('_', ' ')}</span>}
+            {product.refurb_grade && <span class="badge grade">Grade {product.refurb_grade.split('_')[1].toUpperCase()}</span>}
+          </div>
+          <h1 class="product-title">{product.title}</h1>
+          <p class="product-short-specs">{product.short_specs}</p>
+        </div>
+
+        <div class="product-price-section">
+          <div class="price-row">
+            <span class="price-kes">KSh {product.price_kes.toLocaleString()}</span>
+            {hasDiscount && (
+              <span class="compare-price">KSh {product.compare_at_kes.toLocaleString()}</span>
+            )}
+          </div>
+          <div class={`stock-indicator ${product.in_stock ? 'in' : 'out'}`}>
+            <span class="dot"></span>
+            {product.in_stock ? 'In Stock - Ready to ship' : 'Out of Stock'}
+          </div>
+        </div>
+
+        <div class="product-actions-desktop">
+          <button 
+            class="pill-button primary add-to-cart-btn lg"
+            data-id={product.id} 
+            data-title={product.title} 
+            data-price={product.price_kes}
+            data-slug={product.slug}
+            data-image={product.images[0]}
+          >
+            Add to Cart
+          </button>
+          <a 
+            href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I'm interested in: ${product.title} — https://sesicthub.co.ke/product/${product.slug}`)}`} 
+            class="pill-button"
+            style="background-color: #25D366; color: white; width: 100%; justify-content: center; margin-top: 1rem;"
+          >
+            Inquire on WhatsApp
+          </a>
+        </div>
+
+        <div class="trust-panel">
+          <div class="trust-item">
+            <span class="icon">🚚</span>
+            <div>
+              <strong>Delivery</strong>
+              <p>2-hour Nairobi delivery | 24-48h Countrywide</p>
+            </div>
+          </div>
+          <div class="trust-item">
+            <span class="icon">💳</span>
+            <div>
+              <strong>Payment</strong>
+              <p>M-PESA | Cash on Delivery</p>
+            </div>
+          </div>
+          <div class="trust-item">
+            <span class="icon">🛡️</span>
+            <div>
+              <strong>Warranty</strong>
+              <p>{product.warranty_months || 6} Months official warranty</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-description">
+          <h2>Description</h2>
+          <div class="desc-content">
+            {product.description || "No detailed description available."}
+          </div>
+        </div>
+
+        <!-- FAQ Accordion -->
+        <div class="faq-section">
+          <h2>Common Questions</h2>
+          <details>
+            <summary>How do I pay?</summary>
+            <p>We accept M-PESA and Cash on Delivery. You can pay once our rider arrives at your location in Nairobi.</p>
+          </details>
+          <details>
+            <summary>Is this device tested?</summary>
+            <p>Every brand-new and refurbished device undergoes a 21-point quality check before it reaches our shelves.</p>
+          </details>
+          <details>
+            <summary>What if I'm outside Nairobi?</summary>
+            <p>We ship countrywide via G4S, Wells Fargo, or your preferred courier. Delivery typically takes 24-48 hours.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    {related && related.length > 0 && (
+      <section class="related-products">
+        <div class="container">
+          <h2 class="section-title">Customers also viewed</h2>
+          <div class="product-grid">
+            {related.map(p => <ProductCard product={p} />)}
+          </div>
+        </div>
+      </section>
+    )}
+  </div>
+
+  <StickyATC product={product} />
+</Layout>
+
+<style>
+  .product-page {
+    padding-top: var(--space-md);
+    padding-bottom: 100px;
+  }
+
+  .breadcrumbs {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-lg);
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--primary);
+  }
+
+  .product-main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: start;
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (min-width: 1024px) {
+    .product-main {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* Gallery */
+  .main-image {
+    background-color: var(--white);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+  }
+
+  .main-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .thumbnails {
+    display: flex;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    padding-bottom: var(--space-xs);
+  }
+
+  .thumb {
+    width: 80px;
+    height: 80px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px;
+    background-color: var(--white);
+    flex-shrink: 0;
+  }
+
+  .thumb.active {
+    border-color: var(--primary);
+    border-width: 2px;
+  }
+
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Details */
+  .badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .badge.condition { background-color: #E1EFFE; color: #1E429F; }
+  .badge.grade { background-color: #FDF6B2; color: #723B13; }
+
+  .product-title {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+
+  .product-short-specs {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-lg);
+  }
+
+  .product-price-section {
+    background-color: #F1F5F9;
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-lg);
+  }
+
+  .price-kes {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--primary);
+  }
+
+  .compare-price {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    text-decoration: line-through;
+    margin-left: 0.75rem;
+  }
+
+  .stock-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  .stock-indicator.in { color: #059669; }
+  .stock-indicator.out { color: #DC2626; }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+    display: inline-block;
+  }
+
+  .add-to-cart-btn.lg {
+    width: 100%;
+    font-size: 1.125rem;
+    padding: 1rem;
+    justify-content: center;
+  }
+
+  .trust-panel {
+    margin: var(--space-xl) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    background-color: var(--white);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+
+  .trust-item {
+    display: flex;
+    gap: var(--space-md);
+    align-items: start;
+  }
+
+  .trust-item .icon {
+    font-size: 1.5rem;
+  }
+
+  .trust-item strong {
+    display: block;
+    font-size: 0.9375rem;
+  }
+
+  .trust-item p {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  .product-description, .faq-section {
+    margin-top: var(--space-xl);
+  }
+
+  .product-description h2, .faq-section h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+  }
+
+  .desc-content {
+    color: var(--text-main);
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+
+  details {
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-sm) 0;
+  }
+
+  summary {
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  summary::after {
+    content: '+';
+    font-size: 1.25rem;
+  }
+
+  details[open] summary::after {
+    content: '−';
+  }
+
+  details p {
+    padding-top: var(--space-sm);
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .related-products {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border);
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .product-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .product-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+</style>
+
+<script>
+  // Thumbnail switching
+  const thumbs = document.querySelectorAll('.thumb');
+  const mainImg = document.getElementById('main-prod-img') as HTMLImageElement;
+
+  thumbs.forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      const src = (thumb as HTMLButtonElement).dataset.src;
+      if (src && mainImg) {
+        mainImg.src = src;
+        thumbs.forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+      }
+    });
+  });
+</script>

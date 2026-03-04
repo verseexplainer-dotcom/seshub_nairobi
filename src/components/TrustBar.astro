@@ -1,0 +1,88 @@
+---
+---
+<section class="trust-bar">
+  <div class="container trust-grid">
+    <div class="trust-card">
+      <div class="trust-icon">🚚</div>
+      <div class="trust-text">
+        <h3>Same-Day Delivery</h3>
+        <p>Within Nairobi & environs</p>
+      </div>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon">📦</div>
+      <div class="trust-text">
+        <h3>Countrywide Dispatch</h3>
+        <p>Across all 47 counties</p>
+      </div>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon">🛡️</div>
+      <div class="trust-text">
+        <h3>Warranty-Backed</h3>
+        <p>Up to 12 months protection</p>
+      </div>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon">🏠</div>
+      <div class="trust-text">
+        <h3>Physical Shop</h3>
+        <p>Moi Avenue, Nairobi CBD</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .trust-bar {
+    background-color: var(--white);
+    padding: var(--space-xl) 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .trust-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 640px) {
+    .trust-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .trust-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .trust-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .trust-icon {
+    font-size: 2rem;
+    background-color: var(--background);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  .trust-text h3 {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .trust-text p {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+</style>

@@ -1,0 +1,95 @@
+---
+const categories = [
+  { name: 'Laptops', slug: 'laptops', icon: '💻', count: '50+ Items' },
+  { name: 'Printers', slug: 'printers', icon: '🖨️', count: '20+ Items' },
+  { name: 'Phones', slug: 'phones', icon: '📱', count: '15+ Items' },
+  { name: 'Accessories', slug: 'accessories', icon: '🖱️', count: '100+ Items' },
+];
+---
+
+<section class="categories">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Shop by Category</h2>
+      <a href="/category/all" class="text-link">View all catalogs &rarr;</a>
+    </div>
+    
+    <div class="category-grid">
+      {categories.map(cat => (
+        <a href={`/category/${cat.slug}`} class="category-card">
+          <div class="category-icon">{cat.icon}</div>
+          <h3 class="category-name">{cat.name}</h3>
+          <p class="category-count">{cat.count}</p>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .categories {
+    padding: var(--space-xl) 0;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--space-lg);
+  }
+
+  .section-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+  }
+
+  .text-link {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 768px) {
+    .category-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .category-card {
+    background-color: var(--white);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+  }
+
+  .category-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .category-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .category-count {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+</style>

@@ -1,0 +1,158 @@
+---
+---
+<section class="newsletter">
+  <div class="container newsletter-content">
+    <div class="newsletter-text">
+      <h2 class="section-title">Join our newsletter</h2>
+      <p>Get exclusive deals, tech tips, and stock alerts directly in your inbox.</p>
+    </div>
+    
+    <form class="newsletter-form" id="newsletter-form">
+      <div class="form-group">
+        <input 
+          type="email" 
+          id="newsletter-email" 
+          name="email" 
+          placeholder="Enter your email address" 
+          required 
+          aria-label="Email address"
+        />
+        <button type="submit" class="pill-button primary">Subscribe</button>
+      </div>
+      <label class="consent-label">
+        <input type="checkbox" name="consent" required />
+        <span>I agree to receive marketing emails and stock alerts.</span>
+      </label>
+      <div id="newsletter-message" class="newsletter-message hidden"></div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .newsletter {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: var(--space-xl) 0;
+  }
+
+  .newsletter-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 1024px) {
+    .newsletter-content {
+      flex-direction: row;
+      text-align: left;
+      justify-content: space-between;
+    }
+  }
+
+  .newsletter-text h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .newsletter-text p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+  }
+
+  .newsletter-form {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .form-group {
+    display: flex;
+    gap: 0.5rem;
+    background-color: var(--white);
+    padding: 0.5rem;
+    border-radius: var(--radius-full);
+    margin-bottom: var(--space-sm);
+  }
+
+  input[type="email"] {
+    flex: 1;
+    border: none;
+    padding: 0 1rem;
+    font-size: 1rem;
+    outline: none;
+    background: transparent;
+  }
+
+  .consent-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    opacity: 0.8;
+  }
+
+  .newsletter-message {
+    margin-top: var(--space-sm);
+    font-weight: 600;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .success {
+    color: #34D399;
+  }
+
+  .error {
+    color: #F87171;
+  }
+</style>
+
+<script>
+  const form = document.getElementById('newsletter-form') as HTMLFormElement;
+  const messageEl = document.getElementById('newsletter-message');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const email = formData.get('email');
+    const consent = formData.get('consent') === 'on';
+
+    if (messageEl) {
+      messageEl.textContent = 'Subscribing...';
+      messageEl.classList.remove('hidden', 'success', 'error');
+    }
+
+    try {
+      // In a real app, this would call /api/newsletter
+      // For this project, we'll implement it via Cloudflare Functions
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: localStorage.getItem('ses_session_id'),
+          event_type: 'newsletter_signup_intent',
+          payload: { email, consent, source_page: window.location.pathname }
+        })
+      });
+
+      if (response.ok) {
+        if (messageEl) {
+          messageEl.textContent = 'Welcome to the hub! ✓';
+          messageEl.classList.add('success');
+        }
+        form.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (err) {
+      if (messageEl) {
+        messageEl.textContent = 'Something went wrong. Please try again.';
+        messageEl.classList.add('error');
+      }
+    }
+  });
+</script>
