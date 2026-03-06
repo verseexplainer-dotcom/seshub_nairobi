@@ -30,6 +30,22 @@ BUCKET = "product-images"
 
 DRY_RUN = "--dry-run" in sys.argv
 
+def parse_category_filter(argv: list[str]) -> set[str]:
+    """
+    Parse --categories laptops,smartphones into a normalized set.
+    Supports values separated by comma and/or spaces.
+    """
+    categories: set[str] = set()
+    for i, arg in enumerate(argv):
+        if arg == "--categories" and i + 1 < len(argv):
+            raw = argv[i + 1]
+            parts = [p.strip().lower() for p in raw.replace(" ", ",").split(",")]
+            categories = {p for p in parts if p}
+            break
+    return categories
+
+CATEGORY_FILTER = parse_category_filter(sys.argv)
+
 if not URL or not KEY:
     print("❌  Set PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env")
     sys.exit(1)
@@ -190,6 +206,8 @@ def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenam
 def link_images():
     if DRY_RUN:
         print("🔍  DRY RUN – no database writes will be made.\n")
+    if CATEGORY_FILTER:
+        print(f"🎯  Category filter: {sorted(CATEGORY_FILTER)}\n")
 
     # 0. Check buckets
     print("🪣  Checking available buckets...")
@@ -217,12 +235,22 @@ def link_images():
 
     # 2. Fetch all products
     print("📦  Fetching products…")
-    response = supabase.table("products").select("id, slug, title, images").execute()
+    response = supabase.table("products").select("id, slug, title, images, category").execute()
     products = response.data
 
     if not products:
         print("⚠️  No products found in the table.")
         return
+
+    if CATEGORY_FILTER:
+        products = [
+            p for p in products
+            if str(p.get("category", "")).strip().lower() in CATEGORY_FILTER
+        ]
+
+        if not products:
+            print("⚠️  No products found for the requested categories.")
+            return
 
     print(f"   Found {len(products)} products.\n")
 
