@@ -5,7 +5,7 @@ import SearchBar from '../../components/SearchBar.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
-  const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'phones', 'accessories', 'deals', 'all'];
+  const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories', 'deals', 'all'];
   return categories.map(slug => ({ params: { slug } }));
 }
 
@@ -16,8 +16,7 @@ const slugToCategory: Record<string, string[]> = {
   laptops: ['laptops', 'Laptops'],
   desktops: ['desktops', 'Desktops'],
   printers: ['printers', 'Printers'],
-  smartphones: ['smartphones', 'Smartphones', 'phones', 'Phones'],
-  phones: ['smartphones', 'Smartphones', 'phones', 'Phones'],
+  smartphones: ['smartphones', 'Smartphones'],
   accessories: ['accessories', 'Accessories']
 };
 
@@ -37,7 +36,6 @@ const categoryNames: Record<string, string> = {
   desktops: 'Desktops',
   printers: 'Printers',
   smartphones: 'Smartphones',
-  phones: 'Smartphones',
   accessories: 'Accessories',
   deals: 'Special Deals',
   all: 'All Products'

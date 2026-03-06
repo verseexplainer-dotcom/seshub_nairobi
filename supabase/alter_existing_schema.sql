@@ -75,7 +75,7 @@ END $$;
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_category_check
-  CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'phones', 'smartphones', 'accessories'));
+  CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories'));
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_condition_check
@@ -132,6 +132,8 @@ CREATE TABLE IF NOT EXISTS public.testimonials (
 );
 
 ALTER TABLE public.testimonials ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT false;
+ALTER TABLE public.testimonials ADD COLUMN IF NOT EXISTS persona TEXT;
+ALTER TABLE public.testimonials ADD COLUMN IF NOT EXISTS rating INT;
 
 ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Select Testimonials" ON public.testimonials;

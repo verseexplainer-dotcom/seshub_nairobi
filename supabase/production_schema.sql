@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   title TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'phones', 'smartphones', 'accessories')),
+  category TEXT NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
   price_kes INT NOT NULL,
   compare_at_kes INT NULL,
   in_stock BOOLEAN NOT NULL DEFAULT TRUE,
