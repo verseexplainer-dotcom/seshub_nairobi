@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 export async function GET() {
     const { data: products } = await supabase.from('products').select('slug, updated_at');
 
-    const categories = ['laptops', 'printers', 'phones', 'accessories', 'deals', 'all'];
+    const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories', 'deals', 'all'];
     const pages = ['', 'cart', 'track', 'contact', 'faq'];
 
     const baseUrl = 'https://sesicthub.co.ke';

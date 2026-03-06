@@ -3,7 +3,7 @@
 <section class="hero">
   <div class="container hero-content">
     <div class="hero-text">
-      <h1 class="hero-title">Brand-new & <span class="text-accent">certified refurbished</span> electronics in Kenya</h1>
+      <h1 class="hero-title">Achieve Peak Computing Performance Without the High Cost of New Tech</h1>
       <p class="hero-subtitle">Tested devices with clear specs, fair pricing, and fast delivery across Kenya.</p>
       
       <div class="hero-actions">
@@ -17,27 +17,27 @@
       <div class="hero-trust">
         <div class="trust-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Tested & ready-to-use</span>
+          <span>2-Hour Nairobi Delivery</span>
         </div>
         <div class="trust-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Warranty 3/6/12</span>
+          <span>M-PESA</span>
         </div>
         <div class="trust-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Physical shop</span>
-        </div>
-        <div class="trust-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Fast delivery</span>
+          <span>Cash on Delivery</span>
         </div>
       </div>
     </div>
     
     <div class="hero-image">
-      <!-- We'll use a placeholder or generic electronics image for now -->
-      <div class="hero-image-placeholder">
-        <span class="placeholder-icon">💻</span>
+      <div class="hero-image-placeholder relative h-full w-full rounded-2xl overflow-hidden shadow-2xl">
+        <img 
+          src={`${import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co'}/storage/v1/object/public/product-images/hero-laptop.webp`} 
+          alt="Premium Refurbished Laptop" 
+          class="object-cover w-full h-full"
+          onerror="this.src='/product-placeholder.jpg'"
+        />
       </div>
     </div>
   </div>

@@ -1,204 +1,464 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Hero from '../components/Hero.astro';
-import SearchBar from '../components/SearchBar.astro';
-import CategoryCards from '../components/CategoryCards.astro';
-import BrandCarousel from '../components/BrandCarousel.astro';
-import TrustBar from '../components/TrustBar.astro';
-import Newsletter from '../components/Newsletter.astro';
 import ProductCard from '../components/ProductCard.astro';
 import { supabase } from '../lib/supabase';
 
-// Fetch Featured Products (8 items: 6 laptops + 2 printers)
 const { data: featuredProducts } = await supabase
   .from('products')
   .select('*')
   .eq('featured_home', true)
-  .order('featured_rank', { ascending: true })
-  .limit(8);
+  .limit(12);
 
-// Fetch Refurbished Deals
-const { data: refurbishedDeals } = await supabase
-  .from('products')
-  .select('*')
-  .eq('condition', 'refurbished')
-  .limit(4);
-
-// Fetch Testimonials
 const { data: testimonials } = await supabase
   .from('testimonials')
-  .select('*')
+  .select('id, name, quote, approved')
   .eq('approved', true)
   .limit(6);
+
+const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co').replace(/\/$/, '');
+const heroImage = `${supabaseUrl}/storage/v1/object/public/product-images/hero-laptop.webp`;
 ---
 
-<Layout title="Home">
-  <Hero />
-  <SearchBar />
-  <CategoryCards />
-
-  <!-- Curated Collections -->
-  <section class="collections">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Refurbished Deals</h2>
-        <a href="/category/all?condition=refurbished" class="text-link">Shop all refurbished &rarr;</a>
+<Layout
+  title="Achieve Peak Computing Performance Without the High Cost of New Tech"
+  description="Brand-new & certified refurbished electronics in Nairobi. Tested, warranted, and delivered in 2 hours."
+>
+  <section class="hero reveal">
+    <div class="container hero-grid">
+      <div>
+        <h1>Achieve Peak Computing Performance Without the High Cost of New Tech.</h1>
+        <p>Brand-new & certified refurbished electronics in Nairobi. Tested, warranted, and delivered in 2 hours.</p>
+        <div class="hero-actions">
+          <a class="pill-button cta-orange" href="/category/deals">Shop Deals</a>
+          <a class="pill-button" href="/category/all">Browse Full Catalog</a>
+        </div>
       </div>
-      
-      <div class="product-grid">
-        {refurbishedDeals && refurbishedDeals.length > 0 ? (
-          refurbishedDeals.map(product => <ProductCard product={product} />)
-        ) : (
-          <p class="empty-msg">No refurbished deals available right now. Check back soon!</p>
-        )}
+      <div class="hero-media">
+        <img src={heroImage} alt="Premium laptop mockup" loading="eager" onerror="this.src='/product-placeholder.jpg'" />
       </div>
     </div>
   </section>
 
-  <BrandCarousel />
-
-  <!-- Featured Grid -->
-  <section class="featured-products">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Featured for You</h2>
-        <p class="section-subtitle">Top picks from our laptops and printers collection.</p>
-      </div>
-      
-      <div class="product-grid">
-        {featuredProducts && featuredProducts.length > 0 ? (
-          featuredProducts.map(product => <ProductCard product={product} />)
-        ) : (
-          <p class="empty-msg">Our featured products are coming soon!</p>
-        )}
-      </div>
+  <section class="trust-strip reveal">
+    <div class="container trust-strip-inner">
+      <p>✔ 2-hour Nairobi delivery | ✔ M-PESA | ✔ Cash on Delivery</p>
     </div>
   </section>
 
-  <TrustBar />
-
-  <!-- Testimonials -->
   {testimonials && testimonials.length > 0 && (
-    <section class="testimonials">
+    <section class="social-proof reveal">
       <div class="container">
-        <h2 class="section-title text-center">What our customers say</h2>
+        <h2>Trusted by Nairobi Buyers</h2>
         <div class="testimonial-grid">
-          {testimonials.map(item => (
-            <div class="testimonial-card">
-              <div class="stars">{"★".repeat(item.rating)}{"☆".repeat(5-item.rating)}</div>
+          {testimonials.map((item) => (
+            <article class="testimonial-card">
               <p class="quote">"{item.quote}"</p>
-              <div class="author">
-                <strong>{item.name}</strong>
-                <span class="persona">{item.persona}</span>
-              </div>
-            </div>
+              <p class="author">{item.name}</p>
+            </article>
           ))}
         </div>
       </div>
     </section>
   )}
 
-  <Newsletter />
+  <section class="compare reveal">
+    <div class="container">
+      <h2>Why Buyers Are Switching to SES ICT HUB</h2>
+      <div class="compare-grid">
+        <article class="compare-card old-way">
+          <h3>The Old Way</h3>
+          <ul>
+            <li>Unreliable grading and hidden defects</li>
+            <li>No clear testing report before purchase</li>
+            <li>Little or no warranty support</li>
+          </ul>
+        </article>
+        <article class="compare-card ses-way">
+          <h3>The SES Way</h3>
+          <ul>
+            <li>Grade A/B/C certified refurbishment process</li>
+            <li>Verified specs and tested performance</li>
+            <li>Up to 12-month warranty cover</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="benefits reveal">
+    <div class="container">
+      <h2>Built for Speed, Power, and Trust</h2>
+      <div class="benefit-grid">
+        <article class="benefit-card">
+          <h3>Speed</h3>
+          <p>2-hour delivery within Nairobi for urgent work and school needs.</p>
+        </article>
+        <article class="benefit-card">
+          <h3>Power</h3>
+          <p>Core i5/i7 performance tiers for students, creators, and business teams.</p>
+        </article>
+        <article class="benefit-card">
+          <h3>Trust</h3>
+          <p>Visit our physical shop at Tembo Cooperative House before you buy.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-it-works reveal">
+    <div class="container">
+      <h2>How It Works</h2>
+      <ol>
+        <li><strong>1. Browse Specs</strong> and shortlist devices that match your workload.</li>
+        <li><strong>2. Inquire via WhatsApp</strong> for live stock confirmation and expert help.</li>
+        <li><strong>3. Inspect & Pay on Delivery</strong> via M-PESA or Cash on Delivery.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="featured reveal">
+    <div class="container">
+      <div class="section-head">
+        <h2>Featured Deals</h2>
+        <a href="/category/all" class="view-all">View All Products</a>
+      </div>
+      <div class="visual-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {featuredProducts && featuredProducts.length > 0 ? (
+          featuredProducts.map((product) => <ProductCard product={product} />)
+        ) : (
+          <p class="empty-msg">Featured inventory is currently being refreshed.</p>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <section class="tiers reveal">
+    <div class="container">
+      <h2>Pricing Tiers</h2>
+      <div class="tier-grid">
+        <article class="tier-card">
+          <h3>Student Essentials</h3>
+          <p>Affordable laptops and desktops for assignments, browsing, and online classes.</p>
+        </article>
+        <article class="tier-card">
+          <h3>Business Pro</h3>
+          <p>Reliable Core i5/i7 machines optimized for office productivity and multitasking.</p>
+        </article>
+        <article class="tier-card">
+          <h3>Custom Accessories</h3>
+          <p>Expand your setup with printers, docking, storage, and performance peripherals.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq reveal" id="faq">
+    <div class="container">
+      <h2>Frequently Asked Questions</h2>
+      <details>
+        <summary>What is Grade A?</summary>
+        <p>Grade A devices are the cleanest refurbished units with minimal cosmetic wear and excellent performance.</p>
+      </details>
+      <details>
+        <summary>Is there a warranty?</summary>
+        <p>Yes. Most units come with 6-12 months warranty depending on model and condition.</p>
+      </details>
+      <details>
+        <summary>Do you deliver today?</summary>
+        <p>Yes. Nairobi orders placed during business hours are eligible for same-day delivery, often within 2 hours.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="final-cta reveal">
+    <div class="container final-cta-inner">
+      <h2>Ready to Upgrade Your Workspace?</h2>
+      <a class="pill-button cta-orange" href="/category/all">Shop All Deals</a>
+    </div>
+  </section>
 </Layout>
 
 <style>
-  .section-header {
-    margin-bottom: var(--space-lg);
+  section {
+    padding: clamp(2.5rem, 6vw, 5rem) 0;
   }
 
-  .section-title {
-    font-size: 1.75rem;
-    font-weight: 800;
+  h1,
+  h2,
+  h3 {
+    line-height: 1.2;
   }
 
-  .text-center {
-    text-align: center;
-    margin-bottom: var(--space-xl);
+  h2 {
+    font-size: clamp(1.6rem, 3.1vw, 2.3rem);
+    margin-bottom: 1.25rem;
   }
 
-  .section-subtitle {
-    color: var(--text-muted);
-    font-size: 1rem;
-    margin-top: 0.25rem;
+  .hero {
+    background: radial-gradient(circle at 10% 10%, rgba(29, 78, 216, 0.12), transparent 42%),
+      radial-gradient(circle at 95% 0%, rgba(249, 115, 22, 0.15), transparent 35%),
+      var(--background);
+    padding-top: clamp(3rem, 7vw, 6rem);
   }
 
-  .collections, .featured-products, .testimonials {
-    padding: var(--space-xl) 0;
-  }
-
-  .product-grid {
+  .hero-grid {
     display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: var(--space-md);
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: center;
   }
 
-  @media (min-width: 640px) {
-    .product-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    margin-bottom: 1rem;
   }
 
-  @media (min-width: 1024px) {
-    .product-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  .empty-msg {
-    text-align: center;
-    padding: var(--space-xl);
-    background-color: var(--white);
-    border-radius: var(--radius-lg);
-    border: 1px dashed var(--border);
+  .hero p {
     color: var(--text-muted);
-    grid-column: 1 / -1;
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+
+  .hero-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .cta-orange {
+    background-color: var(--accent);
+    color: var(--white);
+    font-weight: 700;
+    box-shadow: 0 12px 30px rgba(249, 115, 22, 0.25);
+  }
+
+  .cta-orange:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-2px);
+  }
+
+  .hero-media {
+    background: linear-gradient(150deg, #ffffff, #eff6ff);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+    padding: 1rem;
+  }
+
+  .hero-media img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0.9rem;
+  }
+
+  .trust-strip {
+    padding: 1rem 0;
+  }
+
+  .trust-strip-inner {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e3a8a;
+    border-radius: 9999px;
+    padding: 0.8rem 1.2rem;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .social-proof {
+    background-color: #ffffff;
   }
 
   .testimonial-grid {
     display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: var(--space-md);
-  }
-
-  @media (min-width: 768px) {
-    .testimonial-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .testimonial-card {
-    background-color: var(--white);
-    padding: var(--space-lg);
-    border-radius: var(--radius-lg);
+    background: var(--background);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .stars {
-    color: #FBBF24;
-    margin-bottom: 0.5rem;
+    border-radius: 1rem;
+    padding: 1.1rem;
   }
 
   .quote {
-    font-style: italic;
-    color: var(--text-main);
-    margin-bottom: var(--space-md);
-    line-height: 1.6;
+    margin-bottom: 0.8rem;
+    color: #0f172a;
   }
 
   .author {
-    display: flex;
-    flex-direction: column;
+    color: #1d4ed8;
+    font-weight: 700;
   }
 
-  .persona {
-    font-size: 0.8125rem;
+  .compare-grid,
+  .benefit-grid,
+  .tier-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .compare-card,
+  .benefit-card,
+  .tier-card {
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+    background-color: var(--white);
+  }
+
+  .old-way {
+    background: #fff7ed;
+    border-color: #fdba74;
+  }
+
+  .ses-way {
+    background: #eff6ff;
+    border-color: #93c5fd;
+  }
+
+  ul,
+  ol {
+    display: grid;
+    gap: 0.75rem;
+    padding-left: 1.15rem;
     color: var(--text-muted);
   }
 
-  .text-link {
+  .how-it-works {
+    background: linear-gradient(120deg, #eff6ff, #f8fafc);
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .view-all {
     color: var(--primary);
-    font-weight: 600;
-    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .visual-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .empty-msg {
+    grid-column: 1 / -1;
+    text-align: center;
+    background: #ffffff;
+    border: 1px dashed var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    color: var(--text-muted);
+  }
+
+  .faq {
+    background: #ffffff;
+  }
+
+  details {
+    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 0;
+  }
+
+  summary {
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  details p {
+    color: var(--text-muted);
+    margin-top: 0.6rem;
+  }
+
+  .final-cta {
+    background: radial-gradient(circle at 0% 0%, rgba(249, 115, 22, 0.15), transparent 35%),
+      radial-gradient(circle at 100% 100%, rgba(29, 78, 216, 0.15), transparent 35%),
+      #ffffff;
+  }
+
+  .final-cta-inner {
+    text-align: center;
+    max-width: 700px;
+  }
+
+  .final-cta-inner .pill-button {
+    margin-top: 1rem;
+    font-size: 1.03rem;
+    padding: 0.8rem 1.9rem;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 500ms ease, transform 500ms ease;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (min-width: 768px) {
+    .testimonial-grid,
+    .benefit-grid,
+    .tier-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .compare-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .md\:grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-grid {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .lg\:grid-cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 </style>
+
+<script>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+</script>

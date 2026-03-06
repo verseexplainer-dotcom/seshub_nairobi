@@ -366,6 +366,7 @@ import Layout from '../layouts/Layout.astro';
     
     const payload = {
       cart,
+      total_kes: cart.reduce((acc: number, item: any) => acc + (item.price_kes * item.qty), 0),
       customer_name: formData.get('customer_name'),
       phone: formData.get('phone'),
       location: formData.get('location'),

@@ -8,12 +8,19 @@ const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.p
 const discountPercent = hasDiscount 
   ? Math.round(((product.compare_at_kes - product.price_kes) / product.compare_at_kes) * 100) 
   : 0;
+
+const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co').replace(/\/$/, '');
+const getImageUrl = (img: string | undefined) => {
+  if (!img) return '/product-placeholder.jpg';
+  if (img.startsWith('http')) return img;
+  return `${supabaseUrl}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
+};
 ---
 
 <article class="product-card">
   <div class="product-image-wrapper">
     <a href={`/product/${product.slug}`}>
-      <img src={product.images[0] || '/product-placeholder.jpg'} alt={product.title} loading="lazy" class="product-image" />
+      <img src={getImageUrl(product.images[0])} alt={product.title} loading="lazy" class="product-image" />
     </a>
     {hasDiscount && <span class="badge sale">-{discountPercent}% OFF</span>}
     <span class={`badge ${product.in_stock ? 'stock' : 'out-of-stock'}`}>
@@ -43,7 +50,7 @@ const discountPercent = hasDiscount
         data-title={product.title} 
         data-price={product.price_kes}
         data-slug={product.slug}
-        data-image={product.images[0]}
+        data-image={getImageUrl(product.images[0])}
       >
         Add to Cart
       </button>

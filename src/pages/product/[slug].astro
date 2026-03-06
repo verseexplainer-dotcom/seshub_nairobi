@@ -30,26 +30,45 @@ const { data: related } = await supabase
   .neq('id', product.id)
   .limit(4);
 
+const categorySlugMap: Record<string, string> = {
+  laptops: 'laptops',
+  desktops: 'desktops',
+  printers: 'printers',
+  smartphones: 'smartphones',
+  phones: 'smartphones',
+  accessories: 'accessories'
+};
+const categoryKey = String(product.category || '').toLowerCase();
+const categorySlug = categorySlugMap[categoryKey] || 'all';
+
 const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.price_kes;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
+const storageBase = supabaseUrl.replace(/\/$/, '');
+const getImageUrl = (img: string | undefined) => {
+  if (!img) return '/product-placeholder.jpg';
+  if (img.startsWith('http')) return img;
+  return `${storageBase}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
+};
 ---
 
 <Layout title={product.title} description={product.description || product.short_specs}>
   <div class="product-page">
     <div class="container breadcrumbs">
-      <a href="/">Home</a> / <a href={`/category/${product.category}`}>{product.category}</a> / <span>{product.title}</span>
+      <a href="/">Home</a> / <a href={`/category/${categorySlug}`}>{product.category}</a> / <span>{product.title}</span>
     </div>
 
     <div class="container product-main">
       <!-- Media Gallery -->
       <div class="product-gallery">
         <div class="main-image">
-          <img src={product.images[0] || '/product-placeholder.jpg'} alt={product.title} id="main-prod-img" />
+          <img src={getImageUrl(product.images[0])} alt={product.title} id="main-prod-img" />
         </div>
         {product.images.length > 1 && (
           <div class="thumbnails">
             {product.images.map((img: string, idx: number) => (
-              <button class={`thumb ${idx === 0 ? 'active' : ''}`} data-src={img}>
-                <img src={img} alt="" />
+              <button class={`thumb ${idx === 0 ? 'active' : ''}`} data-src={getImageUrl(img)}>
+                <img src={getImageUrl(img)} alt="" />
               </button>
             ))}
           </div>
@@ -87,7 +106,7 @@ const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.p
             data-title={product.title} 
             data-price={product.price_kes}
             data-slug={product.slug}
-            data-image={product.images[0]}
+            data-image={getImageUrl(product.images[0])}
           >
             Add to Cart
           </button>
@@ -98,6 +117,10 @@ const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.p
           >
             Inquire on WhatsApp
           </a>
+        </div>
+
+        <div class="trust-signals-mini">
+          <p>✔ 6-12 Month Warranty | ✔ Tested Device | ✔ Nairobi Same-Day Delivery | ✔ Pay via M-PESA</p>
         </div>
 
         <div class="trust-panel">
@@ -126,9 +149,7 @@ const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.p
 
         <div class="product-description">
           <h2>Description</h2>
-          <div class="desc-content">
-            {product.description || "No detailed description available."}
-          </div>
+          <div class="desc-content" set:html={product.description || ''} />
         </div>
 
         <!-- FAQ Accordion -->
@@ -419,6 +440,13 @@ const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.p
     .product-grid {
       grid-template-columns: repeat(4, 1fr);
     }
+  }
+
+  .trust-signals-mini {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 600;
   }
 </style>
 

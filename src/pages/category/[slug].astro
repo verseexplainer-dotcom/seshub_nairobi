@@ -5,18 +5,20 @@ import SearchBar from '../../components/SearchBar.astro';
 import { supabase } from '../../lib/supabase';
 
 export async function getStaticPaths() {
-  const categories = ['laptops', 'printers', 'smartphones', 'accessories', 'deals', 'all'];
+  const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'phones', 'accessories', 'deals', 'all'];
   return categories.map(slug => ({ params: { slug } }));
 }
 
 const { slug } = Astro.params;
 
-// Map URL slugs to capitalised DB category values
-const slugToCategory: Record<string, string> = {
-  laptops: 'Laptops',
-  printers: 'Printers',
-  smartphones: 'Smartphones',
-  accessories: 'Accessories',
+// Map route slugs to acceptable DB category values (case/data tolerant)
+const slugToCategory: Record<string, string[]> = {
+  laptops: ['laptops', 'Laptops'],
+  desktops: ['desktops', 'Desktops'],
+  printers: ['printers', 'Printers'],
+  smartphones: ['smartphones', 'Smartphones', 'phones', 'Phones'],
+  phones: ['smartphones', 'Smartphones', 'phones', 'Phones'],
+  accessories: ['accessories', 'Accessories']
 };
 
 let query = supabase.from('products').select('*');
@@ -24,16 +26,18 @@ let query = supabase.from('products').select('*');
 if (slug === 'deals') {
   query = query.not('compare_at_kes', 'is', null);
 } else if (slug !== 'all') {
-  const dbCategory = slugToCategory[slug as string] || slug;
-  query = query.eq('category', dbCategory);
+  const dbCategories = slugToCategory[slug as string] || [slug as string];
+  query = query.in('category', dbCategories);
 }
 
 const { data: products } = await query;
 
 const categoryNames: Record<string, string> = {
   laptops: 'Laptops',
+  desktops: 'Desktops',
   printers: 'Printers',
   smartphones: 'Smartphones',
+  phones: 'Smartphones',
   accessories: 'Accessories',
   deals: 'Special Deals',
   all: 'All Products'

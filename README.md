@@ -1,66 +1,114 @@
-# SES ICT HUB E-commerce Storefront
+# SES ICT HUB — E-commerce Storefront
 
 A production-ready, high-performance storefront for SES ICT HUB built with Astro, Supabase, and Cloudflare Pages.
 
-## 🚀 Speed & Tech Stack
-- **Framework**: [Astro](https://astro.build/) (Static First)
-- **Database**: [Supabase](https://supabase.com/)
-- **Hosting**: [Cloudflare Pages](https://pages.cloudflare.com/) 
-- **Checkout**: WhatsApp-only (No online payments)
-- **Styling**: Vanilla CSS (Modern, Minimal, Mobile-first)
+## 🚀 Tech Stack
+- **Framework**: [Astro](https://astro.build/) (`output: static`)
+- **Database**: [Supabase](https://supabase.com/) (Postgres + RLS)
+- **Hosting**: [Cloudflare Pages](https://pages.cloudflare.com/)
+- **Checkout**: WhatsApp hybrid (order intent saved to DB → WhatsApp opened)
+- **Styling**: Vanilla CSS (mobile-first, electric blue theme)
 
 ---
 
-## 🛠️ Step-by-Step Setup
+## � Project Structure
 
-### 1. Supabase Setup
-1. Create a new Supabase project at [app.supabase.com](https://app.supabase.com).
-2. Go to the **SQL Editor** and run the contents of [`supabase/schema.sql`](file:///home/paulaflare/Desktop/ses%20superbase%20stack/supabase/schema.sql).
-3. Under **Storage**, create two buckets:
-   - `product-images` (Set to **Public**)
-   - `brand-logos` (Set to **Public**)
+```
+├── src/
+│   ├── components/       # AnnouncementStrip, Header, Hero, Footer, ProductCard, etc.
+│   ├── layouts/          # Layout.astro
+│   ├── lib/supabase.ts   # Supabase client (PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY)
+│   ├── pages/
+│   │   ├── index.astro           # Homepage (featured, refurbished, testimonials)
+│   │   ├── category/[slug].astro # Category pages
+│   │   ├── product/[slug].astro  # Product detail pages
+│   │   ├── cart.astro            # Shopping cart
+│   │   ├── contact.astro
+│   │   ├── faq.astro
+│   │   ├── track.astro
+│   │   └── sitemap.xml.ts
+│   └── styles/global.css
+├── functions/api/        # Cloudflare Pages Functions (checkout, events, search)
+├── supabase/schema.sql   # Full DB schema (v2 — numeric types, RLS policies)
+└── public/robots.txt
+```
 
-### 2. Product Data
-Add initial products via the Supabase Dashboard or CSV import. Ensure you follow the schema.
-- **Conditions**: `brand_new`, `refurbished`
-- **Categories**: `laptops`, `printers`, `phones`, `accessories`
-- **Grades**: `grade_a`, `grade_b`, `grade_c` (for refurbished items)
+---
+
+## 🛠️ Setup
+
+### 1. Supabase
+1. Create a new project at [app.supabase.com](https://app.supabase.com).
+2. Open **SQL Editor** → paste and run `supabase/schema.sql`.
+3. Under **Storage** → create bucket `product-images` (set to **Public**).
+
+### 2. Import Products
+Import `products_for_supabase_import_v4.csv` into the `products` table via Table Editor → Import Data. The CSV has **239 rows** and imports unchanged — all column names match the schema exactly.
+
+**Category values** (capitalized in DB): `Laptops`, `Printers`, `Smartphones`, `Accessories`, `Desktops`
+**Conditions**: `brand_new`, `refurbished`, `unknown`
+**Refurb grades**: `grade_a`, `grade_b`, `grade_c`
 
 ### 3. Environment Variables
-Create a `.env` file in the root:
+Create a `.env` file in the project root:
 ```env
 PUBLIC_SUPABASE_URL=your_supabase_url
 PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-### 4. Cloudflare Pages Deployment
+### 4. Local Development
+```bash
+npm install
+npm run dev
+```
+
+### 5. Cloudflare Pages Deployment
 1. Connect your GitHub repo to Cloudflare Pages.
-2. Set the **Build Command**: `npm run build`
-3. Set the **Output Directory**: `dist`
-4. Add the **Environment Variables** (matches `.env` above) in the Cloudflare Dashboard under Settings > Functions.
+2. **Build command**: `npm run build`
+3. **Output directory**: `dist`
+4. Add `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` in Settings → Environment Variables.
 
 ---
 
-## 📦 Deliverables
-- `/src/pages`: Astro pages for Home, Category, Product, Cart, etc.
-- `/src/components`: UI components including Sticky Header, Announcement Bar, and Product Cards.
-- `/functions/api`: Serverless functions for WhatsApp checkout and event tracking.
-- `/supabase/schema.sql`: Full database schema with Row Level Security (RLS) policies.
+## 🗄️ Database Schema (v2)
+
+| Table | Purpose |
+|---|---|
+| `products` | Product catalogue (numeric types for CSV decimal compatibility) |
+| `order_intents` | WhatsApp hybrid checkout (customer_name, cart, phone, status) |
+| `events` | Analytics (page_view, add_to_cart, whatsapp_click, etc.) |
+| `testimonials` | Customer reviews (name, persona, quote, rating, approved) |
+| `newsletter_signups` | Email collection with consent |
+
+All tables have RLS enabled. Products and approved testimonials are publicly readable; order_intents, events, and newsletter_signups are insert-only for anon/authenticated roles.
+
+---
+
+## 🛒 Category Routes
+
+| URL | DB Query |
+|---|---|
+| `/category/laptops` | `category = 'Laptops'` |
+| `/category/printers` | `category = 'Printers'` |
+| `/category/smartphones` | `category = 'Smartphones'` |
+| `/category/accessories` | `category = 'Accessories'` |
+| `/category/deals` | `compare_at_kes IS NOT NULL` |
+| `/category/all` | All products |
 
 ---
 
 ## 🛡️ Rollback Plan
-If a deployment fails:
-1. Revert to the previous successful commit in Git.
-2. Cloudflare Pages will automatically redeploy the previous state.
-3. If database changes are breaking, use Supabase point-in-time recovery (if available) or manual backup restoration.
+1. Revert to the previous commit in Git.
+2. Cloudflare Pages auto-redeploys the previous state.
+3. For DB issues, use Supabase point-in-time recovery or manual backup.
 
 ---
 
-## 📋 Done Criteria Check
-- [x] Homepage, Category, Product, and Cart pages functional.
-- [x] WhatsApp checkout generates correct messages and saves order intents.
-- [x] Responsive, mobile-first design with pill buttons and electric blue theme.
-- [x] SEO optimized with sitemap, robots.txt, and OG tags.
-- [x] Predictive search via Cloudflare Functions.
+## ✅ Done Criteria
+- [x] Homepage loads featured products, refurbished deals, and approved testimonials
+- [x] All category pages functional (including `/category/smartphones`)
+- [x] Product detail pages render from Supabase data
+- [x] WhatsApp checkout saves order intents and opens WhatsApp
+- [x] Responsive, mobile-first design with pill buttons and electric blue theme
+- [x] SEO: sitemap, robots.txt, OG tags
+- [x] CSV imports into `products` table without any column renaming

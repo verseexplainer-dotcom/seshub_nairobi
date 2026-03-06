@@ -23,3 +23,9 @@ pnpm-debug.log*
 
 # supabase
 supabase/.temp/
+
+# python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
