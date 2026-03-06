@@ -4,6 +4,8 @@ import ProductCard from '../../components/ProductCard.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import { supabase } from '../../lib/supabase';
 
+export const prerender = true;
+
 export async function getStaticPaths() {
   const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories', 'deals', 'all'];
   return categories.map(slug => ({ params: { slug } }));

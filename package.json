@@ -7,6 +7,9 @@
     "start": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "deploy": "npm run build && wrangler deploy",
+    "cf:dev": "wrangler dev",
+    "cf:typegen": "wrangler types",
     "astro": "astro"
   },
   "dependencies": {
@@ -14,5 +17,9 @@
     "@supabase/supabase-js": "^2.48.1",
     "astro": "^4.16.18",
     "typescript": "^5.7.3"
+  },
+  "devDependencies": {
+    "@astrojs/cloudflare": "^11.2.0",
+    "wrangler": "^4.71.0"
   }
 }

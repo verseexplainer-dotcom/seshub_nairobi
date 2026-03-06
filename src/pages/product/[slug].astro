@@ -4,6 +4,8 @@ import ProductCard from '../../components/ProductCard.astro';
 import StickyATC from '../../components/StickyATC.astro';
 import { supabase } from '../../lib/supabase';
 
+export const prerender = true;
+
 export async function getStaticPaths() {
   const { data: products } = await supabase.from('products').select('slug');
   return products?.map(p => ({ params: { slug: p.slug } })) || [];
