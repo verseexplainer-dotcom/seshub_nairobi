@@ -56,10 +56,28 @@ export async function onRequestPost({ request, env }) {
     const cart = normalizeCart(body?.cart);
     const computedTotalKes = cart.reduce((sum, item) => sum + item.price_kes * item.qty, 0);
     const providedTotalKes = body?.total_kes == null ? null : Number(body.total_kes);
+    const customerName = body?.customer_name ? String(body.customer_name).trim() : '';
+    const phone = body?.phone ? String(body.phone).trim() : '';
+    const consent = body?.consent === true;
+    const sourcePage = body?.source_page ? String(body.source_page).trim() : null;
 
     if (providedTotalKes != null && (!Number.isFinite(providedTotalKes) || Math.round(providedTotalKes) !== computedTotalKes)) {
       return new Response(
         JSON.stringify({ ok: false, error: 'Total validation failed. Please refresh your cart and try again.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!customerName || !phone || phone.length < 9) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Customer name and valid phone are required.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!consent) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Consent is required to submit an order intent.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -77,9 +95,11 @@ export async function onRequestPost({ request, env }) {
     const payload = {
       cart,
       total_kes: computedTotalKes,
-      customer_name: body?.customer_name ? String(body.customer_name).trim() : null,
-      phone: body?.phone ? String(body.phone).trim() : null,
+      customer_name: customerName,
+      phone,
       location: body?.location ? String(body.location).trim() : null,
+      consent,
+      source_page: sourcePage,
       status: 'new'
     };
 

@@ -1,35 +1,41 @@
 ---
+import { getSiteAssets } from '../lib/siteAssets';
+
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const trustItems = [
+  {
+    title: 'Fast Delivery',
+    description: '2-hour Nairobi delivery | 24-48h countrywide',
+    icon: siteAssets.trustIcons.delivery,
+    alt: 'Delivery icon'
+  },
+  {
+    title: 'Secure Payments',
+    description: 'M-PESA and Cash on Delivery checkout',
+    icon: siteAssets.trustIcons.payments,
+    alt: 'Payments icon'
+  },
+  {
+    title: 'Trusted Warranty',
+    description: 'Warranty-backed electronics with support',
+    icon: siteAssets.trustIcons.security,
+    alt: 'Security and trust icon'
+  }
+];
 ---
 <section class="trust-bar">
   <div class="container trust-grid">
-    <div class="trust-card">
-      <div class="trust-icon">🚚</div>
-      <div class="trust-text">
-        <h3>Same-Day Delivery</h3>
-        <p>Within Nairobi & environs</p>
-      </div>
-    </div>
-    <div class="trust-card">
-      <div class="trust-icon">📦</div>
-      <div class="trust-text">
-        <h3>Countrywide Dispatch</h3>
-        <p>Across all 47 counties</p>
-      </div>
-    </div>
-    <div class="trust-card">
-      <div class="trust-icon">🛡️</div>
-      <div class="trust-text">
-        <h3>Warranty-Backed</h3>
-        <p>Up to 12 months protection</p>
-      </div>
-    </div>
-    <div class="trust-card">
-      <div class="trust-icon">🏠</div>
-      <div class="trust-text">
-        <h3>Physical Shop</h3>
-        <p>Moi Avenue, Nairobi CBD</p>
-      </div>
-    </div>
+    {trustItems.map((item) => (
+      <article class="trust-card">
+        <div class="trust-icon">
+          <img src={item.icon} alt={item.alt} loading="lazy" class="trust-icon-image" />
+        </div>
+        <div class="trust-text">
+          <h3>{item.title}</h3>
+          <p>{item.description}</p>
+        </div>
+      </article>
+    ))}
   </div>
 </section>
 
@@ -55,7 +61,7 @@
 
   @media (min-width: 1024px) {
     .trust-grid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
@@ -66,14 +72,21 @@
   }
 
   .trust-icon {
-    font-size: 2rem;
-    background-color: var(--background);
+    background: linear-gradient(145deg, #eff6ff, #ffffff);
+    border: 1px solid #bfdbfe;
     width: 60px;
     height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-md);
+    flex-shrink: 0;
+  }
+
+  .trust-icon-image {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
   }
 
   .trust-text h3 {

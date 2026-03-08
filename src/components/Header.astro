@@ -1,4 +1,6 @@
 ---
+import { getSiteAssets } from '../lib/siteAssets';
+
 const navLinks = [
   { name: 'Laptops', href: '/category/laptops' },
   { name: 'Desktops', href: '/category/desktops' },
@@ -8,12 +10,14 @@ const navLinks = [
   { name: 'FAQ', href: '/faq' },
   { name: 'Contact', href: '/contact' },
 ];
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const logoImage = siteAssets.logo;
 ---
 
 <header class="header">
   <div class="container header-content">
-    <a href="/" class="logo">
-      <span class="logo-hub">SES</span> <span class="logo-ict">ICT HUB</span>
+    <a href="/" class="logo" aria-label="SES ICT HUB Home">
+      <img src={logoImage} alt="SES Beyond frontiers logo" class="logo-image" loading="eager" decoding="async" />
     </a>
 
     <nav class="nav" aria-label="Main Navigation">
@@ -68,14 +72,19 @@ const navLinks = [
   }
 
   .logo {
-    font-size: 1.5rem;
-    font-weight: 800;
-    display: flex;
-    gap: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
   }
 
-  .logo-hub { color: var(--text-main); }
-  .logo-ict { color: var(--primary); }
+  .logo-image {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 8px 24px rgb(15 23 42 / 0.18);
+    background: #000;
+  }
 
   .nav {
     display: none;

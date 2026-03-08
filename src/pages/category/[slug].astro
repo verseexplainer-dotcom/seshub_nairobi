@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import { supabase } from '../../lib/supabase';
+import { getSiteAssets } from '../../lib/siteAssets';
 
 export const prerender = true;
 
@@ -44,11 +45,24 @@ const categoryNames: Record<string, string> = {
 };
 
 const title = categoryNames[slug as string] || 'Products';
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const categoryHeroImages: Record<string, string> = {
+  laptops: siteAssets.categoryCards.laptops,
+  desktops: siteAssets.categoryCards.desktops,
+  printers: siteAssets.categoryCards.printers,
+  smartphones: siteAssets.categoryCards.smartphones,
+  accessories: siteAssets.categoryCards.accessories
+};
+const categoryHeroImage = categoryHeroImages[slug as string] || siteAssets.hero;
+const printersHeroOnError = `this.onerror=null;this.src=${JSON.stringify(siteAssets.categoryCards.printersLegacy)}`;
+const categoryHeroOnError = slug === 'printers' ? printersHeroOnError : undefined;
 ---
 
 <Layout title={title}>
   <div class="category-hero">
-    <div class="container text-center">
+    <img src={categoryHeroImage} alt={`${title} category banner`} class="category-hero-bg" loading="eager" onerror={categoryHeroOnError} />
+    <div class="category-hero-overlay"></div>
+    <div class="container text-center category-hero-content">
       <h1 class="category-title">{title}</h1>
       <p class="category-subtitle">Showing {products?.length || 0} items in Kenya</p>
     </div>
@@ -75,10 +89,32 @@ const title = categoryNames[slug as string] || 'Products';
 
 <style>
   .category-hero {
-    background: linear-gradient(135deg, var(--primary) 0%, #172554 100%);
+    position: relative;
     color: var(--white);
-    padding: var(--space-xl) 0 80px;
+    padding: var(--space-xl) 0 clamp(3rem, 8vw, 5rem);
     margin-bottom: 0;
+    overflow: hidden;
+  }
+
+  .category-hero-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center right;
+    z-index: -2;
+  }
+
+  .category-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, rgb(15 23 42 / 0.84) 0%, rgb(30 64 175 / 0.74) 45%, rgb(15 23 42 / 0.28) 100%);
+    z-index: -1;
+  }
+
+  .category-hero-content {
+    position: relative;
   }
 
   .category-title {

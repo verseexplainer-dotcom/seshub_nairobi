@@ -1,13 +1,17 @@
 ---
+import { getSiteAssets } from '../lib/siteAssets';
+
 const today = new Date();
 const year = today.getFullYear();
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const logoImage = siteAssets.logo;
 ---
 
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-brand">
-      <a href="/" class="logo">
-        <span class="logo-hub">SES</span> <span class="logo-ict">ICT HUB</span>
+      <a href="/" class="logo" aria-label="SES ICT HUB Home">
+        <img src={logoImage} alt="SES Beyond frontiers logo" class="logo-image" loading="lazy" decoding="async" />
       </a>
       <p class="brand-tagline">Quality brand-new and certified refurbished electronics in Nairobi. Delivering countrywide.</p>
     </div>
@@ -97,15 +101,19 @@ const year = today.getFullYear();
   }
 
   .logo {
-    font-size: 1.5rem;
-    font-weight: 800;
-    display: flex;
-    gap: 0.25rem;
+    display: inline-flex;
+    align-items: center;
     margin-bottom: var(--space-sm);
   }
 
-  .logo-hub { color: var(--text-main); }
-  .logo-ict { color: var(--primary); }
+  .logo-image {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #000;
+    box-shadow: 0 10px 28px rgb(15 23 42 / 0.22);
+  }
 
   .brand-tagline {
     color: var(--text-muted);

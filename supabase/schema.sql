@@ -126,7 +126,9 @@ CREATE TABLE IF NOT EXISTS public.events (
                             'remove_from_cart',
                             'checkout_start',
                             'whatsapp_click',
-                            'submit_order_intent'
+                            'submit_order_intent',
+                            'newsletter_signup_intent',
+                            'whatsapp_checkout_redirect'
                           )),
   payload     jsonb       DEFAULT '{}'::jsonb,
   session_id  text,
@@ -191,7 +193,7 @@ DROP POLICY IF EXISTS "newsletter_anon_insert" ON public.newsletter_signups;
 CREATE POLICY "newsletter_anon_insert"
   ON public.newsletter_signups FOR INSERT
   TO anon, authenticated
-  WITH CHECK (consent = true);
+  WITH CHECK (consenteer = true);
 
 DROP POLICY IF EXISTS "newsletter_anon_deny_select" ON public.newsletter_signups;
 CREATE POLICY "newsletter_anon_deny_select"

@@ -1,4 +1,6 @@
 ---
+import { getSiteAssets } from '../lib/siteAssets';
+
 interface Props {
   product: any;
 }
@@ -8,19 +10,25 @@ const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.p
 const discountPercent = hasDiscount 
   ? Math.round(((product.compare_at_kes - product.price_kes) / product.compare_at_kes) * 100) 
   : 0;
+const isLaptop = String(product.category || '').toLowerCase().includes('laptop');
+const primaryImage = product.images?.[0];
 
 const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co').replace(/\/$/, '');
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
+const finalFallbackImage = '/product-placeholder.jpg';
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(finalFallbackImage)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
 const getImageUrl = (img: string | undefined) => {
-  if (!img) return '/product-placeholder.jpg';
+  if (!img) return fallbackImage;
   if (img.startsWith('http')) return img;
   return `${supabaseUrl}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
 };
 ---
 
 <article class="product-card">
-  <div class="product-image-wrapper">
+  <div class={`product-image-wrapper ${isLaptop ? 'laptop-frame' : ''}`}>
     <a href={`/product/${product.slug}`}>
-      <img src={getImageUrl(product.images[0])} alt={product.title} loading="lazy" class="product-image" />
+      <img src={getImageUrl(primaryImage)} alt={product.title} loading="lazy" class="product-image" onerror={imageOnError} />
     </a>
     {hasDiscount && <span class="badge sale">-{discountPercent}% OFF</span>}
     <span class={`badge ${product.in_stock ? 'stock' : 'out-of-stock'}`}>
@@ -50,7 +58,7 @@ const getImageUrl = (img: string | undefined) => {
         data-title={product.title} 
         data-price={product.price_kes}
         data-slug={product.slug}
-        data-image={getImageUrl(product.images[0])}
+        data-image={getImageUrl(primaryImage)}
       >
         Add to Cart
       </button>
@@ -89,10 +97,24 @@ const getImageUrl = (img: string | undefined) => {
     overflow: hidden;
   }
 
+  .product-image-wrapper > a {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem;
+  }
+
+  .product-image-wrapper.laptop-frame {
+    aspect-ratio: 4/3;
+  }
+
   .product-image {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    object-position: center;
     transition: transform 0.5s ease;
   }
 
@@ -130,6 +152,7 @@ const getImageUrl = (img: string | undefined) => {
 
   .badge.condition {
     bottom: 10px;
+    top: auto;
     left: 10px;
     background-color: #E1EFFE;
     color: #1E429F;

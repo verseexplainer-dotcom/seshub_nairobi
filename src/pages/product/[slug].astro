@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import StickyATC from '../../components/StickyATC.astro';
 import { supabase } from '../../lib/supabase';
+import { getSiteAssets } from '../../lib/siteAssets';
 
 export const prerender = true;
 
@@ -43,11 +44,16 @@ const categoryKey = String(product.category || '').toLowerCase();
 const categorySlug = categorySlugMap[categoryKey] || 'all';
 
 const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.price_kes;
+const productImages = Array.isArray(product.images) ? product.images : [];
+const primaryImage = productImages[0];
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
 const storageBase = supabaseUrl.replace(/\/$/, '');
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.jpg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
 const getImageUrl = (img: string | undefined) => {
-  if (!img) return '/product-placeholder.jpg';
+  if (!img) return fallbackImage;
   if (img.startsWith('http')) return img;
   return `${storageBase}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
 };
@@ -63,13 +69,13 @@ const getImageUrl = (img: string | undefined) => {
       <!-- Media Gallery -->
       <div class="product-gallery">
         <div class="main-image">
-          <img src={getImageUrl(product.images[0])} alt={product.title} id="main-prod-img" />
+          <img src={getImageUrl(primaryImage)} alt={product.title} id="main-prod-img" onerror={imageOnError} />
         </div>
-        {product.images.length > 1 && (
+        {productImages.length > 1 && (
           <div class="thumbnails">
-            {product.images.map((img: string, idx: number) => (
+            {productImages.map((img: string, idx: number) => (
               <button class={`thumb ${idx === 0 ? 'active' : ''}`} data-src={getImageUrl(img)}>
-                <img src={getImageUrl(img)} alt="" />
+                <img src={getImageUrl(img)} alt="" onerror={imageOnError} />
               </button>
             ))}
           </div>
@@ -107,7 +113,7 @@ const getImageUrl = (img: string | undefined) => {
             data-title={product.title} 
             data-price={product.price_kes}
             data-slug={product.slug}
-            data-image={getImageUrl(product.images[0])}
+            data-image={getImageUrl(primaryImage)}
           >
             Add to Cart
           </button>
@@ -126,21 +132,21 @@ const getImageUrl = (img: string | undefined) => {
 
         <div class="trust-panel">
           <div class="trust-item">
-            <span class="icon">🚚</span>
+            <span class="icon"><img src={siteAssets.trustIcons.delivery} alt="" class="trust-icon-img" loading="lazy" /></span>
             <div>
               <strong>Delivery</strong>
               <p>2-hour Nairobi delivery | 24-48h Countrywide</p>
             </div>
           </div>
           <div class="trust-item">
-            <span class="icon">💳</span>
+            <span class="icon"><img src={siteAssets.trustIcons.payments} alt="" class="trust-icon-img" loading="lazy" /></span>
             <div>
               <strong>Payment</strong>
               <p>M-PESA | Cash on Delivery</p>
             </div>
           </div>
           <div class="trust-item">
-            <span class="icon">🛡️</span>
+            <span class="icon"><img src={siteAssets.trustIcons.security} alt="" class="trust-icon-img" loading="lazy" /></span>
             <div>
               <strong>Warranty</strong>
               <p>{product.warranty_months || 6} Months official warranty</p>
@@ -361,7 +367,21 @@ const getImageUrl = (img: string | undefined) => {
   }
 
   .trust-item .icon {
-    font-size: 1.5rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    flex-shrink: 0;
+  }
+
+  .trust-icon-img {
+    width: 1.4rem;
+    height: 1.4rem;
+    object-fit: contain;
   }
 
   .trust-item strong {

@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ses-hub-superbase-stack-app",
+  "account_id": "0dd23000c67fa8c0d71c8c93c93748bf",
   "main": "dist/_worker.js/index.js",
   "compatibility_date": "2026-03-06",
   "compatibility_flags": [

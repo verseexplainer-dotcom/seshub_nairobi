@@ -1,15 +1,27 @@
 ---
+import { getSiteAssets } from '../lib/siteAssets';
+
 interface Props {
   product: any;
 }
 
 const { product } = Astro.props;
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.jpg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
+const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co').replace(/\/$/, '');
+const primaryImage = product.images?.[0];
+const getImageUrl = (img: string | undefined) => {
+  if (!img) return fallbackImage;
+  if (img.startsWith('http')) return img;
+  return `${supabaseUrl}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
+};
 ---
 
 <div class="sticky-atc" id="sticky-atc">
   <div class="container sticky-atc-content">
     <div class="sticky-info">
-      <img src={product.images[0]} alt="" class="sticky-thumb" />
+      <img src={getImageUrl(primaryImage)} alt="" class="sticky-thumb" onerror={imageOnError} />
       <div class="sticky-text">
         <h3 class="sticky-title">{product.title}</h3>
         <p class="sticky-price">KSh {product.price_kes.toLocaleString()}</p>
@@ -29,7 +41,7 @@ const { product } = Astro.props;
         data-title={product.title} 
         data-price={product.price_kes}
         data-slug={product.slug}
-        data-image={product.images[0]}
+        data-image={getImageUrl(primaryImage)}
       >
         Add to Cart
       </button>

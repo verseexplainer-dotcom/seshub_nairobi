@@ -1,5 +1,12 @@
 ---
+import { getSiteAssets } from '../lib/siteAssets';
+
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const heroImage = siteAssets.hero;
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.jpg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
 ---
+
 <section class="hero">
   <div class="container hero-content">
     <div class="hero-text">
@@ -33,10 +40,10 @@
     <div class="hero-image">
       <div class="hero-image-placeholder relative h-full w-full rounded-2xl overflow-hidden shadow-2xl">
         <img 
-          src={`${import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co'}/storage/v1/object/public/product-images/hero-laptop.webp`} 
+          src={heroImage}
           alt="Premium Refurbished Laptop" 
           class="object-cover w-full h-full"
-          onerror="this.src='/product-placeholder.jpg'"
+          onerror={imageOnError}
         />
       </div>
     </div>

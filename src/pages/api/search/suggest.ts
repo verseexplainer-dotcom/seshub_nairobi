@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     );
     const products = await prodRes.json();
 
-    const allCategories = ['laptops', 'printers', 'phones', 'accessories'];
+    const allCategories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories'];
     const filteredCategories = allCategories.filter((cat) => cat.includes(query.toLowerCase()));
 
     return new Response(

@@ -1,10 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { getSiteAssets } from '../lib/siteAssets';
+
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
 ---
 
 <Layout title="Your Cart">
   <section class="cart-page">
     <div class="container">
+      <div id="cart-config" data-fallback-image={cartFallbackImage} hidden></div>
       <h1 class="page-title">Shopping Cart</h1>
       
       <div id="cart-container" class="cart-grid">
@@ -285,6 +290,23 @@ import Layout from '../layouts/Layout.astro';
 </style>
 
 <script>
+  const cartConfig = document.getElementById('cart-config');
+  const fallbackImage = cartConfig?.getAttribute('data-fallback-image') || '/product-placeholder.jpg';
+  const finalFallbackImage = '/product-placeholder.jpg';
+
+  function attachFallback(img: HTMLImageElement) {
+    img.addEventListener('error', () => {
+      const currentSrc = img.getAttribute('src') || '';
+      if (img.dataset.fallbackApplied === '1' || currentSrc === fallbackImage) {
+        img.onerror = null;
+        img.src = finalFallbackImage;
+        return;
+      }
+      img.dataset.fallbackApplied = '1';
+      img.src = fallbackImage;
+    });
+  }
+
   function renderCart() {
     const cart = JSON.parse(localStorage.getItem('ses_cart') || '[]');
     const container = document.getElementById('cart-container');
@@ -305,7 +327,7 @@ import Layout from '../layouts/Layout.astro';
     if (itemsList) {
       itemsList.innerHTML = cart.map((item: any, idx: number) => `
         <div class="cart-item">
-          <img src="${item.image || '/product-placeholder.jpg'}" alt="${item.title}" class="item-img" />
+          <img src="${item.image || fallbackImage}" alt="${item.title}" class="item-img" />
           <div class="item-details">
             <a href="/product/${item.slug}" class="item-title">${item.title}</a>
             <p class="item-price">KSh ${item.price_kes.toLocaleString()}</p>
@@ -320,6 +342,8 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
       `).join('');
+
+      itemsList.querySelectorAll('.item-img').forEach((img) => attachFallback(img as HTMLImageElement));
 
       // Add event listeners
       itemsList.querySelectorAll('.plus').forEach(btn => {

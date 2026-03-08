@@ -22,7 +22,7 @@ export async function onRequestGet({ request, env }: { request: Request; env: an
         const products = await prodRes.json();
 
         // Static categories for now
-        const allCategories = ['laptops', 'printers', 'phones', 'accessories'];
+        const allCategories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories'];
         const filteredCategories = allCategories.filter(cat => cat.includes(query.toLowerCase()));
 
         return new Response(JSON.stringify({

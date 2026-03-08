@@ -1,70 +1,163 @@
 -- SES ICT HUB Production Schema (Static-first Astro + Supabase)
--- Includes desktops category support and strict RLS defaults.
+-- Aligned with current app behavior as of 2026-03-08.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- Create/Update Products with 'desktops' category
-CREATE TABLE IF NOT EXISTS products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug TEXT UNIQUE NOT NULL,
-  title TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
-  price_kes INT NOT NULL,
-  compare_at_kes INT NULL,
-  in_stock BOOLEAN NOT NULL DEFAULT TRUE,
-  brand TEXT NULL,
-  condition TEXT NULL CHECK (condition IN ('brand_new', 'refurbished', 'unknown')),
-  refurb_grade TEXT NULL CHECK (refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
-  short_specs TEXT NULL,
-  description TEXT NULL,
-  warranty_months INT NULL CHECK (warranty_months IN (3, 6, 12)),
-  images JSONB NOT NULL DEFAULT '[]',
-  featured_home BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- 1. PRODUCTS
+CREATE TABLE IF NOT EXISTS public.products (
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug             text        UNIQUE NOT NULL,
+  title            text        NOT NULL,
+  category         text        NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
+  price_kes        numeric     NOT NULL,
+  compare_at_kes   numeric,
+  in_stock         boolean     NOT NULL DEFAULT true,
+  stock_qty        numeric,
+  brand            text,
+  condition        text        CHECK (condition IN ('brand_new', 'refurbished', 'unknown')),
+  refurb_grade     text        CHECK (refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
+  short_specs      text,
+  description      text,
+  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12)),
+  images           jsonb       NOT NULL DEFAULT '[]'::jsonb,
+  featured_home    boolean     NOT NULL DEFAULT false,
+  featured_rank    numeric,
+  sku              text,
+  status           text,
+  source_id        text,
+  cpu              text,
+  ram_gb           numeric,
+  storage_gb       numeric,
+  storage_type     text,
+  screen_in        numeric,
+  categories       text[],
+  tags             text[],
+  collections      text[],
+  seo_title        text,
+  meta_description text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- Essential Tables
-CREATE TABLE IF NOT EXISTS order_intents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  cart JSONB NOT NULL,
-  total_kes INT NOT NULL,
-  customer_name TEXT,
-  phone TEXT,
-  location TEXT,
-  status TEXT DEFAULT 'new'
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "products_public_read" ON public.products;
+CREATE POLICY "products_public_read"
+  ON public.products FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+-- 2. ORDER_INTENTS
+CREATE TABLE IF NOT EXISTS public.order_intents (
+  id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  source_page   text,
+  cart          jsonb       NOT NULL,
+  total_kes     int         NOT NULL CHECK (total_kes > 0),
+  customer_name text        NOT NULL,
+  phone         text        NOT NULL CHECK (length(phone) >= 9),
+  location      text,
+  consent       boolean     NOT NULL DEFAULT false,
+  status        text        NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'closed'))
 );
 
-CREATE TABLE IF NOT EXISTS testimonials (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  quote TEXT NOT NULL,
-  approved BOOLEAN DEFAULT false
+ALTER TABLE public.order_intents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "order_intents_anon_insert" ON public.order_intents;
+CREATE POLICY "order_intents_anon_insert"
+  ON public.order_intents FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (consent = true AND length(phone) >= 9 AND total_kes > 0);
+
+DROP POLICY IF EXISTS "order_intents_anon_deny_select" ON public.order_intents;
+CREATE POLICY "order_intents_anon_deny_select"
+  ON public.order_intents FOR SELECT
+  TO anon
+  USING (false);
+
+DROP POLICY IF EXISTS "order_intents_auth_deny_select" ON public.order_intents;
+CREATE POLICY "order_intents_auth_deny_select"
+  ON public.order_intents FOR SELECT
+  TO authenticated
+  USING (false);
+
+-- 3. EVENTS
+CREATE TABLE IF NOT EXISTS public.events (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type  text        NOT NULL CHECK (event_type IN (
+                            'page_view',
+                            'add_to_cart',
+                            'remove_from_cart',
+                            'checkout_start',
+                            'whatsapp_click',
+                            'submit_order_intent',
+                            'newsletter_signup_intent',
+                            'whatsapp_checkout_redirect'
+                          )),
+  payload     jsonb       DEFAULT '{}'::jsonb,
+  session_id  text,
+  created_at  timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS newsletter_signups (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL,
-  consent BOOLEAN DEFAULT false
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "events_anon_insert" ON public.events;
+CREATE POLICY "events_anon_insert"
+  ON public.events FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "events_anon_deny_select" ON public.events;
+CREATE POLICY "events_anon_deny_select"
+  ON public.events FOR SELECT
+  TO anon
+  USING (false);
+
+DROP POLICY IF EXISTS "events_auth_deny_select" ON public.events;
+CREATE POLICY "events_auth_deny_select"
+  ON public.events FOR SELECT
+  TO authenticated
+  USING (false);
+
+-- 4. TESTIMONIALS
+CREATE TABLE IF NOT EXISTS public.testimonials (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        text        NOT NULL,
+  persona     text        NOT NULL,
+  rating      int         DEFAULT 5 CHECK (rating BETWEEN 1 AND 5),
+  quote       text        NOT NULL,
+  approved    boolean     NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now()
 );
 
--- RLS POLICIES
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public Select" ON products;
-CREATE POLICY "Public Select" ON products FOR SELECT USING (true);
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "testimonials_public_read" ON public.testimonials;
+CREATE POLICY "testimonials_public_read"
+  ON public.testimonials FOR SELECT
+  TO anon, authenticated
+  USING (approved = true);
 
-ALTER TABLE order_intents ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public Insert Orders" ON order_intents;
-CREATE POLICY "Public Insert Orders" ON order_intents FOR INSERT WITH CHECK (true);
-DROP POLICY IF EXISTS "Admin Select Orders" ON order_intents;
-CREATE POLICY "Admin Select Orders" ON order_intents FOR SELECT USING (false);
+-- 5. NEWSLETTER_SIGNUPS
+CREATE TABLE IF NOT EXISTS public.newsletter_signups (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  email       text        UNIQUE NOT NULL,
+  consent     boolean     NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  source_page text
+);
 
-ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public Select Testimonials" ON testimonials;
-CREATE POLICY "Public Select Testimonials" ON testimonials FOR SELECT USING (approved = true);
+ALTER TABLE public.newsletter_signups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "newsletter_anon_insert" ON public.newsletter_signups;
+CREATE POLICY "newsletter_anon_insert"
+  ON public.newsletter_signups FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (consent = true);
 
-ALTER TABLE newsletter_signups ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public Insert Newsletter" ON newsletter_signups;
-CREATE POLICY "Public Insert Newsletter" ON newsletter_signups FOR INSERT WITH CHECK (true);
-DROP POLICY IF EXISTS "Admin Select Newsletter" ON newsletter_signups;
-CREATE POLICY "Admin Select Newsletter" ON newsletter_signups FOR SELECT USING (false);
+DROP POLICY IF EXISTS "newsletter_anon_deny_select" ON public.newsletter_signups;
+CREATE POLICY "newsletter_anon_deny_select"
+  ON public.newsletter_signups FOR SELECT
+  TO anon
+  USING (false);
+
+DROP POLICY IF EXISTS "newsletter_auth_deny_select" ON public.newsletter_signups;
+CREATE POLICY "newsletter_auth_deny_select"
+  ON public.newsletter_signups FOR SELECT
+  TO authenticated
+  USING (false);
