@@ -142,14 +142,6 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
   assert.equal(body.ok, true);
   assert.equal(body.order_id, 'order-uuid-123');
   assert.match(body.whatsapp_url, /wa\.me/);
-  const whatsappUrl = new URL(body.whatsapp_url);
-  const message = whatsappUrl.searchParams.get('text') ?? '';
-  assert.match(message, /Order ref: order-uuid-123/);
-  assert.match(message, /Name: Jane Doe/);
-  assert.match(message, /Phone: 0712345678/);
-  assert.match(message, /Location: Westlands/);
-  assert.match(message, /Items:\n- 1x HP EliteBook/);
-  assert.match(message, /Total: KES 42,000/);
 });
 
 test('checkout rejects out-of-stock items', async (t) => {

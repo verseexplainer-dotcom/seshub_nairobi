@@ -65,10 +65,6 @@ function normalizePhone(rawPhone: string) {
   return rawPhone.replace(/[\s()-]/g, '');
 }
 
-function formatKes(amount: number) {
-  return new Intl.NumberFormat('en-KE', { maximumFractionDigits: 0 }).format(amount);
-}
-
 function normalizeCart(cart: unknown): RequestedCartItem[] {
   if (!Array.isArray(cart) || cart.length === 0 || cart.length > MAX_CART_ITEMS) {
     throw new Error('Cart is empty or invalid.');
@@ -286,23 +282,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return errorResponse(502, 'ORDER_REF_MISSING', 'Order was created but no order reference was returned.');
     }
 
-    const itemLines = cart.map((item) => `- ${item.qty}x ${item.title}`);
-    const messageLines = [
-      'Hello SES ICT HUB, I would like to place an order.',
-      '',
-      `Order ref: ${orderRef}`,
-      `Name: ${customerName}`,
-      `Phone: ${normalizedPhone}`,
-      ...(location ? [`Location: ${location}`] : []),
-      '',
-      'Items:',
-      ...itemLines,
-      '',
-      `Total: KES ${formatKes(computedTotalKes)}`,
-      '',
-      'Please confirm availability, delivery cost, and payment instructions.'
-    ];
-    const message = messageLines.join('\n');
+    const itemsSummary = cart.map((item) => `${item.qty}x ${item.title}`).join(', ');
+    const message = `Hello SES ICT HUB, I want to place order ref ${orderRef}. Items: ${itemsSummary}. Total: KES ${computedTotalKes}.`;
     const whatsappUrl = `https://wa.me/254720480475?text=${encodeURIComponent(message)}`;
 
     return jsonResponse({
