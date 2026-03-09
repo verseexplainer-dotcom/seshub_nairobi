@@ -8,15 +8,24 @@ interface Props {
   title: string;
   description?: string;
   image?: string;
+  canonical?: string;
 }
 
 const { 
   title, 
-  description = "SES ICT HUB - Brand-new & certified refurbished electronics in Kenya. Laptops, Desktops, Printers, Smartphones & Accessories.",
-  image = "/og-image.jpg" 
+  description = "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.",
+  image = "/product-placeholder.svg",
+  canonical
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://sesicthub.co.ke');
+const canonicalURL = new URL(canonical || Astro.url.pathname, Astro.site || 'https://sesicthub.co.ke');
+const plainDescription = String(description || '')
+  .replace(/<[^>]*>/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 320);
+const safeDescription = plainDescription || "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.";
+const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
 ---
 
 <!DOCTYPE html>
@@ -24,28 +33,33 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://sesicthu
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="generator" content={Astro.generator} />
     
     <!-- SEO -->
     <title>{title} | SES ICT HUB</title>
     <meta name="title" content={`${title} | SES ICT HUB`} />
-    <meta name="description" content={description} />
+    <meta name="description" content={safeDescription} />
     <link rel="canonical" href={canonicalURL} />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={Astro.url} />
+    <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:image" content={new URL(image, Astro.url)} />
+    <meta property="og:description" content={safeDescription} />
+    <meta property="og:image" content={canonicalImage} />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={Astro.url} />
+    <meta property="twitter:url" content={canonicalURL} />
     <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={new URL(image, Astro.url)} />
+    <meta property="twitter:description" content={safeDescription} />
+    <meta property="twitter:image" content={canonicalImage} />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

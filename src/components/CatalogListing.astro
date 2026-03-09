@@ -1,0 +1,1180 @@
+---
+import ProductCard from './ProductCard.astro';
+import SearchBar from './SearchBar.astro';
+import {
+  SHOP_PATH,
+  STOREFRONT_CATEGORIES,
+  formatCurrencyKes,
+  formatScreenSize,
+  formatStorageSize,
+  formatNumberLabel,
+  getStoreCategoryBySlug,
+  normalizeText,
+  parsePositiveNumber
+} from '../lib/productPresentation';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+
+interface Props {
+  mode: 'shop' | 'category';
+  categorySlug?: 'all' | 'laptops' | 'smartphones' | 'printers';
+}
+
+const { mode, categorySlug = 'all' } = Astro.props;
+const isShopMode = mode === 'shop';
+const activeCategory = categorySlug !== 'all' ? getStoreCategoryBySlug(categorySlug) : null;
+const searchParams = Astro.url.searchParams;
+const pageSize = 24;
+const currentPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
+const selectedSort = new Set(['featured', 'newest', 'price_asc', 'price_desc']).has(searchParams.get('sort') || '')
+  ? (searchParams.get('sort') as 'featured' | 'newest' | 'price_asc' | 'price_desc')
+  : 'featured';
+const selectedBrand = normalizeText(searchParams.get('brand'));
+const selectedCpu = normalizeText(searchParams.get('cpu'));
+const selectedRam = normalizeText(searchParams.get('ram_gb'));
+const selectedStorage = normalizeText(searchParams.get('storage_gb'));
+const selectedScreen = normalizeText(searchParams.get('screen_in'));
+const stockFilter = normalizeText(searchParams.get('in_stock'));
+const minPrice = parsePositiveNumber(searchParams.get('min_price'));
+const maxPrice = parsePositiveNumber(searchParams.get('max_price'));
+const selectedRamValue = parsePositiveNumber(selectedRam);
+const selectedStorageValue = parsePositiveNumber(selectedStorage);
+const selectedScreenValue = parsePositiveNumber(selectedScreen);
+const hasFilters =
+  Boolean(selectedBrand) ||
+  Boolean(selectedCpu) ||
+  Boolean(selectedRam) ||
+  Boolean(selectedStorage) ||
+  Boolean(selectedScreen) ||
+  stockFilter === '1' ||
+  stockFilter === '0' ||
+  minPrice !== null ||
+  maxPrice !== null ||
+  selectedSort !== 'featured';
+
+const selectColumns = [
+  'id',
+  'slug',
+  'title',
+  'category',
+  'price_kes',
+  'compare_at_kes',
+  'in_stock',
+  'stock_qty',
+  'brand',
+  'condition',
+  'refurb_grade',
+  'short_specs',
+  'description',
+  'warranty_months',
+  'images',
+  'featured_home',
+  'featured_rank',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'storage_type',
+  'screen_in',
+  'seo_title',
+  'meta_description',
+  'updated_at',
+  'created_at'
+].join(',');
+
+const facetSelectColumns = ['category', 'brand', 'cpu', 'ram_gb', 'storage_gb', 'screen_in', 'price_kes', 'in_stock'].join(',');
+const from = (currentPage - 1) * pageSize;
+const to = from + pageSize - 1;
+
+const applyCategoryScope = (query: any) => {
+  if (!activeCategory) {
+    return query;
+  }
+
+  return query.eq('category', activeCategory.dbValue);
+};
+
+const applyFilters = (query: any) => {
+  if (selectedBrand) {
+    query = query.eq('brand', selectedBrand);
+  }
+
+  if (!isShopMode && selectedCpu) {
+    query = query.eq('cpu', selectedCpu);
+  }
+
+  if (!isShopMode && selectedRamValue !== null) {
+    query = query.eq('ram_gb', selectedRamValue);
+  }
+
+  if (!isShopMode && selectedStorageValue !== null) {
+    query = query.eq('storage_gb', selectedStorageValue);
+  }
+
+  if (!isShopMode && selectedScreenValue !== null) {
+    query = query.eq('screen_in', selectedScreenValue);
+  }
+
+  if (stockFilter === '1') {
+    query = query.eq('in_stock', true);
+  } else if (stockFilter === '0') {
+    query = query.eq('in_stock', false);
+  }
+
+  if (minPrice !== null) {
+    query = query.gte('price_kes', minPrice);
+  }
+
+  if (maxPrice !== null) {
+    query = query.lte('price_kes', maxPrice);
+  }
+
+  return query;
+};
+
+let products: Array<Record<string, any>> = [];
+let totalCount = 0;
+let facetRows: Array<Record<string, any>> = [];
+let featuredProducts: Array<Record<string, any>> = [];
+
+if (isSupabaseConfigured) {
+  let productsQuery = applyFilters(applyCategoryScope(supabase.from('products').select(selectColumns, { count: 'exact' })));
+
+  switch (selectedSort) {
+    case 'price_asc':
+      productsQuery = productsQuery.order('price_kes', { ascending: true }).order('updated_at', { ascending: false });
+      break;
+    case 'price_desc':
+      productsQuery = productsQuery.order('price_kes', { ascending: false }).order('updated_at', { ascending: false });
+      break;
+    case 'newest':
+      productsQuery = productsQuery.order('created_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false });
+      break;
+    default:
+      productsQuery = productsQuery
+        .order('in_stock', { ascending: false })
+        .order('featured_rank', { ascending: true, nullsFirst: false })
+        .order('updated_at', { ascending: false });
+      break;
+  }
+
+  const [{ data, count }, { data: facetData }] = await Promise.all([
+    productsQuery.range(from, to),
+    applyCategoryScope(supabase.from('products').select(facetSelectColumns)).limit(1000)
+  ]);
+
+  products = data || [];
+  totalCount = typeof count === 'number' ? count : products.length;
+  facetRows = facetData || [];
+
+  if (isShopMode) {
+    const { data: featuredData } = await supabase
+      .from('products')
+      .select(selectColumns)
+      .eq('featured_home', true)
+      .eq('in_stock', true)
+      .order('featured_rank', { ascending: true, nullsFirst: false })
+      .order('updated_at', { ascending: false })
+      .limit(4);
+
+    featuredProducts = (featuredData || []).length > 0
+      ? (featuredData || [])
+      : (products || []).filter((product) => product.in_stock === true).slice(0, 4);
+  }
+}
+
+const collectStringFacet = (key: string) =>
+  Array.from(
+    new Set(
+      facetRows
+        .map((row) => normalizeText(row[key]))
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+const collectNumericFacet = (key: string) =>
+  Array.from(
+    new Set(
+      facetRows
+        .map((row) => formatNumberLabel(row[key]))
+        .filter(Boolean)
+    )
+  ).sort((a, b) => Number(a) - Number(b));
+
+const availableBrands = collectStringFacet('brand');
+const availableCpus = collectStringFacet('cpu');
+const availableRam = collectNumericFacet('ram_gb');
+const availableStorage = collectNumericFacet('storage_gb');
+const availableScreens = collectNumericFacet('screen_in');
+const inStockCount = facetRows.filter((row) => row.in_stock === true).length;
+const priceValues = facetRows
+  .map((row) => Number(row.price_kes))
+  .filter((value) => Number.isFinite(value) && value > 0);
+const minFacetPrice = priceValues.length ? Math.min(...priceValues) : null;
+const maxFacetPrice = priceValues.length ? Math.max(...priceValues) : null;
+
+const sortLabels = {
+  featured: 'Featured',
+  newest: 'Newest',
+  price_asc: 'Price: Low to High',
+  price_desc: 'Price: High to Low'
+};
+
+const basePath = Astro.url.pathname;
+const buildHref = (overrides: Record<string, string | number | null | undefined>) => {
+  const params = new URLSearchParams(searchParams);
+
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === null || value === undefined || value === '') {
+      params.delete(key);
+      continue;
+    }
+
+    params.set(key, String(value));
+  }
+
+  const query = params.toString();
+  return query ? `${basePath}?${query}` : basePath;
+};
+
+const clearFiltersHref = basePath;
+const buildPageHref = (page: number) => buildHref({ page: page <= 1 ? null : page });
+const activeFilterChips = [
+  selectedBrand ? { label: `Brand: ${selectedBrand}`, href: buildHref({ brand: null, page: null }) } : null,
+  !isShopMode && selectedCpu ? { label: `CPU: ${selectedCpu}`, href: buildHref({ cpu: null, page: null }) } : null,
+  !isShopMode && selectedRam ? { label: `RAM: ${selectedRam}GB`, href: buildHref({ ram_gb: null, page: null }) } : null,
+  !isShopMode && selectedStorage ? { label: `Storage: ${formatStorageSize(selectedStorage)}`, href: buildHref({ storage_gb: null, page: null }) } : null,
+  !isShopMode && selectedScreen ? { label: `Screen: ${formatScreenSize(selectedScreen)}`, href: buildHref({ screen_in: null, page: null }) } : null,
+  stockFilter === '1' ? { label: 'Availability: In stock', href: buildHref({ in_stock: null, page: null }) } : null,
+  stockFilter === '0' ? { label: 'Availability: Out of stock', href: buildHref({ in_stock: null, page: null }) } : null,
+  minPrice !== null ? { label: `Min: ${formatCurrencyKes(minPrice)}`, href: buildHref({ min_price: null, page: null }) } : null,
+  maxPrice !== null ? { label: `Max: ${formatCurrencyKes(maxPrice)}`, href: buildHref({ max_price: null, page: null }) } : null,
+  selectedSort !== 'featured' ? { label: `Sort: ${sortLabels[selectedSort]}`, href: buildHref({ sort: null, page: null }) } : null
+].filter(Boolean) as Array<{ label: string; href: string }>;
+
+const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+const resultStart = totalCount > 0 ? from + 1 : 0;
+const resultEnd = totalCount > 0 ? from + products.length : 0;
+const paginationNumbers = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+  const start = Math.max(1, Math.min(totalPages - 4, currentPage - 2));
+  return start + index;
+}).filter((page, index, list) => page >= 1 && page <= totalPages && list.indexOf(page) === index);
+
+const categoryCounts = STOREFRONT_CATEGORIES.map((category) => ({
+  ...category,
+  count: facetRows.filter((row) => normalizeText(row.category) === category.dbValue).length
+}));
+
+const priceBand = minFacetPrice && maxFacetPrice
+  ? `${formatCurrencyKes(minFacetPrice)} - ${formatCurrencyKes(maxFacetPrice)}`
+  : 'Live pricing';
+
+const breadcrumbData = isShopMode
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://sesicthub.co.ke/'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Shop',
+          item: `https://sesicthub.co.ke${SHOP_PATH}`
+        }
+      ]
+    }
+  : {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://sesicthub.co.ke/'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Shop',
+          item: `https://sesicthub.co.ke${SHOP_PATH}`
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: activeCategory?.label || 'Category',
+          item: `https://sesicthub.co.ke/category/${activeCategory?.slug || ''}`
+        }
+      ]
+    };
+---
+
+<div class={`catalog-shell ${isShopMode ? 'shop-mode' : 'category-mode'}`}>
+  {isShopMode ? (
+    <section class="shop-hero">
+      <div class="container">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span>/</span>
+          <span aria-current="page">Shop</span>
+        </nav>
+
+        <div class="shop-hero-grid">
+          <div>
+            <p class="eyebrow">Discovery-first catalog</p>
+            <h1>Shop laptops, smartphones, and printers with live pricing.</h1>
+            <p class="hero-copy">
+              Browse the full SES ICT HUB catalog from one place, then jump into narrower category pages when you need deeper filtering.
+            </p>
+            <div class="shortcut-row" aria-label="Category shortcuts">
+              {categoryCounts.map((category) => (
+                <a class="shortcut-chip" href={`/category/${category.slug}`}>
+                  <span>{category.label}</span>
+                  <strong>{category.count}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div class="shop-stats-card">
+            <p class="eyebrow">Shop snapshot</p>
+            <div class="shop-stats-grid">
+              <div>
+                <strong>{totalCount.toLocaleString('en-KE')}</strong>
+                <span>Products</span>
+              </div>
+              <div>
+                <strong>{availableBrands.length}</strong>
+                <span>Brands</span>
+              </div>
+              <div>
+                <strong>{inStockCount}</strong>
+                <span>In stock</span>
+              </div>
+              <div>
+                <strong>{priceBand}</strong>
+                <span>Price band</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section class="category-hero">
+      <div class="container">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span>/</span>
+          <a href="/shop">Shop</a>
+          <span>/</span>
+          <span aria-current="page">{activeCategory?.label}</span>
+        </nav>
+
+        <div class="category-hero-grid">
+          <div>
+            <p class="eyebrow">{activeCategory?.heroEyebrow}</p>
+            <h1>{activeCategory?.label}</h1>
+            <p class="hero-copy">{activeCategory?.heroDescription}</p>
+            <div class="shortcut-row" aria-label={`${activeCategory?.label} highlights`}>
+              {activeCategory?.highlights.map((highlight) => <span class="shortcut-chip static-chip">{highlight}</span>)}
+            </div>
+          </div>
+
+          <div class="shop-stats-card">
+            <p class="eyebrow">Category snapshot</p>
+            <div class="shop-stats-grid">
+              <div>
+                <strong>{totalCount.toLocaleString('en-KE')}</strong>
+                <span>Products</span>
+              </div>
+              <div>
+                <strong>{availableBrands.length}</strong>
+                <span>Brands</span>
+              </div>
+              <div>
+                <strong>{inStockCount}</strong>
+                <span>In stock</span>
+              </div>
+              <div>
+                <strong>{priceBand}</strong>
+                <span>Price band</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="catalog-search">
+    <div class="container">
+      <SearchBar />
+    </div>
+  </section>
+
+  {isShopMode && featuredProducts.length > 0 && (
+    <section class="featured-row">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Featured picks</p>
+            <h2>Start with highlighted products</h2>
+          </div>
+          <a href="/shop" class="text-link">See full catalog</a>
+        </div>
+        <div class="product-grid featured-grid">
+          {featuredProducts.map((product) => <ProductCard product={product} />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="catalog-section">
+    <div class="container">
+      {isShopMode ? (
+        <form class="shop-filters" method="get">
+          <div class="filter-block">
+            <label for="shop-brand">Brand</label>
+            <select id="shop-brand" name="brand">
+              <option value="">All brands</option>
+              {availableBrands.map((brand) => <option value={brand} selected={selectedBrand === brand}>{brand}</option>)}
+            </select>
+          </div>
+          <div class="filter-block">
+            <label for="shop-stock">Availability</label>
+            <select id="shop-stock" name="in_stock">
+              <option value="">All stock</option>
+              <option value="1" selected={stockFilter === '1'}>In stock</option>
+              <option value="0" selected={stockFilter === '0'}>Out of stock</option>
+            </select>
+          </div>
+          <div class="filter-block price-block">
+            <label for="shop-min">Min KES</label>
+            <input id="shop-min" type="number" min="1" step="1" name="min_price" value={minPrice !== null ? String(minPrice) : ''} />
+          </div>
+          <div class="filter-block price-block">
+            <label for="shop-max">Max KES</label>
+            <input id="shop-max" type="number" min="1" step="1" name="max_price" value={maxPrice !== null ? String(maxPrice) : ''} />
+          </div>
+          <div class="filter-block sort-block">
+            <label for="shop-sort">Sort by</label>
+            <select id="shop-sort" name="sort">
+              <option value="featured" selected={selectedSort === 'featured'}>Featured</option>
+              <option value="newest" selected={selectedSort === 'newest'}>Newest</option>
+              <option value="price_asc" selected={selectedSort === 'price_asc'}>Price: Low to High</option>
+              <option value="price_desc" selected={selectedSort === 'price_desc'}>Price: High to Low</option>
+            </select>
+          </div>
+          <div class="shop-filter-actions">
+            <button class="pill-button primary" type="submit">Apply</button>
+            {hasFilters && <a class="pill-button" href={clearFiltersHref}>Reset</a>}
+          </div>
+        </form>
+      ) : (
+        <div class="catalog-layout">
+          <aside class="catalog-sidebar">
+            <form class="sidebar-filters" method="get">
+              <input type="hidden" name="sort" value={selectedSort} />
+
+              <div class="filter-block">
+                <label for="brand-filter">Brand</label>
+                <select id="brand-filter" name="brand">
+                  <option value="">All brands</option>
+                  {availableBrands.map((brand) => <option value={brand} selected={selectedBrand === brand}>{brand}</option>)}
+                </select>
+              </div>
+
+              {availableCpus.length > 0 && (
+                <div class="filter-block">
+                  <label for="cpu-filter">CPU</label>
+                  <select id="cpu-filter" name="cpu">
+                    <option value="">Any CPU</option>
+                    {availableCpus.map((cpu) => <option value={cpu} selected={selectedCpu === cpu}>{cpu}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {availableRam.length > 0 && (
+                <div class="filter-block">
+                  <fieldset class="choice-group">
+                    <legend>RAM</legend>
+                    <div class="filter-chip-list">
+                      <label class={`filter-chip ${selectedRam === '' ? 'selected' : ''}`}>
+                        <input type="radio" name="ram_gb" value="" checked={selectedRam === ''} />
+                        <span>Any</span>
+                      </label>
+                      {availableRam.map((value) => (
+                        <label class={`filter-chip ${selectedRam === value ? 'selected' : ''}`}>
+                          <input type="radio" name="ram_gb" value={value} checked={selectedRam === value} />
+                          <span>{value}GB</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              )}
+
+              {availableStorage.length > 0 && (
+                <div class="filter-block">
+                  <fieldset class="choice-group">
+                    <legend>Storage</legend>
+                    <div class="filter-chip-list">
+                      <label class={`filter-chip ${selectedStorage === '' ? 'selected' : ''}`}>
+                        <input type="radio" name="storage_gb" value="" checked={selectedStorage === ''} />
+                        <span>Any</span>
+                      </label>
+                      {availableStorage.map((value) => (
+                        <label class={`filter-chip ${selectedStorage === value ? 'selected' : ''}`}>
+                          <input type="radio" name="storage_gb" value={value} checked={selectedStorage === value} />
+                          <span>{formatStorageSize(value)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              )}
+
+              {availableScreens.length > 0 && (
+                <div class="filter-block">
+                  <fieldset class="choice-group">
+                    <legend>Screen size</legend>
+                    <div class="filter-chip-list">
+                      <label class={`filter-chip ${selectedScreen === '' ? 'selected' : ''}`}>
+                        <input type="radio" name="screen_in" value="" checked={selectedScreen === ''} />
+                        <span>Any</span>
+                      </label>
+                      {availableScreens.map((value) => (
+                        <label class={`filter-chip ${selectedScreen === value ? 'selected' : ''}`}>
+                          <input type="radio" name="screen_in" value={value} checked={selectedScreen === value} />
+                          <span>{formatScreenSize(value)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              )}
+
+              <div class="filter-block">
+                <label for="min-price">Min KES</label>
+                <input id="min-price" type="number" min="1" step="1" name="min_price" value={minPrice !== null ? String(minPrice) : ''} />
+              </div>
+
+              <div class="filter-block">
+                <label for="max-price">Max KES</label>
+                <input id="max-price" type="number" min="1" step="1" name="max_price" value={maxPrice !== null ? String(maxPrice) : ''} />
+              </div>
+
+              <div class="filter-block">
+                <label for="stock-filter">Availability</label>
+                <select id="stock-filter" name="in_stock">
+                  <option value="">All stock</option>
+                  <option value="1" selected={stockFilter === '1'}>In stock</option>
+                  <option value="0" selected={stockFilter === '0'}>Out of stock</option>
+                </select>
+              </div>
+
+              <div class="shop-filter-actions">
+                <button class="pill-button primary" type="submit">Apply filters</button>
+                {hasFilters && <a class="pill-button" href={clearFiltersHref}>Reset</a>}
+              </div>
+            </form>
+          </aside>
+
+          <div class="catalog-main">
+            <div class="catalog-toolbar">
+              <div>
+                <p class="results-summary">
+                  {totalCount > 0 ? `Showing ${resultStart}-${resultEnd} of ${totalCount.toLocaleString('en-KE')} products` : '0 matching products'}
+                </p>
+                <h2>{activeCategory?.label}</h2>
+                <p class="results-note">{activeCategory?.intro}</p>
+              </div>
+
+              <form class="catalog-sort-form" method="get">
+                {selectedBrand && <input type="hidden" name="brand" value={selectedBrand} />}
+                {selectedCpu && <input type="hidden" name="cpu" value={selectedCpu} />}
+                {selectedRam && <input type="hidden" name="ram_gb" value={selectedRam} />}
+                {selectedStorage && <input type="hidden" name="storage_gb" value={selectedStorage} />}
+                {selectedScreen && <input type="hidden" name="screen_in" value={selectedScreen} />}
+                {stockFilter && <input type="hidden" name="in_stock" value={stockFilter} />}
+                {minPrice !== null && <input type="hidden" name="min_price" value={String(minPrice)} />}
+                {maxPrice !== null && <input type="hidden" name="max_price" value={String(maxPrice)} />}
+                <label for="sort-select">Sort by</label>
+                <select id="sort-select" name="sort" onchange="this.form?.requestSubmit()">
+                  <option value="featured" selected={selectedSort === 'featured'}>Featured</option>
+                  <option value="newest" selected={selectedSort === 'newest'}>Newest</option>
+                  <option value="price_asc" selected={selectedSort === 'price_asc'}>Price: Low to High</option>
+                  <option value="price_desc" selected={selectedSort === 'price_desc'}>Price: High to Low</option>
+                </select>
+              </form>
+            </div>
+
+            {activeFilterChips.length > 0 && (
+              <div class="active-filters" aria-label="Active filters">
+                {activeFilterChips.map((chip) => (
+                  <a class="active-filter-chip" href={chip.href}>
+                    <span>{chip.label}</span>
+                    <span aria-hidden="true">×</span>
+                  </a>
+                ))}
+                <a class="active-filter-clear" href={clearFiltersHref}>Clear all</a>
+              </div>
+            )}
+
+            {products.length > 0 ? (
+              <div class="product-grid">
+                {products.map((product) => <ProductCard product={product} />)}
+              </div>
+            ) : (
+              <div class="empty-state">
+                <div class="empty-illustration">0</div>
+                <h3>No products match this view right now.</h3>
+                <p>Try removing one or two filters, widening the price range, or browsing the main shop page.</p>
+                <div class="empty-actions">
+                  <a href={clearFiltersHref} class="pill-button primary">Clear filters</a>
+                  <a href="/shop" class="pill-button">Browse shop</a>
+                </div>
+              </div>
+            )}
+
+            {products.length > 0 && totalPages > 1 && (
+              <nav class="pagination" aria-label="Pagination">
+                <a class={`pill-button pagination-button ${currentPage <= 1 ? 'disabled' : ''}`} href={currentPage <= 1 ? '#' : buildPageHref(currentPage - 1)} aria-disabled={currentPage <= 1}>
+                  Previous
+                </a>
+                <div class="pagination-pages">
+                  {paginationNumbers.map((page) => (
+                    <a class={`pagination-page ${page === currentPage ? 'current' : ''}`} href={buildPageHref(page)} aria-current={page === currentPage ? 'page' : undefined}>
+                      {page}
+                    </a>
+                  ))}
+                </div>
+                <a class={`pill-button pagination-button ${currentPage >= totalPages ? 'disabled' : ''}`} href={currentPage >= totalPages ? '#' : buildPageHref(currentPage + 1)} aria-disabled={currentPage >= totalPages}>
+                  Next
+                </a>
+              </nav>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isShopMode && (
+        <div class="catalog-toolbar shop-toolbar">
+          <div>
+            <p class="results-summary">
+              {totalCount > 0 ? `Showing ${resultStart}-${resultEnd} of ${totalCount.toLocaleString('en-KE')} products` : '0 matching products'}
+            </p>
+            <h2>All products</h2>
+            <p class="results-note">
+              Browse broadly here, then jump into category pages when you need narrower filtering.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isShopMode && activeFilterChips.length > 0 && (
+        <div class="active-filters" aria-label="Active filters">
+          {activeFilterChips.map((chip) => (
+            <a class="active-filter-chip" href={chip.href}>
+              <span>{chip.label}</span>
+              <span aria-hidden="true">×</span>
+            </a>
+          ))}
+          <a class="active-filter-clear" href={clearFiltersHref}>Clear all</a>
+        </div>
+      )}
+
+      {isShopMode && (products.length > 0 ? (
+        <div class="product-grid">
+          {products.map((product) => <ProductCard product={product} />)}
+        </div>
+      ) : (
+        <div class="empty-state">
+          <div class="empty-illustration">0</div>
+          <h3>No products match this view right now.</h3>
+          <p>Try removing one or two filters, widening the price range, or browsing the main shop page.</p>
+          <div class="empty-actions">
+            <a href={clearFiltersHref} class="pill-button primary">Clear filters</a>
+            {basePath !== '/shop' && <a href="/shop" class="pill-button">Browse shop</a>}
+          </div>
+        </div>
+      ))}
+
+      {isShopMode && products.length > 0 && totalPages > 1 && (
+        <nav class="pagination" aria-label="Pagination">
+          <a class={`pill-button pagination-button ${currentPage <= 1 ? 'disabled' : ''}`} href={currentPage <= 1 ? '#' : buildPageHref(currentPage - 1)} aria-disabled={currentPage <= 1}>
+            Previous
+          </a>
+          <div class="pagination-pages">
+            {paginationNumbers.map((page) => (
+              <a class={`pagination-page ${page === currentPage ? 'current' : ''}`} href={buildPageHref(page)} aria-current={page === currentPage ? 'page' : undefined}>
+                {page}
+              </a>
+            ))}
+          </div>
+          <a class={`pill-button pagination-button ${currentPage >= totalPages ? 'disabled' : ''}`} href={currentPage >= totalPages ? '#' : buildPageHref(currentPage + 1)} aria-disabled={currentPage >= totalPages}>
+            Next
+          </a>
+        </nav>
+      )}
+    </div>
+  </section>
+
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbData)} />
+</div>
+
+<style>
+  .catalog-shell {
+    padding-bottom: clamp(2rem, 4vw, 4rem);
+  }
+
+  .shop-hero,
+  .category-hero {
+    padding: clamp(2.2rem, 5vw, 4rem) 0 1.5rem;
+  }
+
+  .shop-hero {
+    background:
+      radial-gradient(circle at 5% 10%, rgb(29 78 216 / 0.1), transparent 30%),
+      radial-gradient(circle at 95% 0%, rgb(249 115 22 / 0.12), transparent 28%),
+      var(--background);
+  }
+
+  .category-hero {
+    background:
+      linear-gradient(135deg, #0f172a 0%, #1d4ed8 60%, #1e293b 100%);
+    color: var(--white);
+  }
+
+  .breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+    color: color-mix(in srgb, currentColor 72%, transparent);
+  }
+
+  .eyebrow {
+    margin: 0 0 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: inherit;
+    opacity: 0.76;
+  }
+
+  .shop-hero-grid,
+  .category-hero-grid {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .shop-hero h1,
+  .category-hero h1 {
+    font-size: clamp(2rem, 4.5vw, 3.4rem);
+    line-height: 1.05;
+    margin-bottom: 0.95rem;
+  }
+
+  .hero-copy {
+    max-width: 46rem;
+    font-size: 1.02rem;
+    line-height: 1.7;
+  }
+
+  .shop-hero .hero-copy {
+    color: var(--text-muted);
+  }
+
+  .category-hero .hero-copy {
+    color: rgb(255 255 255 / 0.86);
+  }
+
+  .shortcut-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+
+  .shortcut-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.6rem;
+    padding: 0.7rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    box-shadow: 0 10px 24px rgb(15 23 42 / 0.06);
+    font-weight: 700;
+  }
+
+  .category-hero .shortcut-chip {
+    border-color: rgb(255 255 255 / 0.14);
+    background: rgb(255 255 255 / 0.08);
+    box-shadow: none;
+  }
+
+  .static-chip {
+    cursor: default;
+  }
+
+  .shortcut-chip strong {
+    color: var(--primary);
+  }
+
+  .shop-stats-card {
+    border-radius: 1.4rem;
+    border: 1px solid var(--border);
+    background: rgb(255 255 255 / 0.92);
+    padding: 1.2rem;
+    box-shadow: 0 16px 38px rgb(15 23 42 / 0.08);
+  }
+
+  .category-hero .shop-stats-card {
+    background: rgb(15 23 42 / 0.3);
+    border-color: rgb(255 255 255 / 0.12);
+    box-shadow: none;
+  }
+
+  .shop-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
+  .shop-stats-grid strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .shop-stats-grid span {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+  }
+
+  .category-hero .shop-stats-grid span {
+    color: rgb(255 255 255 / 0.72);
+  }
+
+  .catalog-search {
+    padding: 0 0 1rem;
+  }
+
+  .featured-row,
+  .catalog-section {
+    padding: 1.2rem 0 0;
+  }
+
+  .section-head,
+  .catalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .section-head h2,
+  .catalog-toolbar h2 {
+    font-size: clamp(1.4rem, 2.6vw, 2rem);
+    line-height: 1.1;
+    margin: 0;
+  }
+
+  .text-link {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .featured-grid {
+    margin-bottom: 0.6rem;
+  }
+
+  .shop-filters,
+  .sidebar-filters {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .shop-filters {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    margin-bottom: 1.4rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    background: var(--white);
+    box-shadow: 0 12px 28px rgb(15 23 42 / 0.05);
+  }
+
+  .catalog-layout {
+    display: grid;
+    gap: 1.4rem;
+  }
+
+  .catalog-sidebar {
+    align-self: start;
+  }
+
+  .sidebar-filters {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    background: var(--white);
+    box-shadow: 0 12px 28px rgb(15 23 42 / 0.05);
+    position: sticky;
+    top: 128px;
+  }
+
+  .catalog-main {
+    min-width: 0;
+  }
+
+  .filter-block {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .filter-block label,
+  .catalog-sort-form label,
+  .choice-group legend {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .filter-block select,
+  .filter-block input,
+  .catalog-sort-form select {
+    width: 100%;
+    min-height: 2.9rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.95rem;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font: inherit;
+  }
+
+  .choice-group {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .filter-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filter-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.4rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+
+  .filter-chip.selected {
+    border-color: rgb(29 78 216 / 0.3);
+    background: rgb(239 246 255);
+    color: var(--primary);
+  }
+
+  .filter-chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .shop-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .results-summary,
+  .results-note {
+    margin: 0;
+  }
+
+  .results-summary {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .results-note {
+    margin-top: 0.45rem;
+    color: var(--text-muted);
+    max-width: 42rem;
+  }
+
+  .catalog-sort-form {
+    display: grid;
+    gap: 0.45rem;
+    min-width: min(100%, 16rem);
+  }
+
+  .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .active-filter-chip,
+  .active-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.35rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+
+  .active-filter-clear {
+    color: var(--primary);
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .empty-state {
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+    padding: 1.4rem;
+    border-radius: 1.25rem;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.98));
+  }
+
+  .empty-illustration {
+    width: 3.2rem;
+    height: 3.2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgb(239 246 255);
+    color: var(--primary);
+    font-weight: 900;
+    font-size: 1.2rem;
+  }
+
+  .empty-actions,
+  .pagination,
+  .pagination-pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .pagination {
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.35rem;
+  }
+
+  .pagination-button.disabled {
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  .pagination-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.6rem;
+    min-height: 2.6rem;
+    padding: 0.55rem;
+    border-radius: 0.9rem;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-weight: 700;
+  }
+
+  .pagination-page.current {
+    border-color: var(--primary);
+    background: rgb(239 246 255);
+    color: var(--primary);
+  }
+
+  @media (min-width: 768px) {
+    .shop-hero-grid,
+    .category-hero-grid {
+      grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.95fr);
+    }
+
+    .catalog-layout {
+      grid-template-columns: minmax(16.5rem, 18rem) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .shop-filters {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      align-items: end;
+    }
+
+    .shop-filter-actions {
+      justify-content: flex-end;
+      align-self: end;
+    }
+
+    .product-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .catalog-layout {
+      grid-template-columns: minmax(17.5rem, 19.5rem) minmax(0, 1fr);
+    }
+
+    .product-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .shop-stats-card {
+      padding: 1rem;
+    }
+
+    .sidebar-filters {
+      position: static;
+    }
+
+    .catalog-layout {
+      gap: 1rem;
+    }
+  }
+</style>

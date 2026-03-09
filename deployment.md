@@ -1,70 +1,109 @@
-# 🚀 Deployment Guide: SES ICT HUB Storefront
+# Deployment Guide (Cloudflare Worker Only)
 
-This document outlines the steps to deploy the SES ICT HUB storefront to **Cloudflare Pages** and configure the **Supabase** backend.
+This project deploys only to a Cloudflare Worker using `wrangler deploy`.
 
-## 1. Supabase Setup (Backend)
+## Locked Cloudflare Account
 
-### SQL Schema
-1. Login to [Supabase Dashboard](https://app.supabase.com/).
-2. Select your project.
-3. Go to **SQL Editor** → **New Query**.
-4. Paste the contents of `supabase/schema.sql` and run.
+- `account_id`: `e1d8076a3dc603837814ca828736561f`
+- Source of truth: `wrangler.jsonc`
+- Project wrapper: `scripts/wrangler-project.sh`
 
-### Storage
-1. Go to **Storage**.
-2. Create a new bucket named `product-images`.
-3. Set the bucket privacy to **Public**.
-4. **(Recommended)** Create a separate bucket named `site-assets` for:
-    - Store logos and favicons.
-    - Homepage banners and hero images.
-    - Category feature cards.
-    - Brand logos for carousels.
-5. Set the privacy for `site-assets` to **Public**.
+## Required Deployment Credential
 
-### Data Import
-1. Go to **Table Editor** → `products` table.
-2. Click **Insert** → **Import Data from CSV**.
-3. Upload `products_for_supabase_import_v4.csv`.
+Set this in `.env.local` or your shell/CI secret store (never commit real value):
 
----
+```bash
+CLOUDFLARE_ACCOUNT_ID=e1d8076a3dc603837814ca828736561f
+export CLOUDFLARE_API_TOKEN='<your-token>'
+```
 
-## 2. Cloudflare Pages Deployment (Frontend)
+Project npm scripts now load `.env.local` automatically for Wrangler commands.
 
-### Initial Connection
-1. Login to [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Go to **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**.
-3. Select the repository `ses-superbase-stack`.
+## Verify Account Context
 
-### Build Settings
-- **Framework preset**: `Astro`
-- **Build command**: `npm run build`
-- **Build output directory**: `dist`
-- **Root directory**: `/`
+```bash
+npm run cf:whoami
+```
 
-### Environment Variables
-Go to **Settings** → **Environment Variables** and add the following:
+Once your token is present, this should resolve against account `e1d8076a3dc603837814ca828736561f`.
 
-| Variable | Description |
-|---|---|
-| `PUBLIC_SUPABASE_URL` | Your Supabase Project URL |
-| `PUBLIC_SUPABASE_ANON_KEY` | Your Supabase Anon Key |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Secret** Service Role Key (Found in Project Settings -> API) |
+## Other Required Runtime Secrets
 
-> [!IMPORTANT]
-> `SUPABASE_SERVICE_ROLE_KEY` is required for the checkout and analytics functions to work correctly.
+Set these in Worker environment variables:
 
----
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `PUBLIC_FALLBACK_IMAGE_URL` (recommended)
 
-## 3. Production Testing & Verification
+## One Deployment Command
 
-1. **Build Sanity**: Run `npm run build` locally to ensure no TypeScript or build errors.
-2. **Checkout Flow**: 
-   - Add a product to cart.
-   - Proceed to checkout.
-   - Verify that an `order_intent` is created in Supabase.
-   - Verify that the WhatsApp link opens with the correct pre-filled message.
-3. **Analytics**: Verify that `events` are being recorded in the Supabase `events` table.
+```bash
+npm run deploy
+```
 
-## 4. Troubleshooting
-- **Missing Images**: Ensure images are uploaded to the `product-images` bucket and the base URL in the database matches the bucket path.
-- **API Failures**: Check Cloudflare Pages **Functions** logs for any errors related to environment variables.
+What it does:
+
+1. `npm run build`
+2. `scripts/deploy-worker.sh`
+3. Loads project-local Cloudflare env values
+4. Deploys via `npx wrangler deploy --config wrangler.jsonc`
+
+The deploy script enforces:
+
+- `CLOUDFLARE_API_TOKEN` must be set
+- `CLOUDFLARE_ACCOUNT_ID` must match `e1d8076a3dc603837814ca828736561f`
+- `wrangler.jsonc` account id must match `e1d8076a3dc603837814ca828736561f`
+
+## Custom Domain Cutover
+
+The storefront Worker is configured for the apex custom domain:
+
+- `sesicthub.co.ke` -> `ses-hub-superbase-stack-app`
+
+The repo also includes a small redirect Worker for the `www` host:
+
+- `www.sesicthub.co.ke` -> `https://sesicthub.co.ke`
+
+Deploy the redirect Worker with:
+
+```bash
+bash scripts/deploy-www-redirect.sh
+```
+
+Important:
+
+- Cloudflare will not attach a Worker custom domain while `sesicthub.co.ke` or `www.sesicthub.co.ke` still have existing DNS records.
+- Delete or replace those DNS records in Cloudflare first, using a token or dashboard session with DNS edit permissions.
+- After the DNS records are cleared or you switch to a DNS-edit token, run:
+
+```bash
+bash scripts/attach-apex-domain.sh
+bash scripts/deploy-www-redirect.sh
+```
+
+## SESSION KV Binding
+
+Astro Cloudflare adapter expects a `SESSION` KV binding for session storage.
+
+This project is now configured with:
+
+- production `SESSION` namespace id: `855da47786b843709e951dcef310b455`
+- preview `SESSION` namespace id: `bccf2071bd4b43a183df8c896f240b15`
+
+The binding lives in `wrangler.jsonc`.
+
+## Current Cutover Blocker
+
+As of March 9, 2026, the Worker upload succeeds, but custom-domain cutover still requires a Cloudflare token with DNS edit permission.
+
+The current token can:
+
+- upload Workers
+- create KV namespaces
+- read zone metadata
+
+The current token cannot:
+
+- list DNS records
+- replace existing apex or `www` DNS records during Worker custom-domain attachment

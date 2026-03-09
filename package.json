@@ -5,11 +5,16 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build && cp .assetsignore dist/.assetsignore",
+    "check": "astro check",
+    "lint": "npm run check",
+    "build": "astro build && cp .assetsignore dist/.assetsignore",
     "preview": "astro preview",
-    "deploy": "npm run build && wrangler deploy",
-    "cf:dev": "wrangler dev",
-    "cf:typegen": "wrangler types",
+    "test": "tsx --test tests/*.test.ts",
+    "validate": "npm run lint && npm run test && npm run build",
+    "deploy": "npm run build && bash scripts/deploy-worker.sh",
+    "cf:whoami": "bash scripts/wrangler-project.sh whoami",
+    "cf:dev": "bash scripts/wrangler-project.sh dev",
+    "cf:typegen": "bash scripts/wrangler-project.sh types",
     "astro": "astro"
   },
   "dependencies": {
@@ -17,9 +22,12 @@
     "@astrojs/cloudflare": "^12.6.12",
     "@supabase/supabase-js": "^2.48.1",
     "astro": "^5.4.1",
+    "sanitize-html": "^2.13.0",
     "typescript": "^5.7.3"
   },
   "devDependencies": {
+    "@types/sanitize-html": "^2.16.0",
+    "tsx": "^4.20.6",
     "wrangler": "^3.111.0"
   }
 }

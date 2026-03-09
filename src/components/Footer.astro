@@ -1,17 +1,31 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
+import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 
 const today = new Date();
 const year = today.getFullYear();
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const logoImage = siteAssets.logo;
+const logoFallback = siteAssets.logoFallback;
+const logoOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(logoFallback)};}`;
 ---
 
 <footer class="footer">
   <div class="container footer-grid">
     <div class="footer-brand">
       <a href="/" class="logo" aria-label="SES ICT HUB Home">
-        <img src={logoImage} alt="SES Beyond frontiers logo" class="logo-image" loading="lazy" decoding="async" />
+        <img
+          src={logoImage}
+          alt="SES ICT HUB logo"
+          class="logo-image"
+          loading="lazy"
+          decoding="async"
+          onerror={logoOnError}
+        />
+        <span class="logo-copy">
+          <strong>SES ICT HUB</strong>
+          <span>Trusted electronics in Nairobi</span>
+        </span>
       </a>
       <p class="brand-tagline">Quality brand-new and certified refurbished electronics in Nairobi. Delivering countrywide.</p>
     </div>
@@ -46,11 +60,10 @@ const logoImage = siteAssets.logo;
     <div class="footer-group">
       <h3 class="footer-title">Quick Links</h3>
       <ul class="footer-links">
-        <li><a href="/category/laptops">Laptops</a></li>
-        <li><a href="/category/desktops">Desktops</a></li>
-        <li><a href="/category/printers">Printers</a></li>
-        <li><a href="/category/smartphones">Smartphones</a></li>
-        <li><a href="/category/accessories">Accessories</a></li>
+        <li><a href="/shop">Shop</a></li>
+        {STOREFRONT_CATEGORIES.map((category) => (
+          <li><a href={`/category/${category.slug}`}>{category.label}</a></li>
+        ))}
         <li><a href="/track">Track Order</a></li>
         <li><a href="/faq">FAQ</a></li>
         <li><a href="/contact">Contact</a></li>
@@ -103,16 +116,36 @@ const logoImage = siteAssets.logo;
   .logo {
     display: inline-flex;
     align-items: center;
+    gap: 0.85rem;
     margin-bottom: var(--space-sm);
   }
 
   .logo-image {
-    width: 84px;
-    height: 84px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #000;
-    box-shadow: 0 10px 28px rgb(15 23 42 / 0.22);
+    width: 4.4rem;
+    height: 4.4rem;
+    object-fit: contain;
+    padding: 0.45rem;
+    border-radius: 1.25rem;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(241 245 249 / 0.96));
+    border: 1px solid rgb(148 163 184 / 0.24);
+    box-shadow: 0 16px 34px rgb(15 23 42 / 0.12);
+  }
+
+  .logo-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+
+  .logo-copy strong {
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+    color: #0f172a;
+  }
+
+  .logo-copy span {
+    font-size: 0.78rem;
+    color: var(--text-muted);
   }
 
   .brand-tagline {

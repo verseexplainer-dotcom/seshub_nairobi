@@ -13,7 +13,7 @@ const brands = [
   <div class="container">
     <div class="brand-track">
       {brands.map(brand => (
-        <a href={`/category/all?brand=${brand.name}`} class="brand-item">
+        <a href={`/shop?brand=${brand.name}`} class="brand-item">
           <!-- In a real app, these would be proper logos from Supabase storage -->
           <div class="brand-logo-placeholder">{brand.name}</div>
         </a>

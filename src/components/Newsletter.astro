@@ -127,19 +127,27 @@
     }
 
     try {
-      // In a real app, this would call /api/newsletter
-      // For this project, we'll implement it via Cloudflare Functions
-      const response = await fetch('/api/events', {
+      const response = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          session_id: localStorage.getItem('ses_session_id'),
-          event_type: 'newsletter_signup_intent',
-          payload: { email, consent, source_page: window.location.pathname }
+          email,
+          consent,
+          source_page: window.location.pathname
         })
       });
 
       if (response.ok) {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: localStorage.getItem('ses_session_id'),
+            event_type: 'newsletter_signup_intent',
+            payload: { source_page: window.location.pathname }
+          })
+        }).catch(() => null);
+
         if (messageEl) {
           messageEl.textContent = 'Welcome to the hub! ✓';
           messageEl.classList.add('success');

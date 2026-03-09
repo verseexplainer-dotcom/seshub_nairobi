@@ -1,10 +1,13 @@
-import { supabase } from '../lib/supabase';
+import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 export async function GET() {
-    const { data: products } = await supabase.from('products').select('slug, updated_at');
+    const products = isSupabaseConfigured
+      ? (await supabase.from('products').select('slug, updated_at')).data || []
+      : [];
 
-    const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories', 'deals', 'all'];
-    const pages = ['', 'cart', 'track', 'contact', 'faq'];
+    const categories = [...STOREFRONT_CATEGORIES.map((category) => category.slug), 'all'];
+    const pages = ['', 'shop', 'cart', 'track', 'contact', 'faq'];
 
     const baseUrl = 'https://sesicthub.co.ke';
 
@@ -24,10 +27,10 @@ export async function GET() {
       <priority>0.8</priority>
     </url>
   `).join('')}
-  ${(products || []).map(prod => `
+  ${products.map(prod => `
     <url>
       <loc>${baseUrl}/product/${prod.slug}</loc>
-      <lastmod>${new Date(prod.updated_at).toISOString().split('T')[0]}</lastmod>
+      <lastmod>${prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.6</priority>
     </url>

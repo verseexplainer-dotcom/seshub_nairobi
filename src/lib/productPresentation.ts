@@ -1,0 +1,439 @@
+export type StoreCategorySlug = 'laptops' | 'smartphones' | 'printers';
+export type CatalogCategorySlug = StoreCategorySlug | 'all';
+
+export interface StoreCategoryMeta {
+  slug: StoreCategorySlug;
+  label: string;
+  dbValue: string;
+  intro: string;
+  heroEyebrow: string;
+  heroDescription: string;
+  highlights: string[];
+}
+
+const SCREEN_MIN_INCHES = 3.5;
+const SCREEN_MAX_INCHES = 20;
+const LOW_STOCK_THRESHOLD = 3;
+
+export const SHOP_PATH = '/shop';
+
+export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
+  {
+    slug: 'laptops',
+    label: 'Laptops',
+    dbValue: 'Laptops',
+    intro: 'Portable business and study machines with verified specs, clear grading, and delivery-ready stock.',
+    heroEyebrow: 'Portable performance',
+    heroDescription:
+      'Browse laptops with clear CPU, RAM, storage, warranty, and stock signals so buyers can compare quickly without guesswork.',
+    highlights: ['CPU and RAM filters', 'Warranty shown when available', 'Stock shown honestly']
+  },
+  {
+    slug: 'smartphones',
+    label: 'Smartphones',
+    dbValue: 'Smartphones',
+    intro: 'Smartphones with fair pricing, honest condition labels, and trusted Kenya delivery and pickup options.',
+    heroEyebrow: 'Everyday mobility',
+    heroDescription:
+      'Compare smartphones by brand, storage, price, and stock without relying on hidden or inferred product claims.',
+    highlights: ['Condition shown clearly', 'Compare-at savings when real', 'WhatsApp support for quick help']
+  },
+  {
+    slug: 'printers',
+    label: 'Printers',
+    dbValue: 'Printers',
+    intro: 'Printers for office, school, and business workflows with pricing, stock, and product descriptions kept straightforward.',
+    heroEyebrow: 'Reliable print output',
+    heroDescription:
+      'Find printers with live price and stock visibility, plus clean product details that stay close to the buying action.',
+    highlights: ['Brand filter', 'Price sorting', 'Store-level delivery guidance']
+  }
+];
+
+const CATEGORY_BY_SLUG = new Map(STOREFRONT_CATEGORIES.map((category) => [category.slug, category]));
+const CATEGORY_BY_VALUE = new Map(
+  STOREFRONT_CATEGORIES.flatMap((category) => [
+    [category.slug, category],
+    [category.dbValue.toLowerCase(), category]
+  ])
+);
+
+export function normalizeText(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+export function toTitleCase(value: string) {
+  return value
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export function formatCurrencyKes(value: unknown) {
+  const amount = Number(value);
+  return `KSh ${Math.max(0, Number.isFinite(amount) ? Math.round(amount) : 0).toLocaleString('en-KE')}`;
+}
+
+export function parsePositiveNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function formatNumberLabel(value: unknown) {
+  const parsed = parsePositiveNumber(value);
+  if (!parsed) {
+    return '';
+  }
+
+  return Number.isInteger(parsed) ? String(Math.round(parsed)) : parsed.toFixed(1).replace(/\.0$/, '');
+}
+
+export function formatStorageSize(value: unknown) {
+  const parsed = parsePositiveNumber(value);
+  if (!parsed) {
+    return '';
+  }
+
+  if (parsed >= 1024 && parsed % 1024 === 0) {
+    return `${parsed / 1024}TB`;
+  }
+
+  return `${formatNumberLabel(parsed)}GB`;
+}
+
+export function getSafeScreenSize(value: unknown) {
+  const parsed = parsePositiveNumber(value);
+  if (!parsed) {
+    return null;
+  }
+
+  return parsed >= SCREEN_MIN_INCHES && parsed <= SCREEN_MAX_INCHES ? parsed : null;
+}
+
+export function formatScreenSize(value: unknown) {
+  const safe = getSafeScreenSize(value);
+  return safe ? `${formatNumberLabel(safe)}"` : '';
+}
+
+export function getStoreCategoryBySlug(value: unknown) {
+  const slug = normalizeText(value).toLowerCase() as StoreCategorySlug;
+  return CATEGORY_BY_SLUG.get(slug) || null;
+}
+
+export function getStoreCategoryByValue(value: unknown) {
+  const normalized = normalizeText(value).toLowerCase();
+  return CATEGORY_BY_VALUE.get(normalized) || null;
+}
+
+export function getCategorySlug(value: unknown) {
+  return getStoreCategoryBySlug(value)?.slug || getStoreCategoryByValue(value)?.slug || null;
+}
+
+export function getCategoryLabel(value: unknown) {
+  return getStoreCategoryByValue(value)?.label || getStoreCategoryBySlug(value)?.label || toTitleCase(normalizeText(value) || 'Product');
+}
+
+export function getCategoryPath(value: unknown) {
+  const slug = getCategorySlug(value);
+  return slug ? `/category/${slug}` : SHOP_PATH;
+}
+
+export function getConditionMeta(value: unknown) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (normalized === 'brand_new') {
+    return { label: 'Brand New', tone: 'new' as const };
+  }
+
+  if (normalized === 'refurbished') {
+    return { label: 'Refurbished', tone: 'refurbished' as const };
+  }
+
+  return { label: 'Verified condition', tone: 'verified' as const };
+}
+
+export function getRefurbGradeMeta(value: unknown) {
+  const normalized = normalizeText(value).toLowerCase();
+  const allowed = new Set(['grade_a', 'grade_b', 'grade_c']);
+  if (!allowed.has(normalized)) {
+    return null;
+  }
+
+  const gradeLetter = normalized.split('_')[1]?.toUpperCase();
+  if (!gradeLetter) {
+    return null;
+  }
+
+  return {
+    label: `Grade ${gradeLetter}`,
+    tone: gradeLetter.toLowerCase()
+  };
+}
+
+export function getWarrantyMonths(value: unknown) {
+  const parsed = parsePositiveNumber(value);
+  return parsed ? Math.round(parsed) : null;
+}
+
+export function getWarrantyLabel(value: unknown, style: 'short' | 'long' = 'short') {
+  const months = getWarrantyMonths(value);
+  if (!months) {
+    return null;
+  }
+
+  return style === 'long' ? `${months}-month warranty` : `${months} mo warranty`;
+}
+
+export function getDiscountMeta(priceValue: unknown, compareAtValue: unknown) {
+  const price = Math.max(0, Number(priceValue || 0));
+  const compareAt = Math.max(0, Number(compareAtValue || 0));
+  const hasDiscount = compareAt > price;
+  const savings = hasDiscount ? compareAt - price : 0;
+  const percent = hasDiscount && compareAt > 0 ? Math.round((savings / compareAt) * 100) : 0;
+
+  return {
+    price,
+    compareAt,
+    hasDiscount,
+    savings,
+    percent,
+    priceText: formatCurrencyKes(price),
+    compareAtText: hasDiscount ? formatCurrencyKes(compareAt) : null,
+    savingsText: hasDiscount ? formatCurrencyKes(savings) : null
+  };
+}
+
+export function getStockMeta(product: Record<string, any>) {
+  const isInStock = product?.in_stock === true;
+  const stockQty = parsePositiveNumber(product?.stock_qty);
+  const isLowStock = Boolean(isInStock && stockQty && stockQty <= LOW_STOCK_THRESHOLD);
+
+  if (!isInStock) {
+    return {
+      isInStock,
+      stockQty,
+      isLowStock: false,
+      badge: 'Out of Stock',
+      detail: 'Ask on WhatsApp for similar options',
+      tone: 'out' as const
+    };
+  }
+
+  if (isLowStock) {
+    return {
+      isInStock,
+      stockQty,
+      isLowStock: true,
+      badge: 'Low Stock',
+      detail: `Only ${Math.round(stockQty as number)} left`,
+      tone: 'low' as const
+    };
+  }
+
+  return {
+    isInStock,
+    stockQty,
+    isLowStock: false,
+    badge: 'In Stock',
+    detail: stockQty ? `${Math.round(stockQty)} ready to order` : 'Ready to order',
+    tone: 'in' as const
+  };
+}
+
+function parsePossibleImageArray(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+export function getImageCandidates(product: Record<string, any>) {
+  const overrides = parsePossibleImageArray(product?.image_overrides);
+  const images = parsePossibleImageArray(product?.images);
+  return overrides.length > 0 ? overrides : images;
+}
+
+export function resolveProductImageUrl(image: unknown, publicSupabaseUrl: string, fallbackImage: string) {
+  const normalizedFallback = normalizeText(fallbackImage) || '/product-placeholder.svg';
+  const normalizedUrl = normalizeText(publicSupabaseUrl).replace(/\/$/, '');
+  const imagePath = normalizeText(image);
+
+  if (!imagePath) {
+    return normalizedFallback;
+  }
+
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+
+  if (!normalizedUrl) {
+    return normalizedFallback;
+  }
+
+  return `${normalizedUrl}/storage/v1/object/public/product-images/${imagePath.replace(/^\//, '')}`;
+}
+
+export function getProductImageUrls(product: Record<string, any>, publicSupabaseUrl: string, fallbackImage: string) {
+  const candidates = getImageCandidates(product);
+  if (candidates.length === 0) {
+    return [resolveProductImageUrl('', publicSupabaseUrl, fallbackImage)];
+  }
+
+  return candidates.map((image) => resolveProductImageUrl(image, publicSupabaseUrl, fallbackImage));
+}
+
+export function hasExplicitChargerIncluded(product: Record<string, any>) {
+  const source = `${normalizeText(product?.short_specs)} ${normalizeText(product?.description)}`.toLowerCase();
+  if (!source) {
+    return false;
+  }
+
+  const negativePatterns = [
+    /charger\s+not\s+included/,
+    /no\s+charger/,
+    /without\s+charger/,
+    /charger\s+sold\s+separately/
+  ];
+  if (negativePatterns.some((pattern) => pattern.test(source))) {
+    return false;
+  }
+
+  const positivePatterns = [
+    /charger\s+included/,
+    /comes?\s+with\s+(an?\s+)?charger/,
+    /includes?\s+(an?\s+)?charger/,
+    /with\s+(an?\s+)?charger/,
+    /original\s+charger/
+  ];
+
+  return positivePatterns.some((pattern) => pattern.test(source));
+}
+
+export function getSummarySpecItems(product: Record<string, any>) {
+  const cpu = normalizeText(product?.cpu);
+  const ram = formatNumberLabel(product?.ram_gb);
+  const storage = formatStorageSize(product?.storage_gb);
+  const storageType = normalizeText(product?.storage_type).toUpperCase();
+  const screen = formatScreenSize(product?.screen_in);
+
+  const items: Array<{ label: string; value: string }> = [];
+  if (cpu) {
+    items.push({ label: 'CPU', value: cpu });
+  }
+  if (ram) {
+    items.push({ label: 'RAM', value: `${ram}GB` });
+  }
+  if (storage || storageType) {
+    items.push({
+      label: 'Storage',
+      value: `${storage}${storage && storageType ? ' ' : ''}${storageType}`.trim()
+    });
+  }
+  if (screen) {
+    items.push({ label: 'Display', value: screen });
+  }
+
+  return items;
+}
+
+export function getSpecTableRows(product: Record<string, any>) {
+  const condition = getConditionMeta(product?.condition);
+  const grade = getRefurbGradeMeta(product?.refurb_grade);
+  const rows: Array<{ label: string; value: string }> = [];
+
+  const cpu = normalizeText(product?.cpu);
+  const ram = formatNumberLabel(product?.ram_gb);
+  const storage = formatStorageSize(product?.storage_gb);
+  const storageType = normalizeText(product?.storage_type).toUpperCase();
+  const screen = formatScreenSize(product?.screen_in);
+
+  if (cpu) {
+    rows.push({ label: 'CPU', value: cpu });
+  }
+  if (ram) {
+    rows.push({ label: 'RAM', value: `${ram}GB` });
+  }
+  if (storage || storageType) {
+    rows.push({
+      label: 'Storage',
+      value: `${storage}${storage && storageType ? ' ' : ''}${storageType}`.trim()
+    });
+  }
+  if (screen) {
+    rows.push({ label: 'Screen size', value: screen });
+  }
+  if (condition.label) {
+    rows.push({ label: 'Condition', value: condition.label });
+  }
+  if (grade?.label) {
+    rows.push({ label: 'Refurb grade', value: grade.label });
+  }
+
+  return rows;
+}
+
+export function stripMarketingWordsFromTitle(value: unknown) {
+  const raw = normalizeText(value);
+  if (!raw) {
+    return 'Product';
+  }
+
+  return raw
+    .replace(/\b(refurbished|brand[\s-]?new)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim() || raw;
+}
+
+export function getProductPresentation(
+  product: Record<string, any>,
+  options: { publicSupabaseUrl?: string; fallbackImage?: string } = {}
+) {
+  const publicSupabaseUrl = normalizeText(options.publicSupabaseUrl);
+  const fallbackImage = normalizeText(options.fallbackImage) || '/product-placeholder.svg';
+  const category = getStoreCategoryByValue(product?.category);
+  const condition = getConditionMeta(product?.condition);
+  const grade = getRefurbGradeMeta(product?.refurb_grade);
+  const warranty = getWarrantyLabel(product?.warranty_months);
+  const stock = getStockMeta(product);
+  const pricing = getDiscountMeta(product?.price_kes, product?.compare_at_kes);
+  const summarySpecs = getSummarySpecItems(product);
+  const specRows = getSpecTableRows(product);
+  const imageUrls = getProductImageUrls(product, publicSupabaseUrl, fallbackImage);
+  const displayTitle = stripMarketingWordsFromTitle(product?.title);
+  const rawTitle = normalizeText(product?.title) || displayTitle;
+  const brand = normalizeText(product?.brand);
+  const categoryLabel = category?.label || getCategoryLabel(product?.category);
+  const eyeBrow = brand ? `${brand} / ${categoryLabel}` : categoryLabel;
+
+  return {
+    rawTitle,
+    displayTitle,
+    category,
+    categoryLabel,
+    categoryPath: category ? `/category/${category.slug}` : SHOP_PATH,
+    eyebrow: eyeBrow,
+    productPath: `/product/${product?.slug}`,
+    condition,
+    grade,
+    warranty,
+    stock,
+    pricing,
+    summarySpecs,
+    specRows,
+    chargerIncluded: hasExplicitChargerIncluded(product),
+    imageUrls,
+    primaryImageUrl: imageUrls[0] || fallbackImage
+  };
+}

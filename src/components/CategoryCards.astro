@@ -1,23 +1,29 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
+import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const printersCardOnError = `this.onerror=null;this.src=${JSON.stringify(siteAssets.categoryCards.printersLegacy)}`;
 
-const categories = [
-  { name: 'Laptops', slug: 'laptops', count: '80+ Items', image: siteAssets.categoryCards.laptops, alt: 'Laptops collection' },
-  { name: 'Desktops', slug: 'desktops', count: '2+ Items', image: siteAssets.categoryCards.desktops, alt: 'Desktops collection' },
-  { name: 'Printers', slug: 'printers', count: '11+ Items', image: siteAssets.categoryCards.printers, alt: 'Printers collection', onerror: printersCardOnError },
-  { name: 'Smartphones', slug: 'smartphones', count: '19+ Items', image: siteAssets.categoryCards.smartphones, alt: 'Smartphones collection' },
-  { name: 'Accessories', slug: 'accessories', count: '21+ Items', image: siteAssets.categoryCards.accessories, alt: 'Accessories collection' }
-];
+const categories = STOREFRONT_CATEGORIES.map((category) => ({
+  name: category.label,
+  slug: category.slug,
+  image:
+    category.slug === 'laptops'
+      ? siteAssets.categoryCards.laptops
+      : category.slug === 'printers'
+        ? siteAssets.categoryCards.printers
+        : siteAssets.categoryCards.smartphones,
+  alt: `${category.label} collection`,
+  onerror: category.slug === 'printers' ? printersCardOnError : undefined
+}));
 ---
 
 <section class="categories">
   <div class="container">
     <div class="section-header">
       <h2 class="section-title">Shop by Category</h2>
-      <a href="/category/all" class="text-link">View all catalogs &rarr;</a>
+      <a href="/shop" class="text-link">Browse full shop &rarr;</a>
     </div>
     
     <div class="category-grid">
@@ -28,7 +34,7 @@ const categories = [
           </div>
           <div class="category-body">
             <h3 class="category-name">{cat.name}</h3>
-            <p class="category-count">{cat.count}</p>
+            <p class="category-count">Shop now</p>
           </div>
         </a>
       ))}
@@ -67,7 +73,7 @@ const categories = [
 
   @media (min-width: 768px) {
     .category-grid {
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 

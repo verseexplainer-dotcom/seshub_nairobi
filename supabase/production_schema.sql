@@ -1,18 +1,19 @@
 -- SES ICT HUB Production Schema (Static-first Astro + Supabase)
 -- Aligned with current app behavior as of 2026-03-08.
+-- Note: `supabase/schema.sql` is the canonical source; keep this file in parity.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. PRODUCTS
 CREATE TABLE IF NOT EXISTS public.products (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug             text        UNIQUE NOT NULL,
+  slug             text        NOT NULL,
   title            text        NOT NULL,
   category         text        NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
-  price_kes        numeric     NOT NULL,
+  price_kes        numeric     NOT NULL CHECK (price_kes > 0),
   compare_at_kes   numeric,
   in_stock         boolean     NOT NULL DEFAULT true,
-  stock_qty        numeric,
+  stock_qty        numeric     CHECK (stock_qty IS NULL OR stock_qty >= 0),
   brand            text,
   condition        text        CHECK (condition IN ('brand_new', 'refurbished', 'unknown')),
   refurb_grade     text        CHECK (refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
@@ -35,9 +36,44 @@ CREATE TABLE IF NOT EXISTS public.products (
   collections      text[],
   seo_title        text,
   meta_description text,
+  image_overrides  jsonb       NOT NULL DEFAULT '[]'::jsonb
+                            CHECK (jsonb_typeof(image_overrides) = 'array'),
   created_at       timestamptz NOT NULL DEFAULT now(),
-  updated_at       timestamptz NOT NULL DEFAULT now()
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT products_compare_price_check
+    CHECK (compare_at_kes IS NULL OR compare_at_kes > price_kes)
 );
+
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
+CREATE TRIGGER trg_products_updated_at
+  BEFORE UPDATE ON public.products
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_products_category    ON public.products (category);
+CREATE INDEX IF NOT EXISTS idx_products_price_kes   ON public.products (price_kes);
+CREATE INDEX IF NOT EXISTS idx_products_in_stock    ON public.products (in_stock);
+CREATE INDEX IF NOT EXISTS idx_products_featured    ON public.products (featured_home, featured_rank);
+CREATE INDEX IF NOT EXISTS idx_products_brand       ON public.products (brand);
+CREATE INDEX IF NOT EXISTS idx_products_updated_at  ON public.products (updated_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_products_slug_lower ON public.products ((lower(slug)));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_products_sku_lower
+  ON public.products ((lower(sku)))
+  WHERE sku IS NOT NULL AND btrim(sku) <> '';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_products_source_id
+  ON public.products (source_id)
+  WHERE source_id IS NOT NULL AND btrim(source_id) <> '';
+CREATE INDEX IF NOT EXISTS idx_products_sorting ON public.products (in_stock DESC, featured_rank NULLS LAST, updated_at DESC);
 
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "products_public_read" ON public.products;
@@ -62,10 +98,11 @@ CREATE TABLE IF NOT EXISTS public.order_intents (
 
 ALTER TABLE public.order_intents ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "order_intents_anon_insert" ON public.order_intents;
-CREATE POLICY "order_intents_anon_insert"
+DROP POLICY IF EXISTS "order_intents_public_no_insert" ON public.order_intents;
+CREATE POLICY "order_intents_public_no_insert"
   ON public.order_intents FOR INSERT
   TO anon, authenticated
-  WITH CHECK (consent = true AND length(phone) >= 9 AND total_kes > 0);
+  WITH CHECK (false);
 
 DROP POLICY IF EXISTS "order_intents_anon_deny_select" ON public.order_intents;
 CREATE POLICY "order_intents_anon_deny_select"
@@ -99,10 +136,11 @@ CREATE TABLE IF NOT EXISTS public.events (
 
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "events_anon_insert" ON public.events;
-CREATE POLICY "events_anon_insert"
+DROP POLICY IF EXISTS "events_public_no_insert" ON public.events;
+CREATE POLICY "events_public_no_insert"
   ON public.events FOR INSERT
   TO anon, authenticated
-  WITH CHECK (true);
+  WITH CHECK (false);
 
 DROP POLICY IF EXISTS "events_anon_deny_select" ON public.events;
 CREATE POLICY "events_anon_deny_select"
@@ -145,10 +183,11 @@ CREATE TABLE IF NOT EXISTS public.newsletter_signups (
 
 ALTER TABLE public.newsletter_signups ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "newsletter_anon_insert" ON public.newsletter_signups;
-CREATE POLICY "newsletter_anon_insert"
+DROP POLICY IF EXISTS "newsletter_public_no_insert" ON public.newsletter_signups;
+CREATE POLICY "newsletter_public_no_insert"
   ON public.newsletter_signups FOR INSERT
   TO anon, authenticated
-  WITH CHECK (consent = true);
+  WITH CHECK (false);
 
 DROP POLICY IF EXISTS "newsletter_anon_deny_select" ON public.newsletter_signups;
 CREATE POLICY "newsletter_anon_deny_select"

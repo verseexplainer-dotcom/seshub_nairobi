@@ -1,67 +1,98 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
+import { getProductPresentation } from '../lib/productPresentation';
 
 interface Props {
-  product: any;
+  product: Record<string, any>;
 }
 
 const { product } = Astro.props;
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
-const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.jpg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
-const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co').replace(/\/$/, '');
-const primaryImage = product.images?.[0];
-const getImageUrl = (img: string | undefined) => {
-  if (!img) return fallbackImage;
-  if (img.startsWith('http')) return img;
-  return `${supabaseUrl}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
-};
----
+const finalFallbackImage = '/product-placeholder.svg';
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder || finalFallbackImage).trim();
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(finalFallbackImage)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
+const presentation = getProductPresentation(product, {
+  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+  fallbackImage
+});
+const whatsAppUrl = `https://wa.me/254720480475?text=${encodeURIComponent(
+  `Hi SES ICT HUB, I'm interested in: ${presentation.rawTitle} — https://sesicthub.co.ke/product/${product.slug}`
+)}`;
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+const addToCartLabel = `Add ${presentation.displayTitle} to cart`;
+const actionMarkup = presentation.stock.isInStock
+  ? `
+    <button
+      class="pill-button primary add-to-cart-btn sticky-action"
+      data-id="${escapeHtml(product.id)}"
+      data-title="${escapeHtml(presentation.rawTitle)}"
+      data-price="${escapeHtml(presentation.pricing.price)}"
+      data-slug="${escapeHtml(product.slug)}"
+      data-image="${escapeHtml(presentation.primaryImageUrl)}"
+      aria-label="${escapeHtml(addToCartLabel)}"
+    >
+      Add to Cart
+    </button>
+  `
+  : `
+    <button class="pill-button sticky-action" type="button" disabled aria-disabled="true">
+      Out of Stock
+    </button>
+  `;
+const compareMarkup = presentation.pricing.compareAtText
+  ? `<p class="sticky-compare">${escapeHtml(presentation.pricing.compareAtText)}</p>`
+  : '';
+const stickyHtml = `
+  <div class="sticky-atc" id="sticky-atc">
+    <div class="container sticky-atc-content">
+      <div class="sticky-info">
+        <img src="${escapeHtml(presentation.primaryImageUrl)}" alt="" class="sticky-thumb" onerror="${escapeHtml(imageOnError)}" />
+        <div class="sticky-text">
+          <h3 class="sticky-title">${escapeHtml(presentation.displayTitle)}</h3>
+          <div class="sticky-price-row">
+            <p class="sticky-price">${escapeHtml(presentation.pricing.priceText)}</p>
+            ${compareMarkup}
+          </div>
+          <p class="sticky-stock ${escapeHtml(presentation.stock.tone)}">${escapeHtml(presentation.stock.detail)}</p>
+        </div>
+      </div>
 
-<div class="sticky-atc" id="sticky-atc">
-  <div class="container sticky-atc-content">
-    <div class="sticky-info">
-      <img src={getImageUrl(primaryImage)} alt="" class="sticky-thumb" onerror={imageOnError} />
-      <div class="sticky-text">
-        <h3 class="sticky-title">{product.title}</h3>
-        <p class="sticky-price">KSh {product.price_kes.toLocaleString()}</p>
+      <div class="sticky-actions">
+        <a href="${escapeHtml(whatsAppUrl)}" class="pill-button accent sticky-action" target="_blank" rel="noreferrer">
+          WhatsApp
+        </a>
+        ${actionMarkup}
       </div>
     </div>
-    
-    <div class="sticky-actions">
-      <a 
-        href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I'm interested in: ${product.title} — https://sesicthub.co.ke/product/${product.slug}`)}`} 
-        class="pill-button accent"
-      >
-        WhatsApp
-      </a>
-      <button 
-        class="pill-button primary add-to-cart-btn"
-        data-id={product.id} 
-        data-title={product.title} 
-        data-price={product.price_kes}
-        data-slug={product.slug}
-        data-image={getImageUrl(primaryImage)}
-      >
-        Add to Cart
-      </button>
-    </div>
   </div>
-</div>
+`;
+---
+
+<div class="sticky-atc-shell" set:html={stickyHtml}></div>
 
 <style>
+  .sticky-atc-shell {
+    display: contents;
+  }
+
   .sticky-atc {
     position: fixed;
+    right: 0;
     bottom: 0;
     left: 0;
-    right: 0;
-    background-color: var(--white);
-    border-top: 1px solid var(--border);
-    box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1);
-    padding: var(--space-sm) 0;
     z-index: 100;
     transform: translateY(100%);
     transition: transform 0.3s ease;
+    border-top: 1px solid var(--border);
+    background: rgb(255 255 255 / 0.98);
+    box-shadow: 0 -10px 30px rgb(15 23 42 / 0.08);
+    backdrop-filter: blur(14px);
   }
 
   .sticky-atc.visible {
@@ -69,73 +100,112 @@ const getImageUrl = (img: string | undefined) => {
   }
 
   .sticky-atc-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
+    display: grid;
+    gap: 0.85rem;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
   }
 
   .sticky-info {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: 0.8rem;
+    min-width: 0;
   }
 
   .sticky-thumb {
-    width: 40px;
-    height: 40px;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
     object-fit: contain;
-    background-color: #f1f5f9;
-    border-radius: var(--radius-sm);
+    border-radius: 0.9rem;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+  }
+
+  .sticky-text {
+    min-width: 0;
   }
 
   .sticky-title {
-    font-size: 0.875rem;
-    font-weight: 700;
+    margin: 0 0 0.2rem;
+    font-size: 0.95rem;
+    line-height: 1.25;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 150px;
+  }
+
+  .sticky-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .sticky-price,
+  .sticky-compare,
+  .sticky-stock {
+    margin: 0;
   }
 
   .sticky-price {
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--primary);
   }
 
-  .sticky-actions {
-    display: flex;
-    gap: 0.5rem;
+  .sticky-compare {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-decoration: line-through;
   }
 
-  @media (max-width: 640px) {
+  .sticky-stock {
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .sticky-stock.in {
+    color: #166534;
+  }
+
+  .sticky-stock.low {
+    color: #854d0e;
+  }
+
+  .sticky-stock.out {
+    color: #991b1b;
+  }
+
+  .sticky-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .sticky-action {
+    width: 100%;
+    min-height: 3rem;
+    justify-content: center;
+  }
+
+  @media (min-width: 768px) {
     .sticky-atc-content {
-      gap: 0.5rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
     }
-    
-    .sticky-info {
-      display: none;
-    }
-    
+
     .sticky-actions {
-      width: 100%;
-    }
-    
-    .sticky-actions .pill-button {
-      flex: 1;
-      justify-content: center;
-      padding: 0.75rem 0.5rem;
-      font-size: 0.875rem;
+      width: min(28rem, 100%);
     }
   }
 </style>
 
 <script>
   const sticky = document.getElementById('sticky-atc');
-  
+
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 400) {
+    if (window.scrollY > 420) {
       sticky?.classList.add('visible');
     } else {
       sticky?.classList.remove('visible');

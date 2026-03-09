@@ -9,7 +9,7 @@
   --background: #F8FAFC;
   --white: #FFFFFF;
   --text-main: #1E293B;
-  --text-muted: #64748B;
+  --text-muted: #475569;
   --border: #E2E8F0;
 
   /* Spacing */
@@ -58,6 +58,13 @@ button {
   font-family: inherit;
 }
 
+input,
+select,
+textarea {
+  font: inherit;
+  min-height: 3rem;
+}
+
 img {
   max-width: 100%;
   height: auto;
@@ -75,10 +82,12 @@ img {
 .pill-button {
   border-radius: var(--radius-full);
   padding: 0.625rem 1.5rem;
+  min-height: 3rem;
   font-weight: 600;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 

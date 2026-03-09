@@ -2,45 +2,132 @@
 import Layout from '../layouts/Layout.astro';
 import ProductCard from '../components/ProductCard.astro';
 import CategoryCards from '../components/CategoryCards.astro';
+import SearchBar from '../components/SearchBar.astro';
 import TrustBar from '../components/TrustBar.astro';
-import { supabase } from '../lib/supabase';
+import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { getSiteAssets } from '../lib/siteAssets';
 
-const { data: featuredProducts } = await supabase
-  .from('products')
-  .select('*')
-  .eq('featured_home', true)
-  .limit(12);
+let featuredProducts: Array<Record<string, unknown>> = [];
+let testimonials: Array<Record<string, unknown>> = [];
 
-const { data: testimonials } = await supabase
-  .from('testimonials')
-  .select('id, name, quote, approved')
-  .eq('approved', true)
-  .limit(6);
+if (isSupabaseConfigured) {
+  const { data: featuredData } = await supabase
+    .from('products')
+    .select('*')
+    .eq('featured_home', true)
+    .eq('in_stock', true)
+    .order('featured_rank', { ascending: true, nullsFirst: false })
+    .order('updated_at', { ascending: false })
+    .limit(12);
+
+  const { data: testimonialData } = await supabase
+    .from('testimonials')
+    .select('id, name, quote, approved')
+    .eq('approved', true)
+    .limit(6);
+
+  featuredProducts = featuredData || [];
+  testimonials = testimonialData || [];
+}
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const heroImage = siteAssets.hero;
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
-const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.jpg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
+const logoImage = siteAssets.logo;
+const logoFallback = siteAssets.logoFallback;
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder || '/product-placeholder.svg').trim();
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.svg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
+const logoOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(logoFallback)};}`;
 ---
 
 <Layout
-  title="Achieve Peak Computing Performance Without the High Cost of New Tech"
-  description="Brand-new & certified refurbished electronics in Nairobi. Tested, warranted, and delivered in 2 hours."
+  title="Shop Laptops, Smartphones, and Printers in Nairobi"
+  description="Brand-new and refurbished electronics in Nairobi with live pricing, clear specs, and trusted pickup or delivery from SES ICT HUB."
 >
   <section class="hero reveal">
     <div class="container">
-      <div class="hero-banner">
-        <img src={heroImage} alt="Laptop, smartphone and earbuds lineup" class="hero-banner-image" loading="eager" onerror={imageOnError} />
+      <div class="hero-shell">
         <div class="hero-copy">
-          <h1>Achieve Peak Computing Performance Without the High Cost of New Tech.</h1>
-          <p class="hero-subtitle">Brand-new & certified refurbished electronics in Nairobi. Tested, warranted, and delivered in 2 hours.</p>
-          <div class="hero-actions">
-            <a class="pill-button cta-orange" href="/category/deals">Shop Deals</a>
-            <a class="pill-button" href="/category/all">Browse Full Catalog</a>
+          <div class="hero-brand">
+            <img src={logoImage} alt="SES ICT HUB logo" class="hero-logo" loading="eager" decoding="async" onerror={logoOnError} />
+            <div>
+              <p class="hero-eyebrow">SES ICT HUB</p>
+              <span class="hero-brand-note">Electronics for work, study, and business</span>
+            </div>
           </div>
-          <p class="hero-proof">✔ 2-hour Nairobi delivery | ✔ M-PESA | ✔ Cash on Delivery</p>
+
+          <div class="hero-chip-row" aria-label="Primary shopping categories">
+            {STOREFRONT_CATEGORIES.map((category) => (
+              <a href={`/category/${category.slug}`} class="hero-chip">{category.label}</a>
+            ))}
+          </div>
+
+          <h1>Shop laptops, smartphones, and printers with fast Nairobi support.</h1>
+          <p class="hero-subtitle">
+            Brand-new and refurbished devices with live pricing, clear specs, and trusted pickup or delivery
+            from our Moi Avenue store.
+          </p>
+
+          <div class="hero-actions">
+            <a class="pill-button cta-orange" href="/shop">Browse Shop</a>
+            <a
+              class="pill-button hero-secondary"
+              href="https://wa.me/254720480475?text=Hi%20SES%20ICT%20HUB%2C%20I%20need%20help%20choosing%20a%20device."
+              target="_blank"
+              rel="noreferrer"
+            >
+              Get a Quote on WhatsApp
+            </a>
+          </div>
+
+          <div class="hero-proof-grid" aria-label="Store trust highlights">
+            <article class="hero-proof-card">
+              <strong>2-hour Nairobi delivery</strong>
+              <span>Quick dispatch for urgent work, school, and business needs.</span>
+            </article>
+            <article class="hero-proof-card">
+              <strong>M-PESA and pay on delivery</strong>
+              <span>Flexible checkout options for local orders and store pickup.</span>
+            </article>
+            <article class="hero-proof-card">
+              <strong>Live catalog pricing</strong>
+              <span>Browse the same stock, pricing, and categories that are in the database now.</span>
+            </article>
+          </div>
         </div>
+
+        <div class="hero-visual">
+          <div class="hero-visual-frame">
+            <img
+              src={heroImage}
+              alt="SES ICT HUB hero lineup showing desktop, laptop, smartphone, and headphones"
+              class="hero-banner-image"
+              loading="eager"
+              onerror={imageOnError}
+            />
+            <div class="hero-floating-card top">
+              <span class="hero-floating-label">Fast support</span>
+              <strong>WhatsApp replies with real product help</strong>
+            </div>
+            <div class="hero-floating-card bottom">
+              <span class="hero-floating-label">Shop focus</span>
+              <strong>Laptops, smartphones, and printers only</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-search reveal">
+    <div class="container">
+      <div class="home-search-card">
+        <div>
+          <p class="home-search-eyebrow">Search the live catalog</p>
+          <h2>Find a model or brand faster</h2>
+          <p class="home-search-copy">Use quick search for product names and brands, then narrow down with category filters if you need more detail.</p>
+        </div>
+        <SearchBar variant="inline" placeholder="Search laptops, smartphones, printers, or brands..." />
       </div>
     </div>
   </section>
@@ -122,8 +209,8 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
   <section class="featured reveal">
     <div class="container">
       <div class="section-head">
-        <h2>Featured Deals</h2>
-        <a href="/category/all" class="view-all">View All Products</a>
+        <h2>Featured Products</h2>
+        <a href="/shop" class="view-all">View All Products</a>
       </div>
       <div class="visual-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {featuredProducts && featuredProducts.length > 0 ? (
@@ -141,15 +228,15 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
       <div class="tier-grid">
         <article class="tier-card">
           <h3>Student Essentials</h3>
-          <p>Affordable laptops and desktops for assignments, browsing, and online classes.</p>
+          <p>Affordable laptops for assignments, browsing, and online classes.</p>
         </article>
         <article class="tier-card">
           <h3>Business Pro</h3>
-          <p>Reliable Core i5/i7 machines optimized for office productivity and multitasking.</p>
+          <p>Reliable laptops and printers optimized for office productivity and daily business tasks.</p>
         </article>
         <article class="tier-card">
-          <h3>Custom Accessories</h3>
-          <p>Expand your setup with printers, docking, storage, and performance peripherals.</p>
+          <h3>Mobile Essentials</h3>
+          <p>Browse smartphones and practical tech picks for everyday communication and on-the-go work.</p>
         </article>
       </div>
     </div>
@@ -176,7 +263,7 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
   <section class="final-cta reveal">
     <div class="container final-cta-inner">
       <h2>Ready to Upgrade Your Workspace?</h2>
-      <a class="pill-button cta-orange" href="/category/all">Shop All Deals</a>
+      <a class="pill-button cta-orange" href="/shop">Browse the Shop</a>
     </div>
   </section>
 </Layout>
@@ -204,57 +291,135 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
     padding-top: clamp(3rem, 7vw, 6rem);
   }
 
-  .hero-banner {
+  .hero-shell {
     position: relative;
-    min-height: clamp(24rem, 54vw, 35rem);
-    border-radius: 1.5rem;
-    border: 1px solid var(--border);
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 22px 50px rgb(15 23 42 / 0.16);
+    display: grid;
+    gap: 1.35rem;
+    align-items: stretch;
+    min-height: clamp(28rem, 56vw, 40rem);
+    border-radius: 2rem;
+    padding: clamp(1.1rem, 2.4vw, 1.5rem);
+    background:
+      radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.16), transparent 26%),
+      linear-gradient(135deg, #081222 0%, #10213d 48%, #153158 100%);
+    box-shadow: 0 28px 70px rgb(15 23 42 / 0.22);
     isolation: isolate;
+    overflow: hidden;
   }
 
-  .hero-banner-image {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center right;
-    z-index: -2;
-  }
-
-  .hero-banner::after {
+  .hero-shell::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.92) 36%, rgba(255, 255, 255, 0.58) 53%, rgba(255, 255, 255, 0.12) 74%, rgba(255, 255, 255, 0) 100%);
-    z-index: -1;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 28%),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.02) 0%, rgba(255, 255, 255, 0.04) 100%);
+    pointer-events: none;
+  }
+
+  @media (min-width: 1024px) {
+    .hero-shell {
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    }
   }
 
   .hero-copy {
-    width: min(58%, 42rem);
-    padding: clamp(1.5rem, 4vw, 3rem);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .hero-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+    width: fit-content;
+    margin-bottom: 1rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgb(125 211 252 / 0.18);
+    background: rgb(255 255 255 / 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  .hero-logo {
+    width: 3.7rem;
+    height: 3.7rem;
+    object-fit: contain;
+    padding: 0.35rem;
+    border-radius: 1rem;
+    background: rgb(255 255 255 / 0.98);
+    box-shadow: 0 14px 24px rgb(15 23 42 / 0.2);
+  }
+
+  .hero-eyebrow {
+    margin: 0 0 0.18rem;
+    color: #93c5fd;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .hero-brand-note {
+    color: rgb(226 232 240 / 0.82);
+    font-size: 0.9rem;
+  }
+
+  .hero-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-bottom: 1.05rem;
+  }
+
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgb(96 165 250 / 0.22);
+    background: rgb(29 78 216 / 0.16);
+    color: #dbeafe;
+    font-size: 0.84rem;
+    font-weight: 700;
   }
 
   .hero h1 {
-    font-size: clamp(2rem, 5vw, 3.4rem);
+    max-width: 11ch;
+    font-size: clamp(2.35rem, 6vw, 4.65rem);
+    line-height: 0.97;
     margin-bottom: 1rem;
+    color: #f8fafc;
   }
 
   .hero-subtitle {
-    color: var(--text-muted);
-    font-size: 1.05rem;
+    color: rgb(226 232 240 / 0.84);
+    font-size: 1.06rem;
     max-width: 52ch;
   }
 
   .hero-actions {
-    margin-top: 1.5rem;
+    margin-top: 1.6rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+  }
+
+  .hero-secondary {
+    color: #f8fafc;
+    border: 1px solid rgb(148 163 184 / 0.34);
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .hero-secondary:hover {
+    background: rgb(255 255 255 / 0.14);
+    transform: translateY(-2px);
   }
 
   .cta-orange {
@@ -269,22 +434,138 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
     transform: translateY(-2px);
   }
 
-  .hero-proof {
-    margin-top: 1.1rem;
-    display: inline-flex;
-    align-items: center;
-    padding: 0.6rem 0.95rem;
-    border-radius: 999px;
-    border: 1px solid rgb(147 197 253 / 0.65);
-    background: rgb(239 246 255 / 0.85);
-    color: #1e3a8a;
-    font-size: 0.93rem;
-    font-weight: 700;
-    backdrop-filter: blur(2px);
+  .hero-proof-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    margin-top: 1.55rem;
+  }
+
+  .hero-proof-card {
+    padding: 0.95rem 1rem;
+    border-radius: 1.1rem;
+    border: 1px solid rgb(148 163 184 / 0.22);
+    background: rgb(255 255 255 / 0.07);
+    backdrop-filter: blur(14px);
+  }
+
+  .hero-proof-card strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 0.95rem;
+  }
+
+  .hero-proof-card span {
+    display: block;
+    margin-top: 0.28rem;
+    color: rgb(203 213 225 / 0.84);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .hero-visual {
+    position: relative;
+    min-height: 21rem;
+  }
+
+  .hero-visual-frame {
+    position: relative;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    border-radius: 1.6rem;
+    border: 1px solid rgb(148 163 184 / 0.18);
+    background: #020817;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  .hero-banner-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .hero-visual-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgb(8 15 31 / 0.18), rgb(8 15 31 / 0.22)),
+      linear-gradient(135deg, rgb(8 15 31 / 0.08) 0%, rgb(8 15 31 / 0.42) 100%);
+    pointer-events: none;
+  }
+
+  .hero-floating-card {
+    position: absolute;
+    z-index: 1;
+    width: min(16rem, calc(100% - 2rem));
+    padding: 0.95rem 1rem;
+    border-radius: 1.1rem;
+    border: 1px solid rgb(125 211 252 / 0.18);
+    background: rgb(8 15 31 / 0.72);
+    box-shadow: 0 18px 30px rgb(15 23 42 / 0.18);
+    backdrop-filter: blur(14px);
+  }
+
+  .hero-floating-card.top {
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .hero-floating-card.bottom {
+    bottom: 1rem;
+    left: 1rem;
+  }
+
+  .hero-floating-label {
+    display: block;
+    margin-bottom: 0.28rem;
+    color: #7dd3fc;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .hero-floating-card strong {
+    color: #f8fafc;
+    font-size: 0.94rem;
+    line-height: 1.35;
   }
 
   .social-proof {
     background-color: #ffffff;
+  }
+
+  .home-search {
+    padding-top: 1.1rem;
+  }
+
+  .home-search-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1.15rem;
+    border: 1px solid var(--border);
+    border-radius: 1.4rem;
+    background: rgb(255 255 255 / 0.96);
+    box-shadow: 0 18px 40px rgb(15 23 42 / 0.07);
+  }
+
+  .home-search-eyebrow {
+    margin: 0 0 0.45rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  .home-search-copy {
+    margin: 0.45rem 0 0;
+    max-width: 56ch;
+    color: var(--text-muted);
+    line-height: 1.65;
   }
 
   .testimonial-grid {
@@ -437,6 +718,15 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
   }
 
   @media (min-width: 768px) {
+    .home-search-card {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 36rem);
+      align-items: center;
+    }
+
+    .hero-proof-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .testimonial-grid,
     .benefit-grid,
     .tier-grid {
@@ -453,33 +743,33 @@ const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;t
   }
 
   @media (min-width: 1024px) {
-    .hero-copy {
-      width: min(55%, 40rem);
-    }
-
     .lg\:grid-cols-4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 767px) {
-    .hero-banner {
-      min-height: 32rem;
-      align-items: flex-end;
-    }
-
-    .hero-banner::after {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.7) 46%, rgba(255, 255, 255, 0.96) 65%, rgba(255, 255, 255, 0.98) 100%);
-    }
-
     .hero-copy {
       width: 100%;
-      padding: 1.25rem;
+      padding: 0.4rem;
     }
 
-    .hero-proof {
-      border-radius: 0.75rem;
-      display: block;
+    .hero h1 {
+      max-width: 14ch;
+    }
+
+    .hero-floating-card {
+      width: calc(100% - 1.5rem);
+    }
+
+    .hero-floating-card.top {
+      top: 0.75rem;
+      right: 0.75rem;
+    }
+
+    .hero-floating-card.bottom {
+      bottom: 0.75rem;
+      left: 0.75rem;
     }
   }
 </style>

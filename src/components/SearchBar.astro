@@ -1,32 +1,51 @@
 ---
+interface Props {
+  variant?: 'floating' | 'inline';
+  placeholder?: string;
+}
+
+const {
+  variant = 'floating',
+  placeholder = 'Search for laptops, printers, or brands...'
+} = Astro.props;
 ---
-<div class="search-container">
+
+<div class={`search-container ${variant}`} data-search-root>
   <div class="search-box">
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input 
-      type="text" 
-      id="predictive-search" 
-      placeholder="Search for laptops, printers, or brands..." 
+    <input
+      type="text"
+      class="search-input"
+      data-search-input
+      placeholder={placeholder}
       aria-label="Search products"
       autocomplete="off"
     />
   </div>
-  <div id="search-suggestions" class="search-suggestions hidden"></div>
+  <div class="search-suggestions hidden" data-search-suggestions></div>
 </div>
 
 <style>
   .search-container {
     max-width: 600px;
-    margin: -30px auto var(--space-xl);
     position: relative;
     z-index: 80;
+  }
+
+  .search-container.floating {
+    margin: -30px auto var(--space-xl);
     padding: 0 var(--space-md);
+  }
+
+  .search-container.inline {
+    margin: 0;
+    max-width: 100%;
   }
 
   .search-box {
     background-color: var(--white);
     border-radius: var(--radius-full);
-    padding: 0.75rem 1.5rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -34,14 +53,21 @@
     border: 1px solid var(--border);
   }
 
-  .search-icon {
-    color: var(--text-muted);
+  .search-container.inline .search-box {
+    box-shadow: none;
+    background: rgb(248 250 252 / 0.96);
   }
 
-  input {
+  .search-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .search-input {
     border: none;
     background: none;
     flex: 1;
+    min-width: 0;
     font-size: 1rem;
     color: var(--text-main);
     outline: none;
@@ -50,15 +76,72 @@
   .search-suggestions {
     position: absolute;
     top: calc(100% + 10px);
-    left: var(--space-md);
-    right: var(--space-md);
+    left: 0;
+    right: 0;
     background-color: var(--white);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 18px 40px rgb(15 23 42 / 0.12);
     border: 1px solid var(--border);
     overflow: hidden;
     max-height: 400px;
     overflow-y: auto;
+  }
+
+  .search-container.floating .search-suggestions {
+    left: var(--space-md);
+    right: var(--space-md);
+  }
+
+  .suggestion-section {
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .suggestion-section:first-child {
+    border-top: none;
+  }
+
+  .section-title {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    padding: 0.25rem 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .suggestion-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    transition: background-color 0.2s ease;
+  }
+
+  .suggestion-item:hover {
+    background-color: #f8fafc;
+  }
+
+  .prod-title,
+  .category-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .prod-price,
+  .category-note {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+
+  .prod-price {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .no-results {
+    color: var(--text-muted);
+    cursor: default;
   }
 
   .hidden {
@@ -66,76 +149,196 @@
   }
 
   @media (max-width: 640px) {
-    .search-container {
+    .search-container.floating {
       margin-top: -15px;
+    }
+
+    .search-box {
+      padding-inline: 1rem;
     }
   }
 </style>
 
 <script>
-  const searchInput = document.getElementById('predictive-search') as HTMLInputElement;
-  const suggestionsBox = document.getElementById('search-suggestions');
-  let debounceTimer: ReturnType<typeof setTimeout>;
+  const searchRoots = Array.from(document.querySelectorAll('[data-search-root]'));
 
-  searchInput?.addEventListener('input', (e) => {
-    const query = (e.target as HTMLInputElement).value;
-    clearTimeout(debounceTimer);
-    
-    if (query.length < 2) {
-      if (suggestionsBox) suggestionsBox.classList.add('hidden');
+  function toCategoryLabel(value: string) {
+    return value
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  type SearchProduct = {
+    title: string;
+    slug: string;
+    price_kes: number;
+  };
+
+  type SearchPayload = {
+    products: SearchProduct[];
+    categories: string[];
+  };
+
+  function normalizePayload(data: unknown): SearchPayload {
+    const record = data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
+    const products = Array.isArray(record.products)
+      ? record.products
+          .filter((prod: any) => prod && typeof prod.slug === 'string' && typeof prod.title === 'string')
+          .map((prod: any) => ({
+            title: String(prod.title),
+            slug: String(prod.slug),
+            price_kes: Number(prod.price_kes || 0)
+          }))
+      : [];
+
+    const categories = Array.isArray(record.categories)
+      ? record.categories.filter((cat: unknown) => typeof cat === 'string').map((cat: string) => cat.trim()).filter(Boolean)
+      : [];
+
+    return { products, categories };
+  }
+
+  function makeSection(title: string) {
+    const section = document.createElement('div');
+    section.className = 'suggestion-section';
+
+    const sectionTitle = document.createElement('div');
+    sectionTitle.className = 'section-title';
+    sectionTitle.textContent = title;
+    section.appendChild(sectionTitle);
+
+    return section;
+  }
+
+  function makeCategoryItem(category: string) {
+    const item = document.createElement('a');
+    item.className = 'suggestion-item category-item';
+    item.href = `/category/${encodeURIComponent(category)}`;
+
+    const title = document.createElement('div');
+    title.className = 'category-title';
+    title.textContent = toCategoryLabel(category);
+
+    const note = document.createElement('div');
+    note.className = 'category-note';
+    note.textContent = 'Browse this category';
+
+    item.append(title, note);
+    return item;
+  }
+
+  function makeProductItem(product: SearchProduct) {
+    const item = document.createElement('a');
+    item.className = 'suggestion-item product-item';
+    item.href = `/product/${encodeURIComponent(product.slug)}`;
+
+    const title = document.createElement('div');
+    title.className = 'prod-title';
+    title.textContent = product.title;
+
+    const price = document.createElement('div');
+    price.className = 'prod-price';
+    const safePrice = Number.isFinite(Number(product.price_kes)) ? Number(product.price_kes) : 0;
+    price.textContent = `KSh ${safePrice.toLocaleString('en-KE')}`;
+
+    item.append(title, price);
+    return item;
+  }
+
+  searchRoots.forEach((root) => {
+    if (!(root instanceof HTMLElement) || root.dataset.searchBound === '1') {
       return;
     }
 
-    debounceTimer = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`);
-        if (!response.ok) return;
-        
-        const data = await response.json();
-        renderSuggestions(data);
-      } catch (err) {
-        console.error('Search error:', err);
-      }
-    }, 300);
-  });
+    root.dataset.searchBound = '1';
 
-  function renderSuggestions(data: any) {
-    if (!suggestionsBox) return;
-    
-    if (data.products.length === 0 && data.categories.length === 0) {
-      suggestionsBox.innerHTML = '<div class="suggestion-item no-results">No matches found</div>';
-    } else {
-      let html = '';
-      
-      if (data.categories.length > 0) {
-        html += '<div class="suggestion-section"><div class="section-title">Categories</div>';
-        data.categories.forEach((cat: string) => {
-          html += `<a href="/category/${cat}" class="suggestion-item category-item">${cat}</a>`;
-        });
-        html += '</div>';
-      }
+    const searchInput = root.querySelector('[data-search-input]') as HTMLInputElement | null;
+    const suggestionsBox = root.querySelector('[data-search-suggestions]') as HTMLElement | null;
+    let debounceTimer: number | undefined;
 
-      if (data.products.length > 0) {
-        html += '<div class="suggestion-section"><div class="section-title">Products</div>';
-        data.products.forEach((prod: any) => {
-          html += `<a href="/product/${prod.slug}" class="suggestion-item product-item">
-            <div class="prod-title">${prod.title}</div>
-            <div class="prod-price">KSh ${prod.price_kes.toLocaleString()}</div>
-          </a>`;
-        });
-        html += '</div>';
-      }
-      
-      suggestionsBox.innerHTML = html;
+    function clearSuggestions() {
+      suggestionsBox?.replaceChildren();
     }
-    
-    suggestionsBox.classList.remove('hidden');
-  }
 
-  // Close suggestions when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!searchInput?.contains(e.target as Node) && !suggestionsBox?.contains(e.target as Node)) {
+    function hideSuggestions() {
       suggestionsBox?.classList.add('hidden');
     }
+
+    function renderSuggestions(data: unknown) {
+      if (!suggestionsBox) {
+        return;
+      }
+
+      const { products, categories } = normalizePayload(data);
+      clearSuggestions();
+
+      if (products.length === 0 && categories.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'suggestion-item no-results';
+        emptyState.textContent = 'No matches found';
+
+        const browseAll = document.createElement('a');
+        browseAll.className = 'suggestion-item';
+        browseAll.href = '/shop';
+        browseAll.textContent = 'Browse all products';
+
+        suggestionsBox.append(emptyState, browseAll);
+        suggestionsBox.classList.remove('hidden');
+        return;
+      }
+
+      if (categories.length > 0) {
+        const categorySection = makeSection('Categories');
+        categories.forEach((category) => categorySection.appendChild(makeCategoryItem(category)));
+        suggestionsBox.appendChild(categorySection);
+      }
+
+      if (products.length > 0) {
+        const productSection = makeSection('Products');
+        products.forEach((product) => productSection.appendChild(makeProductItem(product)));
+        suggestionsBox.appendChild(productSection);
+      }
+
+      suggestionsBox.classList.remove('hidden');
+    }
+
+    searchInput?.addEventListener('input', (event) => {
+      const query = (event.target as HTMLInputElement).value;
+      clearTimeout(debounceTimer);
+
+      if (query.length < 2) {
+        hideSuggestions();
+        return;
+      }
+
+      debounceTimer = window.setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`);
+          if (!response.ok) {
+            hideSuggestions();
+            return;
+          }
+
+          const data = await response.json().catch(() => ({}));
+          renderSuggestions(data);
+        } catch {
+          hideSuggestions();
+        }
+      }, 300);
+    });
+
+    searchInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        hideSuggestions();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!root.contains(event.target as Node)) {
+        hideSuggestions();
+      }
+    });
   });
 </script>

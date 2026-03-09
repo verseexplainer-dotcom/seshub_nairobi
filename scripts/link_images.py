@@ -13,11 +13,15 @@ Workflow:
 Usage:
   python3 scripts/link_images.py              # live run – writes to DB
   python3 scripts/link_images.py --dry-run    # preview only – no writes
+  python3 scripts/link_images.py --min-confidence 0.80
+  python3 scripts/link_images.py --overrides-file scripts/image_overrides.json
+  python3 scripts/link_images.py --allow-low-confidence
 """
 
 import os
 import sys
 import re
+import json
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -29,6 +33,16 @@ KEY  = os.getenv("SUPABASE_SERVICE_ROLE_KEY")   # service-role for writes
 BUCKET = "product-images"
 
 DRY_RUN = "--dry-run" in sys.argv
+ALLOW_LOW_CONFIDENCE = "--allow-low-confidence" in sys.argv
+
+def parse_arg_value(flag: str, default: str) -> str:
+    for i, arg in enumerate(sys.argv):
+        if arg == flag and i + 1 < len(sys.argv):
+            return sys.argv[i + 1].strip()
+    return default
+
+OVERRIDES_FILE = parse_arg_value("--overrides-file", "scripts/image_overrides.json")
+MIN_CONFIDENCE = float(os.getenv("IMAGE_LINK_MIN_CONFIDENCE", parse_arg_value("--min-confidence", "0.72")))
 
 def parse_category_filter(argv: list[str]) -> set[str]:
     """
@@ -47,10 +61,42 @@ def parse_category_filter(argv: list[str]) -> set[str]:
 CATEGORY_FILTER = parse_category_filter(sys.argv)
 
 if not URL or not KEY:
-    print("❌  Set PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env")
+    print("❌  Set PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local")
     sys.exit(1)
 
 supabase: Client = create_client(URL, KEY)
+
+def load_overrides(path: str) -> dict[str, list[str]]:
+    """
+    Load manual image overrides from JSON object:
+      {
+        "product-slug": ["filename-1.webp", "filename-2.webp"]
+      }
+    """
+    if not path:
+        return {}
+
+    if not os.path.exists(path):
+        return {}
+
+    try:
+        raw = json.loads(open(path, "r", encoding="utf-8").read())
+    except Exception as exc:
+        print(f"⚠️  Could not parse overrides file '{path}': {exc}")
+        return {}
+
+    if not isinstance(raw, dict):
+        print(f"⚠️  Overrides file '{path}' must contain a JSON object.")
+        return {}
+
+    cleaned: dict[str, list[str]] = {}
+    for slug, files in raw.items():
+        if not isinstance(slug, str) or not isinstance(files, list):
+            continue
+        valid_files = [f.strip() for f in files if isinstance(f, str) and f.strip()]
+        if valid_files:
+            cleaned[slug.strip()] = valid_files
+    return cleaned
 
 
 # ── Helpers ─────────────────────────────────────────────────────
@@ -129,7 +175,7 @@ def extract_model_key(text: str) -> str:
     return norm
 
 
-def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenames: list[str]) -> list[str]:
+def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenames: list[str]) -> tuple[list[str], float, str]:
     """
     Match product to images using multiple strategies:
     
@@ -146,7 +192,7 @@ def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenam
             matches.append(filenames[i])
 
     if matches:
-        return sorted(set(matches))
+        return sorted(set(matches)), 0.92, "slug_containment"
 
     # Strategy 2: Match on significant shared segments
     # Split slug into segments and find images sharing the longest prefix
@@ -197,9 +243,12 @@ def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenam
                 best_matches.append(filenames[i])
 
     if best_matches:
-        return sorted(set(best_matches))
+        # Normalize confidence from prefix score.
+        # score=4 ~ 0.72, score>=6 ~ 0.88
+        confidence = min(0.88, 0.4 + (best_score * 0.08))
+        return sorted(set(best_matches)), confidence, "prefix_match"
 
-    return []
+    return [], 0.0, "no_match"
 
 
 # ── Main ────────────────────────────────────────────────────────
@@ -208,6 +257,15 @@ def link_images():
         print("🔍  DRY RUN – no database writes will be made.\n")
     if CATEGORY_FILTER:
         print(f"🎯  Category filter: {sorted(CATEGORY_FILTER)}\n")
+    print(f"🎚️  Minimum confidence: {MIN_CONFIDENCE:.2f}")
+    if ALLOW_LOW_CONFIDENCE:
+        print("⚠️  Low confidence updates enabled via --allow-low-confidence")
+    overrides = load_overrides(OVERRIDES_FILE)
+    if overrides:
+        print(f"🛠️  Loaded {len(overrides)} manual overrides from {OVERRIDES_FILE}")
+    else:
+        print(f"🛠️  No manual overrides loaded ({OVERRIDES_FILE})")
+    print("")
 
     # 0. Check buckets
     print("🪣  Checking available buckets...")
@@ -255,37 +313,66 @@ def link_images():
     print(f"   Found {len(products)} products.\n")
 
     # 3. Match & update
-    updated   = 0
-    skipped   = 0
-    no_match  = []
+    updated = 0
+    skipped = 0
+    no_match = []
+    low_confidence = []
+    overridden = 0
 
     for p in products:
         slug  = p["slug"]
         title = p.get("title", "")
         pid   = p["id"]
 
-        matched = match_images_smart(slug, title, filenames, norm_filenames)
+        override_files = overrides.get(slug) or overrides.get(str(slug).strip().lower())
+        strategy = "manual_override" if override_files else "no_match"
+        confidence = 1.0 if override_files else 0.0
+        if override_files:
+            matched = [fn for fn in override_files if fn in filenames]
+            missing_override_files = [fn for fn in override_files if fn not in filenames]
+            if missing_override_files:
+                print(f"  ⚠️  {slug[:80]} override references missing files: {missing_override_files}")
+            if matched:
+                overridden += 1
+            else:
+                matched = []
+        else:
+            matched, confidence, strategy = match_images_smart(slug, title, filenames, norm_filenames)
 
         if not matched:
             no_match.append(slug)
             skipped += 1
             continue
 
+        if confidence < MIN_CONFIDENCE and not ALLOW_LOW_CONFIDENCE:
+            low_confidence.append((slug, confidence, strategy, matched))
+            skipped += 1
+            continue
+
         urls = [public_url(fn) for fn in matched]
 
-        print(f"  ✅  {slug[:80]}")
+        print(f"  ✅  {slug[:80]}  ({strategy}, confidence={confidence:.2f})")
         for fn in matched:
             print(f"       ↳ {fn}")
 
         if not DRY_RUN:
-            supabase.table("products").update({"images": urls}).eq("id", pid).execute()
+            update_payload = {"images": urls}
+            if strategy == "manual_override":
+                update_payload["image_overrides"] = matched
+            supabase.table("products").update(update_payload).eq("id", pid).execute()
 
         updated += 1
 
     # 4. Summary
     print("\n" + "─" * 50)
     print(f"✅  Matched & {'would update' if DRY_RUN else 'updated'}: {updated}")
+    print(f"🛠️   Updated via manual overrides:   {overridden}")
     print(f"⏭️   Skipped (no matching images):  {skipped}")
+
+    if low_confidence:
+        print(f"\n⚠️  Skipped low-confidence matches ({len(low_confidence)}):")
+        for slug, conf, strategy, matched in low_confidence:
+            print(f"     • {slug[:80]} ({strategy}, confidence={conf:.2f}) -> {matched[:3]}")
 
     if no_match:
         print(f"\n⚠️  Products with NO images found ({len(no_match)}):")

@@ -1,114 +1,113 @@
-# SES ICT HUB — E-commerce Storefront
+# SES ICT HUB Storefront
 
-A production-ready, high-performance storefront for SES ICT HUB built with Astro, Supabase, and Cloudflare Pages.
+Astro + Supabase storefront for SES ICT HUB, deployed only as a **Cloudflare Worker**.
 
-## 🚀 Tech Stack
-- **Framework**: [Astro](https://astro.build/) (`output: static`)
-- **Database**: [Supabase](https://supabase.com/) (Postgres + RLS)
-- **Hosting**: [Cloudflare Pages](https://pages.cloudflare.com/)
-- **Checkout**: WhatsApp hybrid (order intent saved to DB → WhatsApp opened)
-- **Styling**: Vanilla CSS (mobile-first, electric blue theme)
+## Stack
+- Astro (`output: server`) with `@astrojs/cloudflare`
+- Supabase Postgres + Storage (RLS enabled)
+- Cloudflare Workers + Wrangler
+- TypeScript + vanilla CSS
 
----
+## Project Layout
+- `src/pages` storefront pages and API routes (`/api/*`)
+- `src/components` UI components
+- `src/lib` shared clients/utilities
+- `supabase/*.sql` schema + migration scripts
+- `wrangler.jsonc` Worker runtime config
+- `scripts/deploy-worker.sh` locked deploy script
 
-## � Project Structure
+## Requirements
+- Node.js 20+
+- npm 10+
+- Supabase project with Storage buckets:
+  - `product-images` (public)
+  - `site-assets` (public)
 
-```
-├── src/
-│   ├── components/       # AnnouncementStrip, Header, Hero, Footer, ProductCard, etc.
-│   ├── layouts/          # Layout.astro
-│   ├── lib/supabase.ts   # Supabase client (PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY)
-│   ├── pages/
-│   │   ├── index.astro           # Homepage (featured, refurbished, testimonials)
-│   │   ├── category/[slug].astro # Category pages
-│   │   ├── product/[slug].astro  # Product detail pages
-│   │   ├── cart.astro            # Shopping cart
-│   │   ├── contact.astro
-│   │   ├── faq.astro
-│   │   ├── track.astro
-│   │   └── sitemap.xml.ts
-│   └── styles/global.css
-├── functions/api/        # Cloudflare Pages Functions (checkout, events, search)
-├── supabase/schema.sql   # Full DB schema (v2 — numeric types, RLS policies)
-└── public/robots.txt
-```
+## Supabase Setup
+Canonical path (recommended):
+1. Run `supabase/schema.sql` in Supabase SQL Editor.
+2. Run `supabase/schema_sync_2026_03_08.sql`.
+3. Run `supabase/schema_verify_2026_03_09.sql` (must return `OK`).
+4. Import your products CSV into `public.products`.
+5. Optional: run `supabase/seed_testimonials.sql`.
 
----
+Existing/legacy projects:
+1. Run `supabase/alter_existing_schema.sql`.
+2. Run `supabase/schema_sync_2026_03_08.sql`.
+3. Run `supabase/schema_verify_2026_03_09.sql` (must return `OK`).
+4. Optional: run `supabase/seed_testimonials.sql`.
 
-## 🛠️ Setup
+Compatibility note:
+- `supabase/production_schema.sql` is still supported, but `schema.sql` is the canonical source.
+- Public (`anon/authenticated`) direct inserts are intentionally blocked on `order_intents`, `events`, and `newsletter_signups`.
+  All writes should go through `src/pages/api/*` routes using `SUPABASE_SERVICE_ROLE_KEY`.
 
-### 1. Supabase
-1. Create a new project at [app.supabase.com](https://app.supabase.com).
-2. Open **SQL Editor** → paste and run `supabase/schema.sql`.
-3. Under **Storage** → create bucket `product-images` (set to **Public**).
+## Environment Variables
+Create `.env.local`:
 
-### 2. Import Products
-Import `products_for_supabase_import_v4.csv` into the `products` table via Table Editor → Import Data. The CSV has **239 rows** and imports unchanged — all column names match the schema exactly.
-
-**Category values** (capitalized in DB): `Laptops`, `Printers`, `Smartphones`, `Accessories`, `Desktops`
-**Conditions**: `brand_new`, `refurbished`, `unknown`
-**Refurb grades**: `grade_a`, `grade_b`, `grade_c`
-
-### 3. Environment Variables
-Create a `.env` file in the project root:
 ```env
-PUBLIC_SUPABASE_URL=your_supabase_url
-PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+PUBLIC_FALLBACK_IMAGE_URL=https://<project>.supabase.co/storage/v1/object/public/site-assets/product-placeholder.webp
 ```
 
-### 4. Local Development
+Set Cloudflare deploy token in shell/CI (do not commit):
+
+```bash
+export CLOUDFLARE_API_TOKEN='<your-token>'
+```
+
+Locked deploy account id is set in `wrangler.jsonc`:
+- `e1d8076a3dc603837814ca828736561f`
+
+## Local Development
 ```bash
 npm install
 npm run dev
 ```
 
-### 5. Cloudflare Pages Deployment
-1. Connect your GitHub repo to Cloudflare Pages.
-2. **Build command**: `npm run build`
-3. **Output directory**: `dist`
-4. Add `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` in Settings → Environment Variables.
+## Quality Gates
+```bash
+npm run lint
+npm run test
+npm run build
+npm run validate
+```
 
----
+## Catalog Data Quality Tools
+```bash
+# Verify live schema parity and RLS hardening
+# (Run in Supabase SQL Editor)
+# supabase/schema_verify_2026_03_09.sql
 
-## 🗄️ Database Schema (v2)
+# Audit duplicates / suspicious specs (live DB)
+python3 scripts/audit_catalog.py
 
-| Table | Purpose |
-|---|---|
-| `products` | Product catalogue (numeric types for CSV decimal compatibility) |
-| `order_intents` | WhatsApp hybrid checkout (customer_name, cart, phone, status) |
-| `events` | Analytics (page_view, add_to_cart, whatsapp_click, etc.) |
-| `testimonials` | Customer reviews (name, persona, quote, rating, approved) |
-| `newsletter_signups` | Email collection with consent |
+# Audit built snapshot instead of DB
+python3 scripts/audit_catalog.py --source dist
 
-All tables have RLS enabled. Products and approved testimonials are publicly readable; order_intents, events, and newsletter_signups are insert-only for anon/authenticated roles.
+# Link product images with confidence threshold + optional manual overrides
+python3 scripts/link_images.py --dry-run --min-confidence 0.80 --overrides-file scripts/image_overrides.json
+```
 
----
+Use `scripts/image_overrides.example.json` as a template for manual image mapping overrides.
 
-## 🛒 Category Routes
+## Deploy (Cloudflare Worker Only)
+```bash
+npm run deploy
+```
 
-| URL | DB Query |
-|---|---|
-| `/category/laptops` | `category = 'Laptops'` |
-| `/category/printers` | `category = 'Printers'` |
-| `/category/smartphones` | `category = 'Smartphones'` |
-| `/category/accessories` | `category = 'Accessories'` |
-| `/category/deals` | `compare_at_kes IS NOT NULL` |
-| `/category/all` | All products |
+`npm run deploy` uses `scripts/deploy-worker.sh`, which enforces:
+- `CLOUDFLARE_API_TOKEN` is set
+- `wrangler.jsonc` account id matches `e1d8076a3dc603837814ca828736561f`
 
----
+## API Endpoints
+- `GET /api/search/suggest?q=...`
+- `POST /api/checkout/whatsapp`
+- `POST /api/events`
+- `POST /api/newsletter`
 
-## 🛡️ Rollback Plan
-1. Revert to the previous commit in Git.
-2. Cloudflare Pages auto-redeploys the previous state.
-3. For DB issues, use Supabase point-in-time recovery or manual backup.
-
----
-
-## ✅ Done Criteria
-- [x] Homepage loads featured products, refurbished deals, and approved testimonials
-- [x] All category pages functional (including `/category/smartphones`)
-- [x] Product detail pages render from Supabase data
-- [x] WhatsApp checkout saves order intents and opens WhatsApp
-- [x] Responsive, mobile-first design with pill buttons and electric blue theme
-- [x] SEO: sitemap, robots.txt, OG tags
-- [x] CSV imports into `products` table without any column renaming
+## Notes
+- Supabase Edge Functions are **not required**.
+- Astro API routes under `src/pages/api/*` are the only API runtime path.

@@ -1,277 +1,526 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
+import { getProductPresentation, normalizeText } from '../lib/productPresentation';
 
 interface Props {
-  product: any;
+  product: Record<string, any>;
 }
 
 const { product } = Astro.props;
-const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.price_kes;
-const discountPercent = hasDiscount 
-  ? Math.round(((product.compare_at_kes - product.price_kes) / product.compare_at_kes) * 100) 
-  : 0;
-const isLaptop = String(product.category || '').toLowerCase().includes('laptop');
-const primaryImage = product.images?.[0];
-
-const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co').replace(/\/$/, '');
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
-const finalFallbackImage = '/product-placeholder.jpg';
+const finalFallbackImage = '/product-placeholder.svg';
+const fallbackImage = (
+  import.meta.env.PUBLIC_FALLBACK_IMAGE_URL ||
+  siteAssets.productPlaceholder ||
+  finalFallbackImage
+).trim();
 const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(finalFallbackImage)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
-const getImageUrl = (img: string | undefined) => {
-  if (!img) return fallbackImage;
-  if (img.startsWith('http')) return img;
-  return `${supabaseUrl}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
-};
+const presentation = getProductPresentation(product, {
+  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+  fallbackImage
+});
+const whatsAppUrl = `https://wa.me/254720480475?text=${encodeURIComponent(
+  `Hi SES ICT HUB, I need help with: ${presentation.rawTitle} - https://sesicthub.co.ke/product/${product.slug}`
+)}`;
+const hasSpecs = presentation.summarySpecs.length > 0;
+const fallbackSpecsCopy = normalizeText(product.short_specs) || 'More product details are available on the product page.';
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+const specMarkup = hasSpecs
+  ? presentation.summarySpecs
+      .map(
+        (spec) => `
+          <div class="spec-item">
+            <span class="spec-label">${escapeHtml(spec.label)}</span>
+            <strong class="spec-value">${escapeHtml(spec.value)}</strong>
+          </div>
+        `
+      )
+      .join('')
+  : `<p class="product-spec-fallback">${escapeHtml(fallbackSpecsCopy)}</p>`;
+const detailMarkup = [
+  presentation.grade ? `<span class="detail-chip grade-chip">${escapeHtml(presentation.grade.label)}</span>` : '',
+  presentation.warranty ? `<span class="detail-chip">${escapeHtml(presentation.warranty)}</span>` : '',
+  presentation.stock.isLowStock && presentation.stock.stockQty
+    ? `<span class="detail-chip detail-chip-warn">Only ${escapeHtml(Math.round(presentation.stock.stockQty))} left</span>`
+    : ''
+]
+  .filter(Boolean)
+  .join('');
+const priceSupportText =
+  presentation.pricing.hasDiscount && presentation.pricing.savingsText
+    ? `You save ${presentation.pricing.savingsText}`
+    : presentation.stock.detail;
+const viewLabel = `View ${presentation.displayTitle}`;
+const addToCartLabel = `Add ${presentation.displayTitle} to cart`;
+const inquireLabel = `Inquire about ${presentation.displayTitle} on WhatsApp`;
+const actionMarkup = presentation.stock.isInStock
+  ? `
+    <button
+      class="pill-button primary add-to-cart-btn"
+      type="button"
+      data-id="${escapeHtml(product.id)}"
+      data-title="${escapeHtml(presentation.rawTitle)}"
+      data-price="${escapeHtml(presentation.pricing.price)}"
+      data-slug="${escapeHtml(product.slug)}"
+      data-image="${escapeHtml(presentation.primaryImageUrl)}"
+      aria-label="${escapeHtml(addToCartLabel)}"
+    >
+      Add to Cart
+    </button>
+  `
+  : `
+    <a
+      href="${escapeHtml(whatsAppUrl)}"
+      class="pill-button whatsapp-btn"
+      target="_blank"
+      rel="noreferrer"
+      aria-label="${escapeHtml(inquireLabel)}"
+    >
+      WhatsApp Inquiry
+    </a>
+  `;
+const compareMarkup = presentation.pricing.compareAtText
+  ? `<span class="compare-price">${escapeHtml(presentation.pricing.compareAtText)}</span>`
+  : '';
+const dealBadgeMarkup = presentation.pricing.hasDiscount && presentation.pricing.savingsText
+  ? `
+    <div class="deal-badge-row">
+      <span class="discount-chip">Save ${escapeHtml(presentation.pricing.savingsText)}</span>
+      ${presentation.pricing.percent > 0 ? `<span class="percent-chip">-${escapeHtml(String(presentation.pricing.percent))}%</span>` : ''}
+    </div>
+  `
+  : '';
+const specSectionMarkup = hasSpecs
+  ? `<div class="product-spec-list" aria-label="Key specs">${specMarkup}</div>`
+  : specMarkup;
+const cardHtml = `
+  <article class="product-card">
+    <a href="${escapeHtml(presentation.productPath)}" class="product-media" aria-label="${escapeHtml(viewLabel)}">
+      <img
+        src="${escapeHtml(presentation.primaryImageUrl)}"
+        alt="${escapeHtml(presentation.displayTitle)}"
+        loading="lazy"
+        class="product-image"
+        onerror="${escapeHtml(imageOnError)}"
+      />
+      <div class="product-badge-row">
+        <span class="status-badge condition ${escapeHtml(presentation.condition.tone)}">${escapeHtml(presentation.condition.label)}</span>
+        <span class="status-badge stock ${escapeHtml(presentation.stock.tone)}">${escapeHtml(presentation.stock.badge)}</span>
+      </div>
+      ${dealBadgeMarkup}
+    </a>
+
+    <div class="product-body">
+      <p class="product-eyebrow">${escapeHtml(presentation.eyebrow)}</p>
+      <h3 class="product-title">
+        <a href="${escapeHtml(presentation.productPath)}">${escapeHtml(presentation.displayTitle)}</a>
+      </h3>
+      ${specSectionMarkup}
+      <div class="product-detail-row">${detailMarkup}</div>
+      <div class="product-price-block">
+        <div class="product-price-row">
+          <span class="price-kes">${escapeHtml(presentation.pricing.priceText)}</span>
+          ${compareMarkup}
+        </div>
+        <p class="savings-note ${escapeHtml(presentation.pricing.hasDiscount ? 'discount' : 'neutral')}">${escapeHtml(priceSupportText)}</p>
+      </div>
+      <p class="stock-line ${escapeHtml(presentation.stock.tone)}">
+        <span class="stock-dot"></span>
+        ${escapeHtml(presentation.stock.detail)}
+      </p>
+      <div class="product-actions">${actionMarkup}</div>
+    </div>
+  </article>
+`;
 ---
 
-<article class="product-card">
-  <div class={`product-image-wrapper ${isLaptop ? 'laptop-frame' : ''}`}>
-    <a href={`/product/${product.slug}`}>
-      <img src={getImageUrl(primaryImage)} alt={product.title} loading="lazy" class="product-image" onerror={imageOnError} />
-    </a>
-    {hasDiscount && <span class="badge sale">-{discountPercent}% OFF</span>}
-    <span class={`badge ${product.in_stock ? 'stock' : 'out-of-stock'}`}>
-      {product.in_stock ? 'In Stock' : 'Out of Stock'}
-    </span>
-    {product.condition === 'refurbished' && <span class="badge condition">Refurbished</span>}
-  </div>
-
-  <div class="product-info">
-    <p class="product-category">{product.category}</p>
-    <h3 class="product-title">
-      <a href={`/product/${product.slug}`}>{product.title}</a>
-    </h3>
-    <p class="product-specs">{product.short_specs}</p>
-    
-    <div class="product-price-row">
-      <div class="prices">
-        <span class="price-kes">KSh {product.price_kes.toLocaleString()}</span>
-        {hasDiscount && <span class="compare-price">KSh {product.compare_at_kes.toLocaleString()}</span>}
-      </div>
-    </div>
-
-    <div class="product-actions">
-      <button 
-        class="pill-button primary add-to-cart-btn" 
-        data-id={product.id} 
-        data-title={product.title} 
-        data-price={product.price_kes}
-        data-slug={product.slug}
-        data-image={getImageUrl(primaryImage)}
-      >
-        Add to Cart
-      </button>
-      <a 
-        href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I need help with: ${product.title} — https://sesicthub.co.ke/product/${product.slug}`)}`} 
-        class="whatsapp-icon-btn" 
-        aria-label="Inquire on WhatsApp"
-        target="_blank"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.435 5.617 1.436h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-      </a>
-    </div>
-  </div>
-</article>
+<div class="product-card-shell" set:html={cardHtml}></div>
 
 <style>
   .product-card {
-    background-color: var(--white);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    overflow: hidden;
-    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
-  }
-
-  .product-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--primary);
-  }
-
-  .product-image-wrapper {
-    position: relative;
-    aspect-ratio: 1/1;
-    background-color: #f1f5f9;
-    overflow: hidden;
-  }
-
-  .product-image-wrapper > a {
-    width: 100%;
     height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(circle at top right, rgb(219 234 254 / 0.7), transparent 24%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.98));
+    box-shadow: 0 16px 36px rgb(15 23 42 / 0.06);
+    transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+  }
+
+  .product-card-shell {
+    display: contents;
+  }
+
+  .product-media {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.85rem;
-  }
-
-  .product-image-wrapper.laptop-frame {
-    aspect-ratio: 4/3;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    padding: 0.8rem;
+    background:
+      radial-gradient(circle at top, rgb(219 234 254 / 0.7), transparent 42%),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
   }
 
   .product-image {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    object-position: center;
-    transition: transform 0.5s ease;
+    transition: transform 0.35s ease;
   }
 
-  .product-card:hover .product-image {
-    transform: scale(1.05);
-  }
-
-  .badge {
+  .product-badge-row,
+  .deal-badge-row {
     position: absolute;
-    top: 10px;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
+    left: 0.85rem;
+    right: 0.85rem;
+    display: flex;
+    gap: 0.5rem;
+    pointer-events: none;
   }
 
-  .badge.sale {
-    left: 10px;
-    background-color: var(--accent);
+  .product-badge-row {
+    top: 0.85rem;
+  }
+
+  .deal-badge-row {
+    bottom: 0.85rem;
+  }
+
+  .status-badge,
+  .detail-chip,
+  .discount-chip,
+  .percent-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.9rem;
+    padding: 0.36rem 0.72rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .condition {
+    border: 1px solid rgb(203 213 225 / 0.82);
+    background: rgb(241 245 249 / 0.96);
+    color: #334155;
+  }
+
+  .condition.new {
+    border-color: rgb(147 197 253 / 0.72);
+    background: rgb(219 234 254 / 0.9);
+    color: #1d4ed8;
+  }
+
+  .condition.refurbished {
+    border-color: rgb(253 186 116 / 0.72);
+    background: rgb(255 247 237 / 0.96);
+    color: #c2410c;
+  }
+
+  .stock {
+    margin-left: auto;
+  }
+
+  .stock.in {
+    background: rgb(220 252 231 / 0.95);
+    color: #166534;
+  }
+
+  .stock.low {
+    background: rgb(254 249 195 / 0.96);
+    color: #854d0e;
+  }
+
+  .stock.out {
+    background: rgb(254 226 226 / 0.95);
+    color: #991b1b;
+  }
+
+  .discount-chip {
+    background: rgb(249 115 22 / 0.14);
+    color: var(--accent-hover);
+  }
+
+  .percent-chip {
+    margin-left: auto;
+    background: var(--primary);
     color: var(--white);
   }
 
-  .badge.stock {
-    right: 10px;
-    background-color: #DEF7EC;
-    color: #03543F;
-  }
-
-  .badge.out-of-stock {
-    right: 10px;
-    background-color: #FDE8E8;
-    color: #9B1C1C;
-  }
-
-  .badge.condition {
-    bottom: 10px;
-    top: auto;
-    left: 10px;
-    background-color: #E1EFFE;
-    color: #1E429F;
-  }
-
-  .product-info {
-    padding: var(--space-md);
-    flex: 1;
+  .product-body {
     display: flex;
+    flex: 1;
     flex-direction: column;
+    gap: 0.8rem;
+    padding: 1rem;
   }
 
-  .product-category {
-    font-size: 0.75rem;
+  .product-eyebrow {
+    margin: 0;
+    font-size: 0.74rem;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-muted);
-    font-weight: 600;
-    margin-bottom: 0.25rem;
   }
 
   .product-title {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    line-height: 1.4;
+    margin: 0;
+    min-height: 4.1em;
+    font-size: 1.05rem;
+    line-height: 1.36;
+    color: #0f172a;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
     overflow: hidden;
-    height: 2.8em;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    text-wrap: pretty;
   }
 
-  .product-specs {
-    font-size: 0.8125rem;
+  .product-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .product-spec-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .spec-item {
+    display: grid;
+    gap: 0.14rem;
+    padding: 0.6rem 0.68rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    border-radius: 0.9rem;
+    background: rgb(248 250 252 / 0.96);
+  }
+
+  .spec-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: var(--space-md);
+  }
+
+  .spec-value {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #0f172a;
+  }
+
+  .product-spec-fallback {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .product-detail-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    min-height: 1.9rem;
+  }
+
+  .detail-chip {
+    border: 1px solid rgb(203 213 225 / 0.82);
+    background: rgb(241 245 249 / 0.95);
+    color: #334155;
+  }
+
+  .grade-chip {
+    border-color: rgb(29 78 216 / 0.15);
+    background: rgb(29 78 216 / 0.08);
+    color: var(--primary);
+  }
+
+  .detail-chip-warn {
+    border-color: rgb(253 224 71 / 0.72);
+    background: rgb(254 249 195 / 0.92);
+    color: #854d0e;
+  }
+
+  .product-price-block {
+    margin-top: auto;
   }
 
   .product-price-row {
-    margin-top: auto;
-    margin-bottom: var(--space-md);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.45rem;
   }
 
   .price-kes {
-    font-size: 1.25rem;
-    font-weight: 800;
+    font-size: 1.4rem;
+    font-weight: 900;
+    line-height: 1.1;
     color: var(--primary);
   }
 
   .compare-price {
-    font-size: 0.875rem;
+    font-size: 0.92rem;
     color: var(--text-muted);
     text-decoration: line-through;
-    margin-left: 0.5rem;
+  }
+
+  .savings-note {
+    margin: 0.28rem 0 0;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+
+  .savings-note.discount {
+    color: var(--accent-hover);
+  }
+
+  .savings-note.neutral {
+    color: var(--text-muted);
+  }
+
+  .stock-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .stock-line.in {
+    color: #166534;
+  }
+
+  .stock-line.low {
+    color: #854d0e;
+  }
+
+  .stock-line.out {
+    color: #991b1b;
+  }
+
+  .stock-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: currentColor;
   }
 
   .product-actions {
-    display: flex;
-    gap: 0.5rem;
+    display: grid;
   }
 
-  .add-to-cart-btn {
-    flex: 1;
+  .product-actions .pill-button {
+    min-height: 2.9rem;
     justify-content: center;
-    font-size: 0.875rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid transparent;
+    font-size: 0.88rem;
   }
 
-  .whatsapp-icon-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: var(--radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #25D366;
+  .whatsapp-btn {
+    background: #25d366;
     color: var(--white);
-    transition: transform 0.2s ease;
   }
 
-  .whatsapp-icon-btn:hover {
-    transform: scale(1.1);
+  .whatsapp-btn:hover {
+    background: #1faa53;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .product-card:hover {
+      transform: translateY(-4px);
+      border-color: rgb(29 78 216 / 0.2);
+      box-shadow: 0 20px 42px rgb(15 23 42 / 0.1);
+    }
+
+    .product-card:hover .product-image {
+      transform: scale(1.05);
+    }
+  }
+
+  @media (max-width: 639px) {
+    .product-media {
+      padding: 0.68rem;
+    }
+
+    .product-body {
+      padding: 0.9rem;
+    }
+
+    .product-spec-list {
+      grid-template-columns: 1fr;
+    }
+
+    .product-title {
+      min-height: 4.35em;
+      font-size: 1rem;
+    }
+
+    .price-kes {
+      font-size: 1.24rem;
+    }
   }
 </style>
 
 <script>
-  // Add to Cart Logic
-  const addButtons = document.querySelectorAll('.add-to-cart-btn');
-  addButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const target = e.currentTarget as HTMLButtonElement;
-      const item = {
-        id: target.dataset.id,
-        title: target.dataset.title,
-        price_kes: parseInt(target.dataset.price || '0'),
-        slug: target.dataset.slug,
-        image: target.dataset.image,
-        qty: 1
-      };
-      
-      let cart = JSON.parse(localStorage.getItem('ses_cart') || '[]');
-      const existing = cart.find((i: any) => i.id === item.id);
-      
-      if (existing) {
-        existing.qty += 1;
-      } else {
-        cart.push(item);
+  import { addCartItem } from '../lib/cartClient';
+
+  const appWindow = window as typeof window & { __sesProductCardBound?: boolean };
+
+  if (!appWindow.__sesProductCardBound) {
+    appWindow.__sesProductCardBound = true;
+
+    document.addEventListener('click', (event) => {
+      const target = (event.target as HTMLElement | null)?.closest('.add-to-cart-btn');
+      if (!(target instanceof HTMLButtonElement) || target.disabled) {
+        return;
       }
-      
-      localStorage.setItem('ses_cart', JSON.stringify(cart));
-      window.dispatchEvent(new Event('cart-updated'));
-      
-      // Feedback
+
+      const id = (target.dataset.id || '').trim();
+      if (!id) {
+        return;
+      }
+
+      addCartItem({
+        id,
+        title: target.dataset.title || '',
+        price_kes: Math.round(Number(target.dataset.price || '0')),
+        slug: target.dataset.slug || null,
+        image: target.dataset.image || '',
+        qty: 1
+      });
+
       const originalText = target.textContent;
-      target.textContent = 'Added! ✓';
+      target.textContent = 'Added';
       target.style.backgroundColor = '#059669';
+
       setTimeout(() => {
         target.textContent = originalText;
         target.style.backgroundColor = '';
-      }, 2000);
+      }, 1800);
     });
-  });
+  }
 </script>

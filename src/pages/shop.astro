@@ -1,0 +1,12 @@
+---
+import CatalogListing from '../components/CatalogListing.astro';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Shop Electronics"
+  description="Browse laptops, smartphones, and printers at SES ICT HUB with live pricing, stock status, and category shortcuts."
+  canonical="/shop"
+>
+  <CatalogListing mode="shop" categorySlug="all" />
+</Layout>

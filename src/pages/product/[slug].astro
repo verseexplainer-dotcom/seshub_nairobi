@@ -1,489 +1,915 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
+import SearchBar from '../../components/SearchBar.astro';
 import StickyATC from '../../components/StickyATC.astro';
-import { supabase } from '../../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { getSiteAssets } from '../../lib/siteAssets';
+import { sanitizeProductDescription } from '../../lib/sanitize';
+import { getProductPresentation, getWarrantyLabel, normalizeText } from '../../lib/productPresentation';
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-  const { data: products } = await supabase.from('products').select('slug');
-  return products?.map(p => ({ params: { slug: p.slug } })) || [];
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
 
-// Fetch product details
-const { data: product } = await supabase
-  .from('products')
-  .select('*')
-  .eq('slug', slug)
-  .single();
+let product: Record<string, any> | null = null;
+let related: Array<Record<string, any>> = [];
+
+if (isSupabaseConfigured) {
+  const { data: productData } = await supabase.from('products').select('*').eq('slug', slug).single();
+  product = productData || null;
+
+  if (product) {
+    const relatedIds = new Set<string | number>([product.id]);
+
+    if (normalizeText(product.brand)) {
+      const { data: sameBrand } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category', product.category)
+        .eq('brand', product.brand)
+        .neq('id', product.id)
+        .limit(4);
+
+      for (const item of sameBrand || []) {
+        if (!relatedIds.has(item.id)) {
+          related.push(item);
+          relatedIds.add(item.id);
+        }
+      }
+    }
+
+    if (related.length < 4) {
+      const { data: sameCategory } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category', product.category)
+        .neq('id', product.id)
+        .limit(8);
+
+      for (const item of sameCategory || []) {
+        if (related.length >= 4) {
+          break;
+        }
+
+        if (!relatedIds.has(item.id)) {
+          related.push(item);
+          relatedIds.add(item.id);
+        }
+      }
+    }
+
+    if (related.length < 4) {
+      const { data: featuredFallback } = await supabase
+        .from('products')
+        .select('*')
+        .eq('featured_home', true)
+        .neq('id', product.id)
+        .limit(8);
+
+      for (const item of featuredFallback || []) {
+        if (related.length >= 4) {
+          break;
+        }
+
+        if (!relatedIds.has(item.id)) {
+          related.push(item);
+          relatedIds.add(item.id);
+        }
+      }
+    }
+  }
+}
 
 if (!product) {
   return Astro.redirect('/404');
 }
 
-// Fetch related products (same category)
-const { data: related } = await supabase
-  .from('products')
-  .select('*')
-  .eq('category', product.category)
-  .neq('id', product.id)
-  .limit(4);
-
-const categorySlugMap: Record<string, string> = {
-  laptops: 'laptops',
-  desktops: 'desktops',
-  printers: 'printers',
-  smartphones: 'smartphones',
-  accessories: 'accessories'
-};
-const categoryKey = String(product.category || '').toLowerCase();
-const categorySlug = categorySlugMap[categoryKey] || 'all';
-
-const hasDiscount = product.compare_at_kes && product.compare_at_kes > product.price_kes;
-const productImages = Array.isArray(product.images) ? product.images : [];
-const primaryImage = productImages[0];
-
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
-const storageBase = supabaseUrl.replace(/\/$/, '');
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
-const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.jpg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
-const getImageUrl = (img: string | undefined) => {
-  if (!img) return fallbackImage;
-  if (img.startsWith('http')) return img;
-  return `${storageBase}/storage/v1/object/public/product-images/${img.replace(/^\//, '')}`;
+const localPlaceholder = '/product-placeholder.svg';
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder || localPlaceholder).trim();
+const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(localPlaceholder)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
+const presentation = getProductPresentation(product, {
+  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+  fallbackImage
+});
+const safeDescriptionHtml = sanitizeProductDescription(product.description || '');
+const productSeoTitle = normalizeText(product.seo_title) || normalizeText(product.title) || 'Product';
+const plainMetaDescription = String(product.meta_description || product.short_specs || product.description || '')
+  .replace(/<[^>]*>/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 300);
+const siteBase = String(Astro.site || 'https://sesicthub.co.ke').replace(/\/$/, '');
+const canonicalPath = `/product/${product.slug}`;
+const productUrl = `${siteBase}${canonicalPath}`;
+const warrantyLongLabel = getWarrantyLabel(product.warranty_months, 'long');
+const reassuranceCards = [
+  {
+    title: 'Delivery and pickup',
+    body: '2-hour Nairobi delivery where available, plus in-store pickup from Moi Avenue.',
+    icon: siteAssets.trustIcons.delivery
+  },
+  {
+    title: 'Payment options',
+    body: 'M-PESA and pay-on-delivery options are available for many local orders.',
+    icon: siteAssets.trustIcons.payments
+  },
+  {
+    title: 'Inspection support',
+    body: 'Ask for a live WhatsApp walk-through or visit the shop before you commit.',
+    icon: siteAssets.trustIcons.security
+  }
+];
+const trustChips = [
+  warrantyLongLabel ? { label: warrantyLongLabel } : null,
+  { label: presentation.condition.label },
+  presentation.grade ? { label: presentation.grade.label } : null,
+  presentation.chargerIncluded ? { label: 'Charger included' } : null,
+  { label: 'Store pickup available' }
+].filter(Boolean) as Array<{ label: string }>;
+const buyingHighlights = [
+  warrantyLongLabel ? { title: warrantyLongLabel, body: 'Shown from this product record when warranty data is available.' } : null,
+  { title: '7-day defect return window', body: 'Applies to undisclosed functional defects, as outlined in the FAQ.' },
+  { title: 'Nairobi CBD delivery from KSh 200', body: 'Delivery is often free or a small fee within Nairobi CBD.' }
+].filter(Boolean) as Array<{ title: string; body: string }>;
+const breadcrumbData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteBase}/` },
+    { '@type': 'ListItem', position: 2, name: 'Shop', item: `${siteBase}/shop` },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: presentation.categoryLabel,
+      item: `${siteBase}${presentation.categoryPath}`
+    },
+    { '@type': 'ListItem', position: 4, name: presentation.displayTitle, item: productUrl }
+  ]
+};
+const structuredItemCondition =
+  product.condition === 'brand_new'
+    ? 'https://schema.org/NewCondition'
+    : product.condition === 'refurbished'
+      ? 'https://schema.org/RefurbishedCondition'
+      : undefined;
+const productStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.title,
+  description: plainMetaDescription,
+  image: presentation.imageUrls,
+  sku: product.sku || undefined,
+  brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+  itemCondition: structuredItemCondition,
+  offers: {
+    '@type': 'Offer',
+    url: productUrl,
+    priceCurrency: 'KES',
+    price: presentation.pricing.price,
+    availability: presentation.stock.isInStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+  }
 };
 ---
 
-<Layout title={product.title} description={product.description || product.short_specs}>
+<Layout
+  title={productSeoTitle}
+  description={plainMetaDescription}
+  image={presentation.primaryImageUrl}
+  canonical={canonicalPath}
+>
   <div class="product-page">
-    <div class="container breadcrumbs">
-      <a href="/">Home</a> / <a href={`/category/${categorySlug}`}>{product.category}</a> / <span>{product.title}</span>
-    </div>
+    <div class="container">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <a href="/shop">Shop</a>
+        <span>/</span>
+        <a href={presentation.categoryPath}>{presentation.categoryLabel}</a>
+        <span>/</span>
+        <span aria-current="page">{presentation.displayTitle}</span>
+      </nav>
 
-    <div class="container product-main">
-      <!-- Media Gallery -->
-      <div class="product-gallery">
-        <div class="main-image">
-          <img src={getImageUrl(primaryImage)} alt={product.title} id="main-prod-img" onerror={imageOnError} />
+      <section class="product-search-card" aria-label="Search the catalog">
+        <div>
+          <p class="eyebrow">Need another option?</p>
+          <h2>Search the catalog without leaving this product page.</h2>
+          <p class="product-search-copy">Look up another product title or brand, then jump into filtered category pages when you want to compare further.</p>
         </div>
-        {productImages.length > 1 && (
-          <div class="thumbnails">
-            {productImages.map((img: string, idx: number) => (
-              <button class={`thumb ${idx === 0 ? 'active' : ''}`} data-src={getImageUrl(img)}>
-                <img src={getImageUrl(img)} alt="" onerror={imageOnError} />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+        <SearchBar variant="inline" placeholder="Search products or brands..." />
+      </section>
 
-      <!-- Content -->
-      <div class="product-details">
-        <div class="product-header">
-          <div class="badges">
-            {product.condition && <span class={`badge condition ${product.condition}`}>{product.condition.replace('_', ' ')}</span>}
-            {product.refurb_grade && <span class="badge grade">Grade {product.refurb_grade.split('_')[1].toUpperCase()}</span>}
+      <div class="product-layout">
+        <section class="gallery-panel" aria-label="Product image gallery">
+          <div class="main-image-shell">
+            <img
+              src={presentation.primaryImageUrl}
+              alt={presentation.displayTitle}
+              id="main-product-image"
+              class="main-image"
+              onerror={imageOnError}
+            />
           </div>
-          <h1 class="product-title">{product.title}</h1>
-          <p class="product-short-specs">{product.short_specs}</p>
-        </div>
 
-        <div class="product-price-section">
-          <div class="price-row">
-            <span class="price-kes">KSh {product.price_kes.toLocaleString()}</span>
-            {hasDiscount && (
-              <span class="compare-price">KSh {product.compare_at_kes.toLocaleString()}</span>
+          {presentation.imageUrls.length > 1 && (
+            <div class="thumbnail-row" role="list" aria-label="Product images">
+              {presentation.imageUrls.map((imageUrl, index) => (
+                <button
+                  type="button"
+                  class={`thumbnail-button ${index === 0 ? 'active' : ''}`}
+                  data-product-thumb
+                  data-image-src={imageUrl}
+                  aria-pressed={index === 0 ? 'true' : 'false'}
+                >
+                  <img src={imageUrl} alt="" loading="lazy" onerror={imageOnError} />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section class="buy-panel">
+          <div class="title-block">
+            <div class="badge-row">
+              <span class={`meta-badge ${presentation.condition.tone}`}>{presentation.condition.label}</span>
+              {presentation.grade && <span class="meta-badge grade">{presentation.grade.label}</span>}
+            </div>
+            <h1>{presentation.rawTitle}</h1>
+            {normalizeText(product.short_specs) && <p class="short-specs">{product.short_specs}</p>}
+          </div>
+
+          <div class="price-card">
+            <div class="price-row">
+              <span class="current-price">{presentation.pricing.priceText}</span>
+              {presentation.pricing.compareAtText && <span class="compare-price">{presentation.pricing.compareAtText}</span>}
+            </div>
+            {presentation.pricing.hasDiscount && presentation.pricing.savingsText && (
+              <p class="savings-line">
+                Save {presentation.pricing.savingsText}
+                {presentation.pricing.percent > 0 && ` (${presentation.pricing.percent}%)`}
+              </p>
             )}
+            <p class={`stock-line ${presentation.stock.tone}`}>
+              <span class="stock-dot"></span>
+              {presentation.stock.detail}
+            </p>
           </div>
-          <div class={`stock-indicator ${product.in_stock ? 'in' : 'out'}`}>
-            <span class="dot"></span>
-            {product.in_stock ? 'In Stock - Ready to ship' : 'Out of Stock'}
-          </div>
-        </div>
 
-        <div class="product-actions-desktop">
-          <button 
-            class="pill-button primary add-to-cart-btn lg"
-            data-id={product.id} 
-            data-title={product.title} 
-            data-price={product.price_kes}
-            data-slug={product.slug}
-            data-image={getImageUrl(primaryImage)}
-          >
-            Add to Cart
-          </button>
-          <a 
-            href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I'm interested in: ${product.title} — https://sesicthub.co.ke/product/${product.slug}`)}`} 
-            class="pill-button"
-            style="background-color: #25D366; color: white; width: 100%; justify-content: center; margin-top: 1rem;"
-          >
-            Inquire on WhatsApp
-          </a>
-        </div>
-
-        <div class="trust-signals-mini">
-          <p>✔ 6-12 Month Warranty | ✔ Tested Device | ✔ Nairobi Same-Day Delivery | ✔ Pay via M-PESA</p>
-        </div>
-
-        <div class="trust-panel">
-          <div class="trust-item">
-            <span class="icon"><img src={siteAssets.trustIcons.delivery} alt="" class="trust-icon-img" loading="lazy" /></span>
-            <div>
-              <strong>Delivery</strong>
-              <p>2-hour Nairobi delivery | 24-48h Countrywide</p>
+          {presentation.summarySpecs.length > 0 && (
+            <div class="summary-specs" aria-label="Key specs summary">
+              {presentation.summarySpecs.map((spec) => (
+                <div class="summary-spec">
+                  <span>{spec.label}</span>
+                  <strong>{spec.value}</strong>
+                </div>
+              ))}
             </div>
-          </div>
-          <div class="trust-item">
-            <span class="icon"><img src={siteAssets.trustIcons.payments} alt="" class="trust-icon-img" loading="lazy" /></span>
-            <div>
-              <strong>Payment</strong>
-              <p>M-PESA | Cash on Delivery</p>
-            </div>
-          </div>
-          <div class="trust-item">
-            <span class="icon"><img src={siteAssets.trustIcons.security} alt="" class="trust-icon-img" loading="lazy" /></span>
-            <div>
-              <strong>Warranty</strong>
-              <p>{product.warranty_months || 6} Months official warranty</p>
-            </div>
-          </div>
-        </div>
+          )}
 
-        <div class="product-description">
-          <h2>Description</h2>
-          <div class="desc-content" set:html={product.description || ''} />
-        </div>
+          <div class="cta-stack">
+            {presentation.stock.isInStock ? (
+              <button
+                class="pill-button primary add-to-cart-btn cta-button"
+                data-id={product.id}
+                data-title={presentation.rawTitle}
+                data-price={presentation.pricing.price}
+                data-slug={product.slug}
+                data-image={presentation.primaryImageUrl}
+                aria-label={`Add ${presentation.displayTitle} to cart`}
+              >
+                Add to Cart
+              </button>
+            ) : (
+              <button class="pill-button primary cta-button" disabled aria-disabled="true">
+                Out of Stock
+              </button>
+            )}
+            <a
+              href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I'm interested in: ${presentation.rawTitle} — https://sesicthub.co.ke/product/${product.slug}`)}`}
+              class="pill-button whatsapp-button cta-button"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ask on WhatsApp
+            </a>
+          </div>
 
-        <!-- FAQ Accordion -->
-        <div class="faq-section">
-          <h2>Common Questions</h2>
-          <details>
-            <summary>How do I pay?</summary>
-            <p>We accept M-PESA and Cash on Delivery. You can pay once our rider arrives at your location in Nairobi.</p>
-          </details>
-          <details>
-            <summary>Is this device tested?</summary>
-            <p>Every brand-new and refurbished device undergoes a 21-point quality check before it reaches our shelves.</p>
-          </details>
-          <details>
-            <summary>What if I'm outside Nairobi?</summary>
-            <p>We ship countrywide via G4S, Wells Fargo, or your preferred courier. Delivery typically takes 24-48 hours.</p>
-          </details>
-        </div>
+          <section class="policy-grid" aria-label="Store policies">
+            {buyingHighlights.map((item) => (
+              <article class="policy-card">
+                <strong>{item.title}</strong>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </section>
+
+          <div class="trust-chip-row" aria-label="Trust information">
+            {trustChips.map((chip) => <span class="trust-chip">{chip.label}</span>)}
+          </div>
+
+          <section class="reassurance-grid" aria-label="Delivery, pickup, and payment reassurance">
+            {reassuranceCards.map((card) => (
+              <article class="reassurance-card">
+                <img src={card.icon} alt="" loading="lazy" class="reassurance-icon" />
+                <div>
+                  <h3>{card.title}</h3>
+                  <p>{card.body}</p>
+                </div>
+              </article>
+            ))}
+          </section>
+        </section>
       </div>
-    </div>
 
-    <!-- Related Products -->
-    {related && related.length > 0 && (
-      <section class="related-products">
-        <div class="container">
-          <h2 class="section-title">Customers also viewed</h2>
-          <div class="product-grid">
-            {related.map(p => <ProductCard product={p} />)}
+      <div class="detail-layout">
+        {presentation.specRows.length > 0 && (
+          <section class="detail-card">
+            <div class="section-head">
+              <p class="eyebrow">Specifications</p>
+              <h2>Product details</h2>
+            </div>
+            <dl class="spec-table">
+              {presentation.specRows.map((row) => (
+                <div class="spec-row">
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
+        <section class="detail-card">
+          <div class="section-head">
+            <p class="eyebrow">Overview</p>
+            <h2>What you’re getting</h2>
           </div>
+          {normalizeText(product.short_specs) && <p class="summary-copy">{product.short_specs}</p>}
+          {safeDescriptionHtml ? (
+            <div class="description-copy" set:html={safeDescriptionHtml} />
+          ) : (
+            <p class="summary-copy">More description details will be confirmed during your WhatsApp inquiry.</p>
+          )}
+        </section>
+      </div>
+
+      <section class="support-section detail-card">
+        <div class="section-head">
+          <p class="eyebrow">Support</p>
+          <h2>Questions buyers usually ask</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Can I inspect the item before paying?</summary>
+            <p>Yes. You can visit the shop, request a WhatsApp walk-through, or confirm delivery inspection options before finalizing the order.</p>
+          </details>
+          <details>
+            <summary>How do delivery and pickup work?</summary>
+            <p>We support Nairobi delivery where available and in-store pickup from Moi Avenue. Countrywide dispatch can also be arranged.</p>
+          </details>
+          <details>
+            <summary>What payment methods are available?</summary>
+            <p>M-PESA is supported, and some local orders can be completed on delivery depending on the arrangement.</p>
+          </details>
         </div>
       </section>
-    )}
+
+      {related.length > 0 && (
+        <section class="related-section">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Related products</p>
+              <h2>More from this category</h2>
+            </div>
+            <a href={presentation.categoryPath} class="text-link">View {presentation.categoryLabel}</a>
+          </div>
+          <div class="product-grid">
+            {related.map((item) => <ProductCard product={item} />)}
+          </div>
+        </section>
+      )}
+    </div>
   </div>
 
   <StickyATC product={product} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbData)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(productStructuredData)} />
+
+  <script>
+    const mainImage = document.getElementById('main-product-image');
+    const thumbButtons = Array.from(document.querySelectorAll('[data-product-thumb]'));
+
+    thumbButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!(button instanceof HTMLButtonElement) || !(mainImage instanceof HTMLImageElement)) {
+          return;
+        }
+
+        const nextSrc = button.dataset.imageSrc;
+        if (!nextSrc) {
+          return;
+        }
+
+        mainImage.src = nextSrc;
+        thumbButtons.forEach((thumb) => {
+          thumb.classList.remove('active');
+          thumb.setAttribute('aria-pressed', 'false');
+        });
+        button.classList.add('active');
+        button.setAttribute('aria-pressed', 'true');
+      });
+    });
+  </script>
 </Layout>
 
 <style>
   .product-page {
-    padding-top: var(--space-md);
-    padding-bottom: 100px;
+    padding: 1.4rem 0 7rem;
   }
 
   .breadcrumbs {
-    font-size: 0.8125rem;
-    color: var(--text-muted);
-    margin-bottom: var(--space-lg);
-  }
-
-  .breadcrumbs a:hover {
-    color: var(--primary);
-  }
-
-  .product-main {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    align-items: start;
-    margin-bottom: var(--space-xl);
-  }
-
-  @media (min-width: 1024px) {
-    .product-main {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  /* Gallery */
-  .main-image {
-    background-color: var(--white);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    aspect-ratio: 1/1;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    margin-bottom: var(--space-md);
+    gap: 0.55rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
   }
 
-  .main-image img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+  .product-layout,
+  .detail-layout {
+    display: grid;
+    gap: 1.4rem;
   }
 
-  .thumbnails {
-    display: flex;
-    gap: var(--space-sm);
-    overflow-x: auto;
-    padding-bottom: var(--space-xs);
-  }
-
-  .thumb {
-    width: 80px;
-    height: 80px;
+  .product-search-card {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1.4rem;
+    padding: 1.1rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 5px;
-    background-color: var(--white);
-    flex-shrink: 0;
+    border-radius: 1.5rem;
+    background: var(--white);
+    box-shadow: 0 18px 44px rgb(15 23 42 / 0.06);
   }
 
-  .thumb.active {
-    border-color: var(--primary);
-    border-width: 2px;
+  .gallery-panel,
+  .buy-panel,
+  .detail-card {
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: var(--white);
+    box-shadow: 0 18px 44px rgb(15 23 42 / 0.06);
   }
 
-  .thumb img {
+  .gallery-panel,
+  .buy-panel {
+    padding: 1.1rem;
+  }
+
+  .main-image-shell {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1 / 1;
+    padding: 1rem;
+    border-radius: 1.2rem;
+    background:
+      radial-gradient(circle at top, rgb(219 234 254 / 0.72), transparent 42%),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    border: 1px solid rgb(226 232 240 / 0.9);
+  }
+
+  .main-image {
     width: 100%;
     height: 100%;
     object-fit: contain;
   }
 
-  /* Details */
-  .badges {
+  .thumbnail-row {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: var(--space-sm);
+    gap: 0.75rem;
+    margin-top: 0.95rem;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
   }
 
-  .badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
+  .thumbnail-button {
+    width: 4.5rem;
+    height: 4.5rem;
+    flex-shrink: 0;
+    padding: 0.35rem;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: #f8fafc;
   }
 
-  .badge.condition { background-color: #E1EFFE; color: #1E429F; }
-  .badge.grade { background-color: #FDF6B2; color: #723B13; }
+  .thumbnail-button.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgb(29 78 216 / 0.12);
+  }
 
-  .product-title {
-    font-size: 2rem;
+  .thumbnail-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .buy-panel {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .badge-row,
+  .trust-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  .meta-badge,
+  .trust-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
     font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.02em;
   }
 
-  .product-short-specs {
-    font-size: 1.125rem;
+  .meta-badge {
+    border: 1px solid rgb(203 213 225 / 0.9);
+    background: rgb(241 245 249 / 0.95);
+    color: #334155;
+  }
+
+  .meta-badge.new {
+    border-color: rgb(147 197 253 / 0.72);
+    background: rgb(219 234 254 / 0.9);
+    color: #1d4ed8;
+  }
+
+  .meta-badge.refurbished {
+    border-color: rgb(253 186 116 / 0.72);
+    background: rgb(255 247 237 / 0.96);
+    color: #c2410c;
+  }
+
+  .meta-badge.grade,
+  .trust-chip {
+    border: 1px solid rgb(29 78 216 / 0.15);
+    background: rgb(239 246 255);
+    color: var(--primary);
+  }
+
+  .title-block h1,
+  .section-head h2 {
+    margin: 0;
+  }
+
+  .title-block h1 {
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    line-height: 1.08;
+    margin-top: 0.4rem;
+  }
+
+  .short-specs,
+  .summary-copy {
+    margin: 0;
     color: var(--text-muted);
-    margin-bottom: var(--space-lg);
+    line-height: 1.7;
   }
 
-  .product-price-section {
-    background-color: #F1F5F9;
-    padding: var(--space-lg);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-lg);
+  .product-search-copy {
+    margin: 0.45rem 0 0;
+    color: var(--text-muted);
+    line-height: 1.65;
   }
 
-  .price-kes {
-    font-size: 2.25rem;
-    font-weight: 800;
+  .price-card {
+    padding: 1rem;
+    border-radius: 1.2rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    background: linear-gradient(180deg, rgb(248 250 252 / 0.96), rgb(255 255 255 / 0.98));
+  }
+
+  .price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.7rem;
+  }
+
+  .current-price {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 900;
     color: var(--primary);
   }
 
   .compare-price {
-    font-size: 1.25rem;
+    font-size: 1rem;
     color: var(--text-muted);
     text-decoration: line-through;
-    margin-left: 0.75rem;
   }
 
-  .stock-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-top: 0.5rem;
+  .savings-line,
+  .stock-line {
+    margin: 0.45rem 0 0;
+    font-weight: 700;
   }
 
-  .stock-indicator.in { color: #059669; }
-  .stock-indicator.out { color: #DC2626; }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: currentColor;
-    display: inline-block;
+  .savings-line {
+    color: var(--accent-hover);
   }
 
-  .add-to-cart-btn.lg {
-    width: 100%;
-    font-size: 1.125rem;
-    padding: 1rem;
-    justify-content: center;
-  }
-
-  .trust-panel {
-    margin: var(--space-xl) 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-    background-color: var(--white);
-    padding: var(--space-lg);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-  }
-
-  .trust-item {
-    display: flex;
-    gap: var(--space-md);
-    align-items: start;
-  }
-
-  .trust-item .icon {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.6rem;
+  .stock-line {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    flex-shrink: 0;
+    gap: 0.45rem;
   }
 
-  .trust-icon-img {
-    width: 1.4rem;
-    height: 1.4rem;
+  .stock-line.in {
+    color: #166534;
+  }
+
+  .stock-line.low {
+    color: #854d0e;
+  }
+
+  .stock-line.out {
+    color: #991b1b;
+  }
+
+  .stock-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .summary-specs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .summary-spec {
+    padding: 0.85rem;
+    border-radius: 1rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    background: #f8fafc;
+  }
+
+  .summary-spec span {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .summary-spec strong {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .cta-stack {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .policy-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .policy-card {
+    padding: 0.95rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    background: #f8fafc;
+  }
+
+  .policy-card strong,
+  .policy-card p {
+    margin: 0;
+  }
+
+  .policy-card strong {
+    display: block;
+    font-size: 0.94rem;
+    line-height: 1.35;
+    color: #0f172a;
+  }
+
+  .policy-card p {
+    margin-top: 0.35rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .cta-button {
+    width: 100%;
+    min-height: 3.2rem;
+    justify-content: center;
+  }
+
+  .whatsapp-button {
+    background: #25d366;
+    color: var(--white);
+  }
+
+  .reassurance-grid {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .reassurance-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.85rem;
+    padding: 0.9rem;
+    border-radius: 1rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    background: #f8fafc;
+  }
+
+  .reassurance-icon {
+    width: 2.2rem;
+    height: 2.2rem;
     object-fit: contain;
   }
 
-  .trust-item strong {
-    display: block;
-    font-size: 0.9375rem;
+  .reassurance-card h3,
+  .reassurance-card p {
+    margin: 0;
   }
 
-  .trust-item p {
-    font-size: 0.8125rem;
+  .reassurance-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .reassurance-card p {
     color: var(--text-muted);
+    line-height: 1.55;
   }
 
-  .product-description, .faq-section {
-    margin-top: var(--space-xl);
+  .detail-layout,
+  .support-section,
+  .related-section {
+    margin-top: 1.4rem;
   }
 
-  .product-description h2, .faq-section h2 {
-    font-size: 1.25rem;
+  .detail-card,
+  .support-section {
+    padding: 1.2rem;
+  }
+
+  .section-head {
+    margin-bottom: 1rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.6rem;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-weight: 800;
+  }
+
+  .spec-table {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+  }
+
+  .spec-row {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 1rem;
+    background: #f8fafc;
+    border: 1px solid rgb(226 232 240 / 0.92);
+  }
+
+  .spec-row dt {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 800;
+  }
+
+  .spec-row dd {
+    margin: 0;
     font-weight: 700;
-    margin-bottom: var(--space-md);
   }
 
-  .desc-content {
+  .description-copy :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .description-copy :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .description-copy :global(p),
+  .description-copy :global(li) {
     color: var(--text-main);
-    line-height: 1.6;
-    white-space: pre-line;
+    line-height: 1.75;
   }
 
-  details {
-    border-bottom: 1px solid var(--border);
-    padding: var(--space-sm) 0;
+  .faq-list {
+    display: grid;
+    gap: 0.75rem;
   }
 
-  summary {
-    font-weight: 600;
+  .faq-list details {
+    padding: 0.95rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    background: #f8fafc;
+  }
+
+  .faq-list summary {
     cursor: pointer;
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    font-weight: 800;
   }
 
-  summary::after {
-    content: '+';
-    font-size: 1.25rem;
-  }
-
-  details[open] summary::after {
-    content: '−';
-  }
-
-  details p {
-    padding-top: var(--space-sm);
+  .faq-list p {
+    margin: 0.75rem 0 0;
     color: var(--text-muted);
-    font-size: 0.875rem;
+    line-height: 1.65;
   }
 
-  .related-products {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-xl);
-    border-top: 1px solid var(--border);
+  .related-section .section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .text-link {
+    color: var(--primary);
+    font-weight: 700;
   }
 
   .product-grid {
     display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: var(--space-md);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 900px) {
+    .product-search-card {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 34rem);
+      align-items: center;
+    }
+
+    .product-layout,
+    .detail-layout {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    }
+
     .product-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
-  @media (min-width: 1024px) {
-    .product-grid {
-      grid-template-columns: repeat(4, 1fr);
+  @media (max-width: 639px) {
+    .product-search-card {
+      padding: 0.95rem;
+      gap: 0.8rem;
     }
-  }
 
-  .trust-signals-mini {
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    font-weight: 600;
+    .product-search-card > :last-child {
+      order: -1;
+    }
+
+    .product-search-card h2 {
+      font-size: 1.15rem;
+      line-height: 1.25;
+    }
+
+    .product-search-copy {
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    .summary-specs {
+      grid-template-columns: 1fr;
+    }
+
+    .product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 </style>
-
-<script>
-  // Thumbnail switching
-  const thumbs = document.querySelectorAll('.thumb');
-  const mainImg = document.getElementById('main-prod-img') as HTMLImageElement;
-
-  thumbs.forEach(thumb => {
-    thumb.addEventListener('click', () => {
-      const src = (thumb as HTMLButtonElement).dataset.src;
-      if (src && mainImg) {
-        mainImg.src = src;
-        thumbs.forEach(t => t.classList.remove('active'));
-        thumb.classList.add('active');
-      }
-    });
-  });
-</script>
