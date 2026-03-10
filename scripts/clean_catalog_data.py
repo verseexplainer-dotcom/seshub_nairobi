@@ -22,8 +22,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-import requests
-
 try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover - optional local dependency
@@ -54,6 +52,10 @@ CONDITION_REMAP = {
     "brand new": "brand_new",
     "refurbished": "refurbished",
 }
+LAPTOP_CATEGORY = "laptops"
+LAPTOP_ALLOWED_CONDITIONS = {"brand_new", "refurbished"}
+LAPTOP_ALLOWED_RENEWED_GRADE = "grade_a"
+LAPTOP_BLOCKED_RENEWED_GRADES = {"grade_b", "grade_c"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -100,6 +102,14 @@ def parse_float(value: str) -> float | None:
     return parsed if parsed == parsed else None
 
 
+def normalize_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def is_laptop_row(row: dict[str, str]) -> bool:
+    return normalize_text(row.get("category")).lower() == LAPTOP_CATEGORY
+
+
 def as_csv_number(value: int | float) -> str:
     if isinstance(value, float) and value.is_integer():
         return str(int(value))
@@ -136,9 +146,10 @@ def build_text_blob(row: dict[str, str]) -> str:
     return " ".join(part for part in parts if part).strip()
 
 
-def clean_row(row: dict[str, str]) -> tuple[dict[str, str], dict[str, Any]]:
+def clean_row(row: dict[str, str]) -> tuple[dict[str, str], dict[str, Any], list[str]]:
     updated = deepcopy(row)
     changes: dict[str, Any] = {}
+    errors: list[str] = []
 
     brand = updated.get("brand", "")
     if brand in BRAND_FIXES:
@@ -215,7 +226,26 @@ def clean_row(row: dict[str, str]) -> tuple[dict[str, str], dict[str, Any]]:
             updated["condition"] = inferred_conditions[0]
             changes["condition"] = inferred_conditions[0]
 
-    return updated, changes
+    if is_laptop_row(updated):
+        normalized_condition = normalize_text(updated.get("condition")).lower()
+        normalized_grade = normalize_text(updated.get("refurb_grade")).lower()
+
+        if normalized_condition == "brand_new":
+            if normalize_text(updated.get("refurb_grade")):
+                updated["refurb_grade"] = ""
+                changes["refurb_grade"] = ""
+        elif normalized_condition == "refurbished":
+            if normalized_grade in LAPTOP_BLOCKED_RENEWED_GRADES:
+                updated["refurb_grade"] = LAPTOP_ALLOWED_RENEWED_GRADE
+                changes["refurb_grade"] = LAPTOP_ALLOWED_RENEWED_GRADE
+                normalized_grade = LAPTOP_ALLOWED_RENEWED_GRADE
+
+            if normalized_grade != LAPTOP_ALLOWED_RENEWED_GRADE:
+                errors.append("Laptop refurbished products must use refurb_grade=grade_a.")
+        elif normalized_condition not in LAPTOP_ALLOWED_CONDITIONS:
+            errors.append("Laptop products must use condition=brand_new or condition=refurbished.")
+
+    return updated, changes, errors
 
 
 def to_supabase_payload(changes: dict[str, Any]) -> dict[str, Any]:
@@ -230,9 +260,16 @@ def to_supabase_payload(changes: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def apply_updates_to_supabase(changed_rows: list[dict[str, Any]]) -> None:
+def apply_updates_to_supabase(changed_rows: list[dict[str, Any]], rejected_rows: list[dict[str, Any]]) -> None:
+    if rejected_rows:
+        raise RuntimeError(
+            f"Refusing to apply Supabase updates: {len(rejected_rows)} laptop rows require manual review first."
+        )
+
     if load_dotenv:
         load_dotenv(".env.local")
+
+    import requests
 
     supabase_url = (os.getenv("PUBLIC_SUPABASE_URL") or "").rstrip("/")
     service_role_key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
@@ -269,16 +306,27 @@ def main() -> None:
 
     cleaned_rows: list[dict[str, str]] = []
     changed_rows: list[dict[str, Any]] = []
+    rejected_rows: list[dict[str, Any]] = []
     field_change_counts: Counter[str] = Counter()
 
     for row in rows:
-        cleaned_row, changes = clean_row(row)
+        cleaned_row, changes, errors = clean_row(row)
         cleaned_rows.append(cleaned_row)
         if changes:
             changed_rows.append({"slug": row["slug"], "changes": changes})
             for key in changes:
                 if key != "removed_display_values":
                     field_change_counts[key] += 1
+        if errors:
+            rejected_rows.append(
+                {
+                    "slug": row.get("slug", ""),
+                    "category": row.get("category", ""),
+                    "condition": cleaned_row.get("condition", ""),
+                    "refurb_grade": cleaned_row.get("refurb_grade", ""),
+                    "errors": errors,
+                }
+            )
 
     cleaned_csv_path = output_dir / "products_rows.cleaned.csv"
     report_path = output_dir / "catalog_cleanup_report.json"
@@ -290,6 +338,7 @@ def main() -> None:
                 "source_csv": str(input_path),
                 "cleaned_csv": str(cleaned_csv_path),
                 "changed_rows": changed_rows,
+                "rejected_rows": rejected_rows,
                 "field_change_counts": dict(field_change_counts),
             },
             indent=2,
@@ -298,10 +347,11 @@ def main() -> None:
     )
 
     if args.apply_supabase:
-        apply_updates_to_supabase(changed_rows)
+        apply_updates_to_supabase(changed_rows, rejected_rows)
 
     print(f"Source rows: {len(rows)}")
     print(f"Changed rows: {len(changed_rows)}")
+    print(f"Rejected rows: {len(rejected_rows)}")
     for field, count in sorted(field_change_counts.items()):
         print(f"  {field}: {count}")
     print(f"Cleaned CSV: {cleaned_csv_path}")

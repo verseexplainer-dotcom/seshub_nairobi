@@ -152,8 +152,28 @@ export function getConditionMeta(value: unknown) {
   return { label: 'Verified condition', tone: 'verified' as const };
 }
 
-export function getRefurbGradeMeta(value: unknown) {
+export function isLaptopProduct(value: unknown) {
+  return normalizeText(value).toLowerCase() === 'laptops';
+}
+
+export function getConditionMetaForProduct(value: unknown, category: unknown) {
   const normalized = normalizeText(value).toLowerCase();
+  if (isLaptopProduct(category) && !new Set(['brand_new', 'refurbished']).has(normalized)) {
+    return { label: '', tone: 'verified' as const };
+  }
+
+  return getConditionMeta(value);
+}
+
+export function getRefurbGradeMeta(value: unknown, options: { category?: unknown; condition?: unknown } = {}) {
+  const normalized = normalizeText(value).toLowerCase();
+  const normalizedCondition = normalizeText(options.condition).toLowerCase();
+  if (isLaptopProduct(options.category)) {
+    if (normalizedCondition !== 'refurbished' || normalized !== 'grade_a') {
+      return null;
+    }
+  }
+
   const allowed = new Set(['grade_a', 'grade_b', 'grade_c']);
   if (!allowed.has(normalized)) {
     return null;
@@ -349,8 +369,11 @@ export function getSummarySpecItems(product: Record<string, any>) {
 }
 
 export function getSpecTableRows(product: Record<string, any>) {
-  const condition = getConditionMeta(product?.condition);
-  const grade = getRefurbGradeMeta(product?.refurb_grade);
+  const condition = getConditionMetaForProduct(product?.condition, product?.category);
+  const grade = getRefurbGradeMeta(product?.refurb_grade, {
+    category: product?.category,
+    condition: product?.condition
+  });
   const rows: Array<{ label: string; value: string }> = [];
 
   const cpu = normalizeText(product?.cpu);
@@ -403,8 +426,11 @@ export function getProductPresentation(
   const publicSupabaseUrl = normalizeText(options.publicSupabaseUrl);
   const fallbackImage = normalizeText(options.fallbackImage) || '/product-placeholder.svg';
   const category = getStoreCategoryByValue(product?.category);
-  const condition = getConditionMeta(product?.condition);
-  const grade = getRefurbGradeMeta(product?.refurb_grade);
+  const condition = getConditionMetaForProduct(product?.condition, product?.category);
+  const grade = getRefurbGradeMeta(product?.refurb_grade, {
+    category: product?.category,
+    condition: product?.condition
+  });
   const warranty = getWarrantyLabel(product?.warranty_months);
   const stock = getStockMeta(product);
   const pricing = getDiscountMeta(product?.price_kes, product?.compare_at_kes);

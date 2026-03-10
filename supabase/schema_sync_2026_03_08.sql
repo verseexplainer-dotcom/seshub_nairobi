@@ -31,6 +31,18 @@ SET category = 'smartphones'
 WHERE lower(category) = 'phones';
 
 UPDATE public.products
+SET refurb_grade = 'grade_a'
+WHERE lower(category) = 'laptops'
+  AND condition = 'refurbished'
+  AND refurb_grade IN ('grade_b', 'grade_c');
+
+UPDATE public.products
+SET refurb_grade = NULL
+WHERE lower(category) = 'laptops'
+  AND condition = 'brand_new'
+  AND refurb_grade IS NOT NULL;
+
+UPDATE public.products
 SET compare_at_kes = NULL
 WHERE compare_at_kes IS NOT NULL AND compare_at_kes <= price_kes;
 
@@ -50,6 +62,9 @@ BEGIN
       AND contype = 'c'
       AND (
         pg_get_constraintdef(oid) ILIKE '%lower(category)%'
+        OR pg_get_constraintdef(oid) ILIKE '%condition%'
+        OR pg_get_constraintdef(oid) ILIKE '%refurb_grade%'
+        OR pg_get_constraintdef(oid) ILIKE '%warranty_months%'
         OR pg_get_constraintdef(oid) ILIKE '%price_kes%'
         OR pg_get_constraintdef(oid) ILIKE '%compare_at_kes%'
         OR pg_get_constraintdef(oid) ILIKE '%stock_qty%'
@@ -78,8 +93,52 @@ ALTER TABLE public.products
   CHECK (stock_qty IS NULL OR stock_qty >= 0);
 
 ALTER TABLE public.products
+  ADD CONSTRAINT products_condition_check
+  CHECK (condition IS NULL OR condition IN ('brand_new', 'refurbished', 'unknown'));
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_refurb_grade_check
+  CHECK (refurb_grade IS NULL OR refurb_grade IN ('grade_a', 'grade_b', 'grade_c'));
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_warranty_months_check
+  CHECK (warranty_months IS NULL OR warranty_months IN (3, 6, 12));
+
+ALTER TABLE public.products
   ADD CONSTRAINT products_image_overrides_json_check
   CHECK (jsonb_typeof(image_overrides) = 'array');
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM public.products
+    WHERE lower(category) = 'laptops'
+      AND NOT (
+        condition IN ('brand_new', 'refurbished')
+        AND (
+          (condition = 'brand_new' AND refurb_grade IS NULL)
+          OR (condition = 'refurbished' AND refurb_grade = 'grade_a')
+        )
+      )
+  ) THEN
+    RAISE EXCEPTION 'Laptop condition/grade policy violation found in public.products. Review invalid laptop rows before continuing.';
+  END IF;
+END
+$$;
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_laptop_condition_grade_check
+  CHECK (
+    lower(category) <> 'laptops'
+    OR (
+      condition IN ('brand_new', 'refurbished')
+      AND (
+        (condition = 'brand_new' AND refurb_grade IS NULL)
+        OR (condition = 'refurbished' AND refurb_grade = 'grade_a')
+      )
+    )
+  );
 
 DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
 CREATE TRIGGER trg_products_updated_at

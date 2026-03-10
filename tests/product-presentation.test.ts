@@ -1,0 +1,77 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { getProductPresentation } from '../src/lib/productPresentation';
+
+function createProduct(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'prod-1',
+    slug: 'hp-elitebook-840-g5',
+    title: 'HP EliteBook 840 G5 Refurbished Laptop',
+    category: 'Laptops',
+    price_kes: 42000,
+    compare_at_kes: null,
+    in_stock: true,
+    stock_qty: 3,
+    brand: 'HP',
+    condition: 'refurbished',
+    refurb_grade: 'grade_a',
+    short_specs: 'Intel Core i5, 8GB RAM, 256GB SSD',
+    description: '',
+    warranty_months: 6,
+    images: [],
+    image_overrides: [],
+    cpu: 'Intel Core i5',
+    ram_gb: 8,
+    storage_gb: 256,
+    storage_type: 'SSD',
+    screen_in: 14,
+    ...overrides
+  };
+}
+
+test('laptop presentation suppresses Grade B and Grade C badges', () => {
+  const presentation = getProductPresentation(createProduct({ refurb_grade: 'grade_b' }));
+
+  assert.equal(presentation.condition.label, 'Refurbished');
+  assert.equal(presentation.grade, null);
+  assert.equal(
+    presentation.specRows.some((row) => row.label === 'Refurb grade'),
+    false
+  );
+});
+
+test('brand new laptops never expose a refurb grade badge', () => {
+  const presentation = getProductPresentation(
+    createProduct({
+      condition: 'brand_new',
+      refurb_grade: 'grade_a',
+      title: 'HP EliteBook 840 G5 Brand New Laptop'
+    })
+  );
+
+  assert.equal(presentation.condition.label, 'Brand New');
+  assert.equal(presentation.grade, null);
+});
+
+test('non-laptop products keep their existing refurb grade behavior', () => {
+  const presentation = getProductPresentation(
+    createProduct({
+      category: 'Smartphones',
+      refurb_grade: 'grade_b',
+      title: 'Samsung Galaxy A54 Refurbished Smartphone'
+    })
+  );
+
+  assert.equal(presentation.grade?.label, 'Grade B');
+});
+
+test('invalid laptop conditions are hidden in storefront presentation', () => {
+  const presentation = getProductPresentation(
+    createProduct({
+      condition: 'unknown',
+      refurb_grade: 'grade_a'
+    })
+  );
+
+  assert.equal(presentation.condition.label, '');
+});

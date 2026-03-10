@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   stock_qty        numeric     CHECK (stock_qty IS NULL OR stock_qty >= 0),
   brand            text,
   condition        text        CHECK (condition IN ('brand_new', 'refurbished', 'unknown')),
-  refurb_grade     text        CHECK (refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
+  refurb_grade     text        CHECK (refurb_grade IS NULL OR refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
   short_specs      text,
   description      text,
   warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12)),
@@ -41,7 +41,18 @@ CREATE TABLE IF NOT EXISTS public.products (
   created_at       timestamptz NOT NULL DEFAULT now(),
   updated_at       timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT products_compare_price_check
-    CHECK (compare_at_kes IS NULL OR compare_at_kes > price_kes)
+    CHECK (compare_at_kes IS NULL OR compare_at_kes > price_kes),
+  CONSTRAINT products_laptop_condition_grade_check
+    CHECK (
+      lower(category) <> 'laptops'
+      OR (
+        condition IN ('brand_new', 'refurbished')
+        AND (
+          (condition = 'brand_new' AND refurb_grade IS NULL)
+          OR (condition = 'refurbished' AND refurb_grade = 'grade_a')
+        )
+      )
+    )
 );
 
 CREATE OR REPLACE FUNCTION public.set_updated_at()

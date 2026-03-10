@@ -123,7 +123,7 @@ const reassuranceCards = [
 ];
 const trustChips = [
   warrantyLongLabel ? { label: warrantyLongLabel } : null,
-  { label: presentation.condition.label },
+  presentation.condition.label ? { label: presentation.condition.label } : null,
   presentation.grade ? { label: presentation.grade.label } : null,
   presentation.chargerIncluded ? { label: 'Charger included' } : null,
   { label: 'Store pickup available' }
@@ -232,7 +232,7 @@ const productStructuredData = {
         <section class="buy-panel">
           <div class="title-block">
             <div class="badge-row">
-              <span class={`meta-badge ${presentation.condition.tone}`}>{presentation.condition.label}</span>
+              {presentation.condition.label && <span class={`meta-badge ${presentation.condition.tone}`}>{presentation.condition.label}</span>}
               {presentation.grade && <span class="meta-badge grade">{presentation.grade.label}</span>}
             </div>
             <h1>{presentation.rawTitle}</h1>

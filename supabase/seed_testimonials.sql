@@ -25,7 +25,7 @@ VALUES
   'Kevin Mutua',
   'cyber_owner',
   5,
-  'Equipped my entire cyber cafe with refurbished monitors and printers from SES. Their Grade B stock is excellent value, and being able to pay via M-PESA on delivery made the process risk-free.',
+  'Equipped my entire cyber cafe with refurbished monitors and printers from SES. Their clean refurbished stock is excellent value, and being able to pay via M-PESA on delivery made the process risk-free.',
   true
 ),
 (

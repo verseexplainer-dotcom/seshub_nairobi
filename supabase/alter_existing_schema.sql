@@ -99,6 +99,16 @@ UPDATE public.products
 SET category = 'smartphones'
 WHERE lower(category) = 'phones';
 UPDATE public.products
+SET refurb_grade = 'grade_a'
+WHERE lower(category) = 'laptops'
+  AND condition = 'refurbished'
+  AND refurb_grade IN ('grade_b', 'grade_c');
+UPDATE public.products
+SET refurb_grade = NULL
+WHERE lower(category) = 'laptops'
+  AND condition = 'brand_new'
+  AND refurb_grade IS NOT NULL;
+UPDATE public.products
 SET created_at = now()
 WHERE created_at IS NULL;
 UPDATE public.products
@@ -179,6 +189,38 @@ ALTER TABLE public.products
 ALTER TABLE public.products
   ADD CONSTRAINT products_image_overrides_json_check
   CHECK (jsonb_typeof(image_overrides) = 'array');
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM public.products
+    WHERE lower(category) = 'laptops'
+      AND NOT (
+        condition IN ('brand_new', 'refurbished')
+        AND (
+          (condition = 'brand_new' AND refurb_grade IS NULL)
+          OR (condition = 'refurbished' AND refurb_grade = 'grade_a')
+        )
+      )
+  ) THEN
+    RAISE EXCEPTION 'Laptop condition/grade policy violation found in public.products. Review invalid laptop rows before continuing.';
+  END IF;
+END
+$$;
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_laptop_condition_grade_check
+  CHECK (
+    lower(category) <> 'laptops'
+    OR (
+      condition IN ('brand_new', 'refurbished')
+      AND (
+        (condition = 'brand_new' AND refurb_grade IS NULL)
+        OR (condition = 'refurbished' AND refurb_grade = 'grade_a')
+      )
+    )
+  );
 
 DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
 CREATE TRIGGER trg_products_updated_at

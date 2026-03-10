@@ -27,6 +27,15 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1
+    FROM pg_constraint
+    WHERE conrelid = 'public.products'::regclass
+      AND conname = 'products_laptop_condition_grade_check'
+  ) THEN
+    missing_items := array_append(missing_items, 'constraint products_laptop_condition_grade_check');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
     FROM pg_indexes
     WHERE schemaname = 'public'
       AND tablename = 'products'

@@ -52,6 +52,9 @@ const detailMarkup = [
 ]
   .filter(Boolean)
   .join('');
+const conditionBadgeMarkup = presentation.condition.label
+  ? `<span class="status-badge condition ${escapeHtml(presentation.condition.tone)}">${escapeHtml(presentation.condition.label)}</span>`
+  : '';
 const priceSupportText =
   presentation.pricing.hasDiscount && presentation.pricing.savingsText
     ? `You save ${presentation.pricing.savingsText}`
@@ -110,7 +113,7 @@ const cardHtml = `
         onerror="${escapeHtml(imageOnError)}"
       />
       <div class="product-badge-row">
-        <span class="status-badge condition ${escapeHtml(presentation.condition.tone)}">${escapeHtml(presentation.condition.label)}</span>
+        ${conditionBadgeMarkup}
         <span class="status-badge stock ${escapeHtml(presentation.stock.tone)}">${escapeHtml(presentation.stock.badge)}</span>
       </div>
       ${dealBadgeMarkup}
