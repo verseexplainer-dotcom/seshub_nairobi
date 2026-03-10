@@ -1,9 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import type { SessionLocals } from '../lib/app-types';
 import { getSiteAssets } from '../lib/siteAssets';
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
+const locals = Astro.locals as SessionLocals;
+const profile = locals.profile;
+const user = locals.user;
 ---
 
 <Layout title="Your Cart">
@@ -36,21 +40,53 @@ const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAsse
 
             <form id="checkout-form" class="checkout-form">
               <h3>Delivery Details</h3>
-              <p class="form-hint">Enter your details for WhatsApp checkout</p>
+              <p class="form-hint">
+                {user
+                  ? 'You are signed in. This order will appear in your account after checkout.'
+                  : 'Guest checkout still works. Sign in if you want this order linked to your account.'}
+              </p>
+
+              {!user && (
+                <p class="auth-prompt">
+                  <a href="/auth/login?next=/cart" class="text-link">Sign in</a>
+                  to save your order history, or continue as a guest.
+                </p>
+              )}
               
               <div class="form-group">
                 <label for="customer_name">Full Name</label>
-                <input type="text" id="customer_name" name="customer_name" required placeholder="e.g. John Doe" />
+                <input
+                  type="text"
+                  id="customer_name"
+                  name="customer_name"
+                  required
+                  placeholder="e.g. John Doe"
+                  value={profile?.full_name || ''}
+                />
               </div>
               
               <div class="form-group">
                 <label for="phone">Phone Number (M-PESA)</label>
-                <input type="tel" id="phone" name="phone" required placeholder="e.g. 0712345678" />
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  placeholder="e.g. 0712345678"
+                  value={profile?.phone || ''}
+                />
               </div>
               
               <div class="form-group">
                 <label for="location">Delivery Location</label>
-                <input type="text" id="location" name="location" required placeholder="e.g. Westlands, Nairobi" />
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  required
+                  placeholder="e.g. Westlands, Nairobi"
+                  value={profile?.default_location || ''}
+                />
               </div>
 
               <label class="consent-checkbox">
@@ -230,6 +266,12 @@ const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAsse
     font-size: 0.8125rem;
     color: var(--text-muted);
     margin-bottom: var(--space-md);
+  }
+
+  .auth-prompt {
+    margin-bottom: var(--space-md);
+    font-size: 0.875rem;
+    color: var(--text-muted);
   }
 
   .form-group {

@@ -1,0 +1,149 @@
+---
+import PortalShell from '../../components/PortalShell.astro';
+import StatusPill from '../../components/StatusPill.astro';
+import { adminNavItems } from '../../lib/navigation';
+import { formatDateTime, formatKes, getFulfillmentStatusTone, titleCaseStatus } from '../../lib/order-utils';
+import { createAdminSupabaseClient } from '../../lib/supabase-admin';
+
+const adminSupabase = createAdminSupabaseClient(Astro.locals);
+const message = Astro.url.searchParams.get('message');
+const error = Astro.url.searchParams.get('error');
+
+const [
+  { count: newOrdersCount = 0 },
+  { count: unpaidOrdersCount = 0 },
+  { count: inProgressOrdersCount = 0 },
+  { count: outOfStockCount = 0 },
+  { count: newLeadsCount = 0 },
+  { count: newsletterCount = 0 },
+  { data: recentOrdersData }
+] = await Promise.all([
+  adminSupabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('fulfillment_status', 'new'),
+  adminSupabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('payment_status', 'pending'),
+  adminSupabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .in('fulfillment_status', ['processing', 'ready', 'shipped']),
+  adminSupabase
+    .from('products')
+    .select('*', { count: 'exact', head: true })
+    .eq('in_stock', false),
+  adminSupabase
+    .from('order_intents')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'new'),
+  adminSupabase
+    .from('newsletter_signups')
+    .select('*', { count: 'exact', head: true }),
+  adminSupabase
+    .from('orders')
+    .select('id, order_number, customer_name, total_kes, fulfillment_status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(8)
+]);
+const recentOrders = recentOrdersData ?? [];
+---
+
+<PortalShell
+  title="Admin Dashboard"
+  intro="Monitor fresh orders, customer leads, and inventory exceptions from one operational workspace."
+  navItems={adminNavItems}
+  currentPath={Astro.url.pathname}
+  badge="Admin"
+>
+  <div class="stack">
+    {error && <div class="app-alert danger">{error}</div>}
+    {message && <div class="app-alert success">{message}</div>}
+
+    <section class="metrics-grid">
+      <article class="app-card metric-card">
+        <span>New Orders</span>
+        <strong>{newOrdersCount}</strong>
+        <p>Orders that still need first contact or processing.</p>
+      </article>
+      <article class="app-card metric-card">
+        <span>Unpaid Orders</span>
+        <strong>{unpaidOrdersCount}</strong>
+        <p>Orders still waiting on payment confirmation.</p>
+      </article>
+      <article class="app-card metric-card">
+        <span>In Progress</span>
+        <strong>{inProgressOrdersCount}</strong>
+        <p>Orders currently being worked, packed, or shipped.</p>
+      </article>
+      <article class="app-card metric-card">
+        <span>Out Of Stock</span>
+        <strong>{outOfStockCount}</strong>
+        <p>Products flagged unavailable in the current catalog.</p>
+      </article>
+      <article class="app-card metric-card">
+        <span>Uncontacted Leads</span>
+        <strong>{newLeadsCount}</strong>
+        <p>Raw order intents that still need follow-up.</p>
+      </article>
+      <article class="app-card metric-card">
+        <span>Newsletter Signups</span>
+        <strong>{newsletterCount}</strong>
+        <p>Total opt-ins captured through the storefront.</p>
+      </article>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Recent Orders</h2>
+          <p>Fast access to the newest order records.</p>
+        </div>
+        <a class="text-link" href="/admin/orders">Open full orders view</a>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentOrders.map((order) => (
+              <tr>
+                <td>
+                  <strong>{order.order_number}</strong>
+                </td>
+                <td>{order.customer_name}</td>
+                <td>{formatKes(order.total_kes)}</td>
+                <td>
+                  <StatusPill
+                    label={titleCaseStatus(order.fulfillment_status)}
+                    tone={getFulfillmentStatusTone(order.fulfillment_status)}
+                  />
+                </td>
+                <td>{formatDateTime(order.created_at)}</td>
+                <td>
+                  <a class="text-link" href={`/admin/orders/${order.id}`}>Review</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .table-wrap {
+    overflow-x: auto;
+  }
+</style>

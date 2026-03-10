@@ -5,13 +5,6 @@ import StickyATC from '../../components/StickyATC.astro';
 import { supabase } from '../../lib/supabase';
 import { getSiteAssets } from '../../lib/siteAssets';
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-  const { data: products } = await supabase.from('products').select('slug');
-  return products?.map(p => ({ params: { slug: p.slug } })) || [];
-}
-
 const { slug } = Astro.params;
 
 // Fetch product details

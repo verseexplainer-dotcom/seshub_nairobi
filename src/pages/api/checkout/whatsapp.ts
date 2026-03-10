@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import type { APIRoute } from 'astro';
+import { createAdminSupabaseClient } from '../../../lib/supabase-admin';
+import { getSessionContext } from '../../../lib/server-auth';
 
 export const prerender = false;
 
@@ -24,10 +25,12 @@ function isRateLimited(ip: string) {
 }
 
 type CartItem = {
+  id: string | null;
   title: string;
   qty: number;
   price_kes: number;
   slug: string | null;
+  image: string | null;
 };
 
 function normalizeCart(cart: any): CartItem[] {
@@ -44,16 +47,19 @@ function normalizeCart(cart: any): CartItem[] {
     }
 
     return {
+      id: item?.id ? String(item.id) : null,
       title,
       qty: Math.floor(qty),
       price_kes: Math.round(price),
-      slug: item?.slug ? String(item.slug) : null
+      slug: item?.slug ? String(item.slug) : null,
+      image: item?.image ? String(item.image) : null
     };
   });
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async (context) => {
   try {
+    const { request, locals } = context;
     const ip = getClientIp(request);
     if (isRateLimited(ip)) {
       return new Response(
@@ -92,38 +98,32 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const env = (locals as any)?.runtime?.env ?? {};
-    const supabaseUrl = env.PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceRoleKey) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Server configuration missing Supabase credentials.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    const session = await getSessionContext(context);
+    const adminSupabase = createAdminSupabaseClient(locals);
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const payload = {
-      cart,
-      total_kes: computedTotalKes,
-      customer_name: customerName,
-      phone,
-      location: body?.location ? String(body.location).trim() : null,
-      consent,
-      source_page: sourcePage,
-      status: 'new'
-    };
+    const { data, error } = await adminSupabase.rpc('create_checkout_order', {
+      p_cart: cart,
+      p_total_kes: computedTotalKes,
+      p_customer_name: customerName,
+      p_phone: phone,
+      p_location: body?.location ? String(body.location).trim() : null,
+      p_consent: consent,
+      p_source_page: sourcePage,
+      p_user_id: session.user?.id ?? null,
+      p_customer_email: session.user?.email ?? null
+    });
 
-    const { data, error } = await supabase.from('order_intents').insert([payload]).select('id').single();
-    if (error || !data?.id) {
-      console.error('order_intents insert error', error);
-      return new Response(JSON.stringify({ ok: false, error: 'Failed to save order intent.' }), {
+    const orderRow = Array.isArray(data) ? data[0] : data;
+
+    if (error || !orderRow?.order_id) {
+      console.error('create_checkout_order error', error);
+      return new Response(JSON.stringify({ ok: false, error: error?.message || 'Failed to save order.' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const orderRef = data.id;
+    const orderRef = orderRow.order_number || orderRow.order_id;
     const itemsSummary = cart.map((item) => `${item.qty}x ${item.title}`).join(', ');
     const message = `Hello SES ICT HUB, I want to place order ref ${orderRef}. Items: ${itemsSummary}. Total: KES ${computedTotalKes}.`;
     const whatsappUrl = `https://wa.me/254720480475?text=${encodeURIComponent(message)}`;
@@ -131,7 +131,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(
       JSON.stringify({
         ok: true,
-        order_id: orderRef,
+        order_id: orderRow.order_id,
+        order_number: orderRow.order_number,
         whatsapp_url: whatsappUrl,
         url: whatsappUrl
       }),

@@ -1,0 +1,10 @@
+---
+interface Props {
+  message?: string | null;
+  tone?: 'info' | 'success' | 'warning' | 'danger';
+}
+
+const { message, tone = 'info' } = Astro.props;
+---
+
+{message && <div class={`app-alert ${tone}`}>{message}</div>}

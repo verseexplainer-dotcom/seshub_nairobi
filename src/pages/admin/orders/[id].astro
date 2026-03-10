@@ -1,0 +1,277 @@
+---
+import PortalShell from '../../../components/PortalShell.astro';
+import StatusPill from '../../../components/StatusPill.astro';
+import { normalizePhoneForWhatsApp } from '../../../lib/auth-utils';
+import { adminNavItems } from '../../../lib/navigation';
+import { FULFILLMENT_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS, describeOrderEvent, formatDateTime, formatKes, getFulfillmentStatusTone, getPaymentStatusTone, titleCaseStatus } from '../../../lib/order-utils';
+import { createAdminSupabaseClient } from '../../../lib/supabase-admin';
+
+const adminSupabase = createAdminSupabaseClient(Astro.locals);
+const id = Astro.params.id;
+const message = Astro.url.searchParams.get('message');
+const error = Astro.url.searchParams.get('error');
+
+const { data: order } = await adminSupabase
+  .from('orders')
+  .select('*, order_items(*), order_status_events(*)')
+  .eq('id', id)
+  .single();
+
+if (!order) {
+  return Astro.redirect('/admin/orders?error=Order%20not%20found.');
+}
+
+const actorIds = [
+  ...new Set(
+    (order.order_status_events || [])
+      .map((event: any) => event.actor_user_id)
+      .filter((actorId: string | null | undefined) => Boolean(actorId))
+  )
+];
+
+const { data: actorProfilesData } = actorIds.length
+  ? await adminSupabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', actorIds)
+  : { data: [] };
+const actorProfiles = actorProfilesData ?? [];
+
+const actorNames = new Map(actorProfiles.map((profile) => [profile.user_id, profile.full_name]));
+const statusEvents = [...(order.order_status_events || [])].sort((a, b) =>
+  b.created_at.localeCompare(a.created_at)
+);
+const whatsappPhone = normalizePhoneForWhatsApp(order.customer_phone);
+const whatsappHref = whatsappPhone
+  ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`Hello ${order.customer_name}, this is SES ICT HUB following up on order ${order.order_number}.`)}`
+  : null;
+---
+
+<PortalShell
+  title={`Order ${order.order_number}`}
+  intro="Review line items, customer snapshots, and the audit timeline before pushing operational updates."
+  navItems={adminNavItems}
+  currentPath="/admin/orders"
+  badge="Admin"
+>
+  <div class="stack">
+    {error && <div class="app-alert danger">{error}</div>}
+    {message && <div class="app-alert success">{message}</div>}
+
+    <section class="app-grid cols-2">
+      <article class="app-card">
+        <div class="section-heading">
+          <div>
+            <h2>Order Summary</h2>
+            <p>Created {formatDateTime(order.created_at)}</p>
+          </div>
+          <div class="app-actions">
+            <StatusPill
+              label={titleCaseStatus(order.payment_status)}
+              tone={getPaymentStatusTone(order.payment_status)}
+            />
+            <StatusPill
+              label={titleCaseStatus(order.fulfillment_status)}
+              tone={getFulfillmentStatusTone(order.fulfillment_status)}
+            />
+          </div>
+        </div>
+
+        <div class="detail-list">
+          <div class="detail-row">
+            <span>Customer</span>
+            <strong>{order.customer_name}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Phone</span>
+            <strong>{order.customer_phone}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Email</span>
+            <strong>{order.customer_email || 'Not captured'}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Location</span>
+            <strong>{order.customer_location || 'Not provided'}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Total</span>
+            <strong>{formatKes(order.total_kes)}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Source</span>
+            <strong>{titleCaseStatus(order.source)}</strong>
+          </div>
+        </div>
+
+        {whatsappHref && (
+          <div class="app-actions">
+            <a class="pill-button accent" href={whatsappHref} target="_blank">Message Customer</a>
+          </div>
+        )}
+      </article>
+
+      <article class="app-card">
+        <div class="section-heading">
+          <div>
+            <h2>Update Status</h2>
+            <p>Each submission writes a status event into the order timeline.</p>
+          </div>
+        </div>
+
+        <form method="POST" action={`/api/admin/orders/${order.id}/status`} class="app-form">
+          <input type="hidden" name="redirect_to" value={`/admin/orders/${order.id}`} />
+
+          <div class="app-form-grid cols-2">
+            <div class="form-field">
+              <label for="payment_status">Payment status</label>
+              <select id="payment_status" name="payment_status">
+                {PAYMENT_STATUS_OPTIONS.map((option) => (
+                  <option
+                    value={option}
+                    selected={order.payment_status === option}
+                  >
+                    {titleCaseStatus(option)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="fulfillment_status">Fulfillment status</label>
+              <select id="fulfillment_status" name="fulfillment_status">
+                {FULFILLMENT_STATUS_OPTIONS.map((option) => (
+                  <option
+                    value={option}
+                    selected={order.fulfillment_status === option}
+                  >
+                    {titleCaseStatus(option)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="status_note">Operational note</label>
+            <textarea
+              id="status_note"
+              name="note"
+              placeholder="Optional note visible in the audit trail."
+            ></textarea>
+          </div>
+
+          <button type="submit" class="pill-button primary">Save Status Update</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Order Items</h2>
+          <p>Catalog fields are snapshotted into each order line.</p>
+        </div>
+      </div>
+
+      <div class="stack sm">
+        {(order.order_items || []).map((item: any) => (
+          <article class="line-item">
+            <div>
+              <strong>{item.product_title}</strong>
+              <p class="muted">
+                {item.qty} x {formatKes(item.unit_price_kes)}
+                {item.product_sku ? ` • SKU ${item.product_sku}` : ''}
+              </p>
+            </div>
+            <strong>{formatKes(item.line_total_kes)}</strong>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Internal Note</h2>
+          <p>Add a note without changing statuses.</p>
+        </div>
+      </div>
+
+      <form method="POST" action={`/api/admin/orders/${order.id}/note`} class="app-form">
+        <input type="hidden" name="redirect_to" value={`/admin/orders/${order.id}`} />
+        <div class="form-field">
+          <label for="note_only">Note</label>
+          <textarea id="note_only" name="note" required placeholder="Add follow-up detail, payment confirmation evidence, or courier info."></textarea>
+        </div>
+        <button type="submit" class="pill-button primary">Add Note</button>
+      </form>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Audit Timeline</h2>
+          <p>Newest events first.</p>
+        </div>
+      </div>
+
+      <div class="timeline">
+        {statusEvents.map((event) => (
+          <article class="timeline-item">
+            <div class="timeline-head">
+              <div>
+                <strong>{describeOrderEvent(event.event_type)}</strong>
+                <p class="muted">{formatDateTime(event.created_at)}</p>
+              </div>
+              <div class="app-actions">
+                <StatusPill
+                  label={titleCaseStatus(event.payment_status)}
+                  tone={getPaymentStatusTone(event.payment_status)}
+                />
+                <StatusPill
+                  label={titleCaseStatus(event.fulfillment_status)}
+                  tone={getFulfillmentStatusTone(event.fulfillment_status)}
+                />
+              </div>
+            </div>
+            {event.actor_user_id && (
+              <p class="muted">
+                Actor: {actorNames.get(event.actor_user_id) || event.actor_user_id}
+              </p>
+            )}
+            {event.note && <p>{event.note}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .line-item,
+  .timeline-item {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .line-item:first-child,
+  .timeline-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .line-item {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+  }
+
+  .timeline-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+</style>

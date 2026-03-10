@@ -5,13 +5,6 @@ import SearchBar from '../../components/SearchBar.astro';
 import { supabase } from '../../lib/supabase';
 import { getSiteAssets } from '../../lib/siteAssets';
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-  const categories = ['laptops', 'desktops', 'printers', 'smartphones', 'accessories', 'deals', 'all'];
-  return categories.map(slug => ({ params: { slug } }));
-}
-
 const { slug } = Astro.params;
 
 // Map route slugs to acceptable DB category values (case/data tolerant)

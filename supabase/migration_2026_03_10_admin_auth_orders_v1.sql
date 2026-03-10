@@ -1,14 +1,20 @@
--- =============================================================
--- SES ICT HUB — Supabase Schema  (admin/auth/orders v1)
--- Run on a fresh project or use the matching migration for existing
--- databases before deploying the new admin/auth/orders feature set.
--- =============================================================
+-- SES ICT HUB
+-- Incremental migration for existing Supabase projects
+-- Target: admin/auth/orders v1 on feature/admin-auth-orders-v1
+--
+-- Apply this file to the existing project before deploying this branch.
+-- After the schema upgrade completes, run:
+--   select public.backfill_orders_from_order_intents();
+--
+-- Then manually promote the first staff user in public.profiles.
+
+BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- ─────────────────────────────────────────────────────────────
--- 0. SHARED HELPERS
--- ─────────────────────────────────────────────────────────────
+-- ------------------------------------------------------------------
+-- Shared helpers
+-- ------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -36,6 +42,205 @@ BEGIN
   );
 END;
 $$;
+
+-- ------------------------------------------------------------------
+-- Products sync for admin/catalog visibility
+-- ------------------------------------------------------------------
+ALTER TABLE IF EXISTS public.products
+  ADD COLUMN IF NOT EXISTS stock_qty numeric,
+  ADD COLUMN IF NOT EXISTS featured_rank numeric,
+  ADD COLUMN IF NOT EXISTS sku text,
+  ADD COLUMN IF NOT EXISTS status text,
+  ADD COLUMN IF NOT EXISTS source_id text,
+  ADD COLUMN IF NOT EXISTS cpu text,
+  ADD COLUMN IF NOT EXISTS ram_gb numeric,
+  ADD COLUMN IF NOT EXISTS storage_gb numeric,
+  ADD COLUMN IF NOT EXISTS storage_type text,
+  ADD COLUMN IF NOT EXISTS screen_in numeric,
+  ADD COLUMN IF NOT EXISTS categories text[],
+  ADD COLUMN IF NOT EXISTS tags text[],
+  ADD COLUMN IF NOT EXISTS collections text[],
+  ADD COLUMN IF NOT EXISTS seo_title text,
+  ADD COLUMN IF NOT EXISTS meta_description text,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+
+UPDATE public.products
+SET updated_at = coalesce(updated_at, created_at, now())
+WHERE updated_at IS NULL;
+
+ALTER TABLE public.products
+  ALTER COLUMN updated_at SET DEFAULT now();
+
+DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
+CREATE TRIGGER trg_products_updated_at
+  BEFORE UPDATE ON public.products
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_products_category    ON public.products (category);
+CREATE INDEX IF NOT EXISTS idx_products_price_kes   ON public.products (price_kes);
+CREATE INDEX IF NOT EXISTS idx_products_in_stock    ON public.products (in_stock);
+CREATE INDEX IF NOT EXISTS idx_products_featured    ON public.products (featured_home, featured_rank);
+CREATE INDEX IF NOT EXISTS idx_products_brand       ON public.products (brand);
+CREATE INDEX IF NOT EXISTS idx_products_updated_at  ON public.products (updated_at DESC);
+
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.products'::regclass
+      AND contype = 'c'
+      AND (
+        pg_get_constraintdef(oid) ILIKE '%lower(category)%'
+        OR pg_get_constraintdef(oid) ILIKE '%condition%'
+        OR pg_get_constraintdef(oid) ILIKE '%refurb_grade%'
+        OR pg_get_constraintdef(oid) ILIKE '%warranty_months%'
+      )
+  LOOP
+    EXECUTE format('ALTER TABLE public.products DROP CONSTRAINT IF EXISTS %I', c.conname);
+  END LOOP;
+END
+$$;
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_category_check
+  CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories'));
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_condition_check
+  CHECK (condition IS NULL OR condition IN ('brand_new', 'refurbished', 'unknown'));
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_refurb_grade_check
+  CHECK (refurb_grade IS NULL OR refurb_grade IN ('grade_a', 'grade_b', 'grade_c'));
+
+ALTER TABLE public.products
+  ADD CONSTRAINT products_warranty_months_check
+  CHECK (warranty_months IS NULL OR warranty_months IN (3, 6, 12));
+
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Select" ON public.products;
+DROP POLICY IF EXISTS "products_public_read" ON public.products;
+CREATE POLICY "products_public_read"
+  ON public.products FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+-- ------------------------------------------------------------------
+-- Testimonials sync
+-- ------------------------------------------------------------------
+ALTER TABLE IF EXISTS public.testimonials
+  ADD COLUMN IF NOT EXISTS persona text,
+  ADD COLUMN IF NOT EXISTS rating int,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+
+UPDATE public.testimonials
+SET created_at = now()
+WHERE created_at IS NULL;
+
+ALTER TABLE public.testimonials
+  ALTER COLUMN created_at SET DEFAULT now();
+
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Select Testimonials" ON public.testimonials;
+DROP POLICY IF EXISTS "testimonials_public_read" ON public.testimonials;
+CREATE POLICY "testimonials_public_read"
+  ON public.testimonials FOR SELECT
+  TO anon, authenticated
+  USING (approved = true);
+
+-- ------------------------------------------------------------------
+-- Profiles + auth helpers
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.profiles (
+  user_id           uuid        PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  full_name         text,
+  phone             text,
+  default_location  text,
+  role              text        NOT NULL DEFAULT 'customer',
+  is_active         boolean     NOT NULL DEFAULT true,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE IF EXISTS public.profiles
+  ADD COLUMN IF NOT EXISTS full_name text,
+  ADD COLUMN IF NOT EXISTS phone text,
+  ADD COLUMN IF NOT EXISTS default_location text,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'customer',
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+
+UPDATE public.profiles
+SET
+  role = coalesce(nullif(role, ''), 'customer'),
+  is_active = coalesce(is_active, true),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now());
+
+ALTER TABLE public.profiles
+  ALTER COLUMN role SET DEFAULT 'customer',
+  ALTER COLUMN role SET NOT NULL,
+  ALTER COLUMN is_active SET DEFAULT true,
+  ALTER COLUMN is_active SET NOT NULL,
+  ALTER COLUMN created_at SET DEFAULT now(),
+  ALTER COLUMN created_at SET NOT NULL,
+  ALTER COLUMN updated_at SET DEFAULT now(),
+  ALTER COLUMN updated_at SET NOT NULL;
+
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.profiles'::regclass
+      AND contype = 'c'
+      AND pg_get_constraintdef(oid) ILIKE '%role%'
+  LOOP
+    EXECUTE format('ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS %I', c.conname);
+  END LOOP;
+END
+$$;
+
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_role_check
+  CHECK (role IN ('customer', 'staff', 'admin'));
+
+CREATE INDEX IF NOT EXISTS idx_profiles_role    ON public.profiles (role);
+CREATE INDEX IF NOT EXISTS idx_profiles_active  ON public.profiles (is_active);
+CREATE INDEX IF NOT EXISTS idx_profiles_updated ON public.profiles (updated_at DESC);
+
+DROP TRIGGER IF EXISTS trg_profiles_updated_at ON public.profiles;
+CREATE TRIGGER trg_profiles_updated_at
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at();
+
+INSERT INTO public.profiles (
+  user_id,
+  full_name,
+  phone,
+  default_location,
+  created_at,
+  updated_at
+)
+SELECT
+  u.id,
+  nullif(u.raw_user_meta_data ->> 'full_name', ''),
+  nullif(u.raw_user_meta_data ->> 'phone', ''),
+  nullif(u.raw_user_meta_data ->> 'default_location', ''),
+  coalesce(u.created_at, now()),
+  now()
+FROM auth.users u
+ON CONFLICT (user_id) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION public.current_profile_role()
 RETURNS text
@@ -69,213 +274,6 @@ SET search_path = public
 AS $$
   SELECT public.current_profile_role() = 'admin';
 $$;
-
--- ─────────────────────────────────────────────────────────────
--- 1. PRODUCTS
--- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.products (
-  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug             text        UNIQUE NOT NULL,
-  title            text        NOT NULL,
-  category         text        NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
-  price_kes        numeric     NOT NULL,
-  compare_at_kes   numeric,
-  in_stock         boolean     NOT NULL DEFAULT true,
-  stock_qty        numeric,
-  brand            text,
-  condition        text        CHECK (condition IN ('brand_new', 'refurbished', 'unknown')),
-  refurb_grade     text        CHECK (refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
-  short_specs      text,
-  description      text,
-  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12)),
-  images           jsonb       NOT NULL DEFAULT '[]'::jsonb,
-  featured_home    boolean     NOT NULL DEFAULT false,
-  featured_rank    numeric,
-  sku              text,
-  status           text,
-  source_id        text,
-  cpu              text,
-  ram_gb           numeric,
-  storage_gb       numeric,
-  storage_type     text,
-  screen_in        numeric,
-  categories       text[],
-  tags             text[],
-  collections      text[],
-  seo_title        text,
-  meta_description text,
-  created_at       timestamptz NOT NULL DEFAULT now(),
-  updated_at       timestamptz NOT NULL DEFAULT now()
-);
-
-DROP TRIGGER IF EXISTS trg_products_updated_at ON public.products;
-CREATE TRIGGER trg_products_updated_at
-  BEFORE UPDATE ON public.products
-  FOR EACH ROW
-  EXECUTE FUNCTION public.set_updated_at();
-
-CREATE INDEX IF NOT EXISTS idx_products_category   ON public.products (category);
-CREATE INDEX IF NOT EXISTS idx_products_price_kes  ON public.products (price_kes);
-CREATE INDEX IF NOT EXISTS idx_products_in_stock   ON public.products (in_stock);
-CREATE INDEX IF NOT EXISTS idx_products_featured   ON public.products (featured_home, featured_rank);
-CREATE INDEX IF NOT EXISTS idx_products_brand      ON public.products (brand);
-CREATE INDEX IF NOT EXISTS idx_products_updated_at ON public.products (updated_at DESC);
-
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "products_public_read" ON public.products;
-CREATE POLICY "products_public_read"
-  ON public.products FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
--- ─────────────────────────────────────────────────────────────
--- 2. TESTIMONIALS
--- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.testimonials (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  name        text        NOT NULL,
-  persona     text        NOT NULL,
-  rating      int         DEFAULT 5 CHECK (rating BETWEEN 1 AND 5),
-  quote       text        NOT NULL,
-  approved    boolean     NOT NULL DEFAULT false,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "testimonials_public_read" ON public.testimonials;
-CREATE POLICY "testimonials_public_read"
-  ON public.testimonials FOR SELECT
-  TO anon, authenticated
-  USING (approved = true);
-
--- ─────────────────────────────────────────────────────────────
--- 3. LEADS / TRACKING TABLES
--- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.order_intents (
-  id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id        uuid        REFERENCES auth.users (id) ON DELETE SET NULL,
-  created_at     timestamptz NOT NULL DEFAULT now(),
-  source_page    text,
-  cart           jsonb       NOT NULL,
-  total_kes      int         NOT NULL CHECK (total_kes > 0),
-  customer_name  text        NOT NULL,
-  customer_email text,
-  phone          text        NOT NULL CHECK (length(phone) >= 9),
-  location       text,
-  consent        boolean     NOT NULL DEFAULT false,
-  status         text        NOT NULL DEFAULT 'new'
-                             CHECK (status IN ('new', 'contacted', 'closed'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_order_intents_created_at ON public.order_intents (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_order_intents_status     ON public.order_intents (status);
-CREATE INDEX IF NOT EXISTS idx_order_intents_user_id    ON public.order_intents (user_id);
-
-ALTER TABLE public.order_intents ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "order_intents_public_insert" ON public.order_intents;
-CREATE POLICY "order_intents_public_insert"
-  ON public.order_intents FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (consent = true AND total_kes > 0 AND length(phone) >= 9);
-
-DROP POLICY IF EXISTS "order_intents_staff_read" ON public.order_intents;
-CREATE POLICY "order_intents_staff_read"
-  ON public.order_intents FOR SELECT
-  TO authenticated
-  USING (public.is_staff());
-
-DROP POLICY IF EXISTS "order_intents_staff_update" ON public.order_intents;
-CREATE POLICY "order_intents_staff_update"
-  ON public.order_intents FOR UPDATE
-  TO authenticated
-  USING (public.is_staff())
-  WITH CHECK (public.is_staff());
-
-CREATE TABLE IF NOT EXISTS public.events (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_type  text        NOT NULL CHECK (event_type IN (
-                            'page_view',
-                            'add_to_cart',
-                            'remove_from_cart',
-                            'checkout_start',
-                            'whatsapp_click',
-                            'submit_order_intent',
-                            'newsletter_signup_intent',
-                            'whatsapp_checkout_redirect'
-                          )),
-  payload     jsonb       DEFAULT '{}'::jsonb,
-  session_id  text,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_events_created_at ON public.events (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_events_type       ON public.events (event_type);
-
-ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "events_public_insert" ON public.events;
-CREATE POLICY "events_public_insert"
-  ON public.events FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);
-
-DROP POLICY IF EXISTS "events_staff_read" ON public.events;
-CREATE POLICY "events_staff_read"
-  ON public.events FOR SELECT
-  TO authenticated
-  USING (public.is_staff());
-
-CREATE TABLE IF NOT EXISTS public.newsletter_signups (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  email       text        UNIQUE NOT NULL,
-  consent     boolean     NOT NULL DEFAULT false,
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  source_page text
-);
-
-CREATE INDEX IF NOT EXISTS idx_newsletter_created_at ON public.newsletter_signups (created_at DESC);
-
-ALTER TABLE public.newsletter_signups ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "newsletter_public_insert" ON public.newsletter_signups;
-CREATE POLICY "newsletter_public_insert"
-  ON public.newsletter_signups FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (consent = true AND position('@' IN email) > 1);
-
-DROP POLICY IF EXISTS "newsletter_staff_read" ON public.newsletter_signups;
-CREATE POLICY "newsletter_staff_read"
-  ON public.newsletter_signups FOR SELECT
-  TO authenticated
-  USING (public.is_staff());
-
--- ─────────────────────────────────────────────────────────────
--- 4. AUTH PROFILES
--- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.profiles (
-  user_id           uuid        PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  full_name         text,
-  phone             text,
-  default_location  text,
-  role              text        NOT NULL DEFAULT 'customer'
-                                CHECK (role IN ('customer', 'staff', 'admin')),
-  is_active         boolean     NOT NULL DEFAULT true,
-  created_at        timestamptz NOT NULL DEFAULT now(),
-  updated_at        timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_profiles_role      ON public.profiles (role);
-CREATE INDEX IF NOT EXISTS idx_profiles_active    ON public.profiles (is_active);
-CREATE INDEX IF NOT EXISTS idx_profiles_updated   ON public.profiles (updated_at DESC);
-
-DROP TRIGGER IF EXISTS trg_profiles_updated_at ON public.profiles;
-CREATE TRIGGER trg_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION public.set_updated_at();
 
 CREATE OR REPLACE FUNCTION public.guard_profile_updates()
 RETURNS trigger
@@ -333,42 +331,257 @@ CREATE TRIGGER on_auth_user_created
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "profiles_self_or_staff_read" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_self_insert" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_self_or_admin_update" ON public.profiles;
+
 CREATE POLICY "profiles_self_or_staff_read"
   ON public.profiles FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id OR public.is_staff());
 
-DROP POLICY IF EXISTS "profiles_self_insert" ON public.profiles;
 CREATE POLICY "profiles_self_insert"
   ON public.profiles FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "profiles_self_or_admin_update" ON public.profiles;
 CREATE POLICY "profiles_self_or_admin_update"
   ON public.profiles FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id OR public.is_admin())
   WITH CHECK (auth.uid() = user_id OR public.is_admin());
 
--- ─────────────────────────────────────────────────────────────
--- 5. ORDERS
--- ─────────────────────────────────────────────────────────────
+-- ------------------------------------------------------------------
+-- Leads / tracking tables
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.events (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type  text        NOT NULL,
+  payload     jsonb       DEFAULT '{}'::jsonb,
+  session_id  text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE IF EXISTS public.events
+  ADD COLUMN IF NOT EXISTS payload jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+
+UPDATE public.events
+SET
+  payload = coalesce(payload, '{}'::jsonb),
+  created_at = coalesce(created_at, now());
+
+ALTER TABLE public.events
+  ALTER COLUMN payload SET DEFAULT '{}'::jsonb,
+  ALTER COLUMN created_at SET DEFAULT now();
+
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.events'::regclass
+      AND contype = 'c'
+      AND pg_get_constraintdef(oid) ILIKE '%event_type%'
+  LOOP
+    EXECUTE format('ALTER TABLE public.events DROP CONSTRAINT IF EXISTS %I', c.conname);
+  END LOOP;
+END
+$$;
+
+ALTER TABLE public.events
+  ADD CONSTRAINT events_event_type_check
+  CHECK (
+    event_type IN (
+      'page_view',
+      'add_to_cart',
+      'remove_from_cart',
+      'checkout_start',
+      'whatsapp_click',
+      'submit_order_intent',
+      'newsletter_signup_intent',
+      'whatsapp_checkout_redirect'
+    )
+  );
+
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON public.events (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_events_type       ON public.events (event_type);
+
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "events_public_insert" ON public.events;
+DROP POLICY IF EXISTS "events_staff_read" ON public.events;
+DROP POLICY IF EXISTS "events_anon_insert" ON public.events;
+DROP POLICY IF EXISTS "events_anon_deny_select" ON public.events;
+DROP POLICY IF EXISTS "events_auth_deny_select" ON public.events;
+
+CREATE POLICY "events_public_insert"
+  ON public.events FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "events_staff_read"
+  ON public.events FOR SELECT
+  TO authenticated
+  USING (public.is_staff());
+
+ALTER TABLE IF EXISTS public.order_intents
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS source_page text,
+  ADD COLUMN IF NOT EXISTS customer_email text,
+  ADD COLUMN IF NOT EXISTS consent boolean DEFAULT false;
+
+UPDATE public.order_intents
+SET consent = coalesce(consent, false);
+
+ALTER TABLE public.order_intents
+  ALTER COLUMN consent SET DEFAULT false,
+  ALTER COLUMN consent SET NOT NULL;
+
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.order_intents'::regclass
+      AND contype = 'c'
+      AND (
+        pg_get_constraintdef(oid) ILIKE '%status%'
+        OR pg_get_constraintdef(oid) ILIKE '%phone%'
+        OR pg_get_constraintdef(oid) ILIKE '%total_kes%'
+      )
+  LOOP
+    EXECUTE format('ALTER TABLE public.order_intents DROP CONSTRAINT IF EXISTS %I', c.conname);
+  END LOOP;
+END
+$$;
+
+ALTER TABLE public.order_intents
+  ADD CONSTRAINT order_intents_total_kes_check
+  CHECK (total_kes IS NULL OR total_kes > 0);
+
+ALTER TABLE public.order_intents
+  ADD CONSTRAINT order_intents_phone_check
+  CHECK (phone IS NULL OR length(phone) >= 9);
+
+ALTER TABLE public.order_intents
+  ADD CONSTRAINT order_intents_status_check
+  CHECK (status IN ('new', 'contacted', 'closed'));
+
+CREATE INDEX IF NOT EXISTS idx_order_intents_created_at ON public.order_intents (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_intents_status     ON public.order_intents (status);
+CREATE INDEX IF NOT EXISTS idx_order_intents_user_id    ON public.order_intents (user_id);
+
+ALTER TABLE public.order_intents ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Insert Orders" ON public.order_intents;
+DROP POLICY IF EXISTS "Admin Select Orders" ON public.order_intents;
+DROP POLICY IF EXISTS "order_intents_public_insert" ON public.order_intents;
+DROP POLICY IF EXISTS "order_intents_staff_read" ON public.order_intents;
+DROP POLICY IF EXISTS "order_intents_staff_update" ON public.order_intents;
+DROP POLICY IF EXISTS "order_intents_anon_insert" ON public.order_intents;
+DROP POLICY IF EXISTS "order_intents_anon_deny_select" ON public.order_intents;
+DROP POLICY IF EXISTS "order_intents_auth_deny_select" ON public.order_intents;
+
+CREATE POLICY "order_intents_public_insert"
+  ON public.order_intents FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (consent = true AND total_kes > 0 AND length(phone) >= 9);
+
+CREATE POLICY "order_intents_staff_read"
+  ON public.order_intents FOR SELECT
+  TO authenticated
+  USING (public.is_staff());
+
+CREATE POLICY "order_intents_staff_update"
+  ON public.order_intents FOR UPDATE
+  TO authenticated
+  USING (public.is_staff())
+  WITH CHECK (public.is_staff());
+
+ALTER TABLE IF EXISTS public.newsletter_signups
+  ADD COLUMN IF NOT EXISTS source_page text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+
+UPDATE public.newsletter_signups
+SET
+  consent = coalesce(consent, false),
+  created_at = coalesce(created_at, now());
+
+ALTER TABLE public.newsletter_signups
+  ALTER COLUMN consent SET DEFAULT false,
+  ALTER COLUMN created_at SET DEFAULT now();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_indexes
+    WHERE schemaname = 'public'
+      AND indexname = 'newsletter_signups_email_unique'
+  )
+  THEN
+    IF EXISTS (
+      SELECT 1
+      FROM (
+        SELECT email
+        FROM public.newsletter_signups
+        GROUP BY email
+        HAVING count(*) > 1
+      ) dupes
+    )
+    THEN
+      RAISE NOTICE 'Skipping newsletter_signups_email_unique because duplicate emails already exist.';
+    ELSE
+      CREATE UNIQUE INDEX newsletter_signups_email_unique
+        ON public.newsletter_signups (email);
+    END IF;
+  END IF;
+END
+$$;
+
+CREATE INDEX IF NOT EXISTS idx_newsletter_created_at ON public.newsletter_signups (created_at DESC);
+
+ALTER TABLE public.newsletter_signups ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Insert Newsletter" ON public.newsletter_signups;
+DROP POLICY IF EXISTS "Admin Select Newsletter" ON public.newsletter_signups;
+DROP POLICY IF EXISTS "newsletter_public_insert" ON public.newsletter_signups;
+DROP POLICY IF EXISTS "newsletter_staff_read" ON public.newsletter_signups;
+DROP POLICY IF EXISTS "newsletter_anon_insert" ON public.newsletter_signups;
+DROP POLICY IF EXISTS "newsletter_anon_deny_select" ON public.newsletter_signups;
+DROP POLICY IF EXISTS "newsletter_auth_deny_select" ON public.newsletter_signups;
+
+CREATE POLICY "newsletter_public_insert"
+  ON public.newsletter_signups FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (consent = true AND position('@' IN email) > 1);
+
+CREATE POLICY "newsletter_staff_read"
+  ON public.newsletter_signups FOR SELECT
+  TO authenticated
+  USING (public.is_staff());
+
+-- ------------------------------------------------------------------
+-- Orders
+-- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.orders (
   id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number        text        NOT NULL UNIQUE DEFAULT public.generate_order_number(),
   user_id             uuid        REFERENCES auth.users (id) ON DELETE SET NULL,
   order_intent_id     uuid        UNIQUE REFERENCES public.order_intents (id) ON DELETE SET NULL,
   customer_name       text        NOT NULL,
-  customer_phone      text        NOT NULL CHECK (length(customer_phone) >= 9),
+  customer_phone      text        NOT NULL,
   customer_email      text,
   customer_location   text,
-  subtotal_kes        int         NOT NULL CHECK (subtotal_kes > 0),
-  total_kes           int         NOT NULL CHECK (total_kes > 0),
-  payment_status      text        NOT NULL DEFAULT 'pending'
-                                  CHECK (payment_status IN ('pending', 'partially_paid', 'paid', 'refunded')),
-  fulfillment_status  text        NOT NULL DEFAULT 'new'
-                                  CHECK (fulfillment_status IN ('new', 'contacted', 'processing', 'ready', 'shipped', 'delivered', 'cancelled')),
+  subtotal_kes        int         NOT NULL,
+  total_kes           int         NOT NULL,
+  payment_status      text        NOT NULL DEFAULT 'pending',
+  fulfillment_status  text        NOT NULL DEFAULT 'new',
   source              text        NOT NULL DEFAULT 'whatsapp_checkout',
   created_at          timestamptz NOT NULL DEFAULT now(),
   updated_at          timestamptz NOT NULL DEFAULT now()
@@ -386,6 +599,33 @@ CREATE TRIGGER trg_orders_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at();
 
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.orders'::regclass
+      AND contype = 'c'
+      AND (
+        pg_get_constraintdef(oid) ILIKE '%payment_status%'
+        OR pg_get_constraintdef(oid) ILIKE '%fulfillment_status%'
+      )
+  LOOP
+    EXECUTE format('ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS %I', c.conname);
+  END LOOP;
+END
+$$;
+
+ALTER TABLE public.orders
+  ADD CONSTRAINT orders_payment_status_check
+  CHECK (payment_status IN ('pending', 'partially_paid', 'paid', 'refunded'));
+
+ALTER TABLE public.orders
+  ADD CONSTRAINT orders_fulfillment_status_check
+  CHECK (fulfillment_status IN ('new', 'contacted', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'));
+
 CREATE TABLE IF NOT EXISTS public.order_items (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id         uuid        NOT NULL REFERENCES public.orders (id) ON DELETE CASCADE,
@@ -394,9 +634,9 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   product_slug     text,
   product_sku      text,
   product_image    text,
-  unit_price_kes   int         NOT NULL CHECK (unit_price_kes > 0),
-  qty              int         NOT NULL CHECK (qty > 0),
-  line_total_kes   int         NOT NULL CHECK (line_total_kes > 0),
+  unit_price_kes   int         NOT NULL,
+  qty              int         NOT NULL,
+  line_total_kes   int         NOT NULL,
   created_at       timestamptz NOT NULL DEFAULT now()
 );
 
@@ -407,30 +647,59 @@ CREATE TABLE IF NOT EXISTS public.order_status_events (
   id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id            uuid        NOT NULL REFERENCES public.orders (id) ON DELETE CASCADE,
   actor_user_id       uuid        REFERENCES auth.users (id) ON DELETE SET NULL,
-  event_type          text        NOT NULL
-                                   CHECK (event_type IN ('order_created', 'payment_status_updated', 'fulfillment_status_updated', 'note_added', 'backfilled')),
-  payment_status      text        NOT NULL
-                                   CHECK (payment_status IN ('pending', 'partially_paid', 'paid', 'refunded')),
-  fulfillment_status  text        NOT NULL
-                                   CHECK (fulfillment_status IN ('new', 'contacted', 'processing', 'ready', 'shipped', 'delivered', 'cancelled')),
+  event_type          text        NOT NULL,
+  payment_status      text        NOT NULL,
+  fulfillment_status  text        NOT NULL,
   note                text,
   created_at          timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_order_status_events_order_id    ON public.order_status_events (order_id);
-CREATE INDEX IF NOT EXISTS idx_order_status_events_created_at  ON public.order_status_events (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_status_events_order_id   ON public.order_status_events (order_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_events_created_at ON public.order_status_events (created_at DESC);
+
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.order_status_events'::regclass
+      AND contype = 'c'
+      AND (
+        pg_get_constraintdef(oid) ILIKE '%event_type%'
+        OR pg_get_constraintdef(oid) ILIKE '%payment_status%'
+        OR pg_get_constraintdef(oid) ILIKE '%fulfillment_status%'
+      )
+  LOOP
+    EXECUTE format('ALTER TABLE public.order_status_events DROP CONSTRAINT IF EXISTS %I', c.conname);
+  END LOOP;
+END
+$$;
+
+ALTER TABLE public.order_status_events
+  ADD CONSTRAINT order_status_events_event_type_check
+  CHECK (event_type IN ('order_created', 'payment_status_updated', 'fulfillment_status_updated', 'note_added', 'backfilled'));
+
+ALTER TABLE public.order_status_events
+  ADD CONSTRAINT order_status_events_payment_status_check
+  CHECK (payment_status IN ('pending', 'partially_paid', 'paid', 'refunded'));
+
+ALTER TABLE public.order_status_events
+  ADD CONSTRAINT order_status_events_fulfillment_status_check
+  CHECK (fulfillment_status IN ('new', 'contacted', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'));
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_status_events ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "orders_customer_or_staff_read" ON public.orders;
+DROP POLICY IF EXISTS "orders_staff_update" ON public.orders;
 CREATE POLICY "orders_customer_or_staff_read"
   ON public.orders FOR SELECT
   TO authenticated
   USING (user_id = auth.uid() OR public.is_staff());
 
-DROP POLICY IF EXISTS "orders_staff_update" ON public.orders;
 CREATE POLICY "orders_staff_update"
   ON public.orders FOR UPDATE
   TO authenticated
@@ -451,6 +720,7 @@ CREATE POLICY "order_items_customer_or_staff_read"
   );
 
 DROP POLICY IF EXISTS "order_status_events_customer_or_staff_read" ON public.order_status_events;
+DROP POLICY IF EXISTS "order_status_events_staff_insert" ON public.order_status_events;
 CREATE POLICY "order_status_events_customer_or_staff_read"
   ON public.order_status_events FOR SELECT
   TO authenticated
@@ -463,15 +733,14 @@ CREATE POLICY "order_status_events_customer_or_staff_read"
     )
   );
 
-DROP POLICY IF EXISTS "order_status_events_staff_insert" ON public.order_status_events;
 CREATE POLICY "order_status_events_staff_insert"
   ON public.order_status_events FOR INSERT
   TO authenticated
   WITH CHECK (public.is_staff());
 
--- ─────────────────────────────────────────────────────────────
--- 6. TRANSACTIONAL ORDER FUNCTIONS
--- ─────────────────────────────────────────────────────────────
+-- ------------------------------------------------------------------
+-- Transactional order functions
+-- ------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.create_checkout_order(
   p_cart jsonb,
   p_total_kes int,
@@ -877,8 +1146,8 @@ BEGIN
     VALUES (
       v_intent.user_id,
       v_intent.id,
-      v_intent.customer_name,
-      v_intent.phone,
+      coalesce(v_intent.customer_name, 'Legacy customer'),
+      coalesce(v_intent.phone, 'unknown'),
       v_intent.customer_email,
       v_intent.location,
       greatest(1, coalesce(v_intent.total_kes, v_total)),
@@ -989,6 +1258,13 @@ BEGIN
 END;
 $$;
 
--- ─────────────────────────────────────────────────────────────
--- DONE
--- ─────────────────────────────────────────────────────────────
+REVOKE ALL ON FUNCTION public.create_checkout_order(jsonb, int, text, text, text, boolean, text, uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_checkout_order(jsonb, int, text, text, text, boolean, text, uuid, text) TO service_role;
+
+REVOKE ALL ON FUNCTION public.record_order_update(uuid, uuid, text, text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_order_update(uuid, uuid, text, text, text) TO service_role;
+
+REVOKE ALL ON FUNCTION public.backfill_orders_from_order_intents() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.backfill_orders_from_order_intents() TO service_role;
+
+COMMIT;

@@ -1,5 +1,6 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
+import type { SessionLocals } from '../lib/app-types';
 
 const navLinks = [
   { name: 'Laptops', href: '/category/laptops' },
@@ -12,6 +13,16 @@ const navLinks = [
 ];
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const logoImage = siteAssets.logo;
+const locals = Astro.locals as SessionLocals;
+const user = locals.user;
+const isStaff = locals.isStaff;
+const authLinks = user
+  ? [
+      { name: 'Account', href: '/account' },
+      ...(isStaff ? [{ name: 'Admin', href: '/admin' }] : []),
+      { name: 'Logout', href: '/auth/logout' }
+    ]
+  : [{ name: 'Sign In', href: '/auth/login' }];
 ---
 
 <header class="header">
@@ -29,6 +40,13 @@ const logoImage = siteAssets.logo;
     </nav>
 
     <div class="header-actions">
+      <div class="account-links">
+        {authLinks.map((link) => (
+          <a href={link.href} class={`account-link ${link.name === 'Logout' ? 'logout' : ''}`}>
+            {link.name}
+          </a>
+        ))}
+      </div>
       <a href="/category/deals" class="pill-button primary header-cta">Shop Deals</a>
       <a href="/cart" class="cart-link" aria-label="View Cart">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cart-icon"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.1-5.38a.5.5 0 0 0-.49-.6H6.14"/></svg>
@@ -44,6 +62,9 @@ const logoImage = siteAssets.logo;
     <div class="container">
       <ul class="mobile-nav-list">
         {navLinks.map(link => (
+          <li><a href={link.href} class="mobile-nav-link">{link.name}</a></li>
+        ))}
+        {authLinks.map((link) => (
           <li><a href={link.href} class="mobile-nav-link">{link.name}</a></li>
         ))}
         <li><a href="/category/deals" class="pill-button primary mobile-cta">Shop Deals</a></li>
@@ -117,6 +138,28 @@ const logoImage = siteAssets.logo;
     display: flex;
     align-items: center;
     gap: var(--space-md);
+  }
+
+  .account-links {
+    display: none;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  @media (min-width: 1024px) {
+    .account-links {
+      display: flex;
+    }
+  }
+
+  .account-link {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .account-link.logout {
+    color: var(--accent-hover);
   }
 
   .header-cta {

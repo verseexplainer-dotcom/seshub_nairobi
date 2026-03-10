@@ -1,0 +1,133 @@
+---
+import PortalShell from '../../components/PortalShell.astro';
+import StatusPill from '../../components/StatusPill.astro';
+import { adminNavItems } from '../../lib/navigation';
+import { formatDateTime } from '../../lib/order-utils';
+import { createAdminSupabaseClient } from '../../lib/supabase-admin';
+
+const adminSupabase = createAdminSupabaseClient(Astro.locals);
+const q = Astro.url.searchParams.get('q')?.trim() || '';
+const stock = Astro.url.searchParams.get('stock') || '';
+
+let query = adminSupabase
+  .from('products')
+  .select('id, title, slug, category, in_stock, stock_qty, featured_home, updated_at')
+  .order('updated_at', { ascending: false })
+  .limit(150);
+
+if (q) {
+  query = query.or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
+}
+
+if (stock === 'in') {
+  query = query.eq('in_stock', true);
+}
+
+if (stock === 'out') {
+  query = query.eq('in_stock', false);
+}
+
+const { data } = await query;
+const products = data ?? [];
+---
+
+<PortalShell
+  title="Catalog"
+  intro="Read-only product visibility for operations, with stock and featured state surfaced from the existing catalog table."
+  navItems={adminNavItems}
+  currentPath={Astro.url.pathname}
+  badge="Admin"
+>
+  <div class="stack">
+    <section class="app-card">
+      <form class="app-form">
+        <div class="app-form-grid cols-2">
+          <div class="form-field">
+            <label for="q">Search products</label>
+            <input id="q" name="q" value={q} placeholder="Search by title or slug" />
+          </div>
+
+          <div class="form-field">
+            <label for="stock">Stock filter</label>
+            <select id="stock" name="stock">
+              <option value="">All stock states</option>
+              <option value="in" selected={stock === 'in'}>In stock</option>
+              <option value="out" selected={stock === 'out'}>Out of stock</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="app-actions">
+          <button type="submit" class="pill-button primary">Apply</button>
+          <a class="pill-button" href="/admin/catalog">Reset</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Catalog Snapshot</h2>
+          <p>{products.length} products returned.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Stock</th>
+              <th>Featured</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((product) => (
+              <tr>
+                <td>
+                  <div class="detail-row compact">
+                    <strong>{product.title}</strong>
+                    <span>{product.slug}</span>
+                  </div>
+                </td>
+                <td>{product.category}</td>
+                <td>
+                  <div class="detail-row compact">
+                    <StatusPill
+                      label={product.in_stock ? 'In stock' : 'Out of stock'}
+                      tone={product.in_stock ? 'success' : 'danger'}
+                    />
+                    <span>{product.stock_qty ?? 'N/A'} units</span>
+                  </div>
+                </td>
+                <td>
+                  <StatusPill
+                    label={product.featured_home ? 'Featured' : 'Standard'}
+                    tone={product.featured_home ? 'info' : 'neutral'}
+                  />
+                </td>
+                <td>{formatDateTime(product.updated_at)}</td>
+                <td>
+                  <a class="text-link" href={`/product/${product.slug}`} target="_blank">View</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .detail-row.compact {
+    gap: 0.1rem;
+  }
+</style>
