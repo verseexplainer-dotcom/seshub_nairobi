@@ -1,6 +1,15 @@
 ---
-import { getInitials } from '../lib/productPresentation';
-import { homeTestimonials } from '../lib/homepageContent';
+import { getInitials, toTitleCase } from '../lib/productPresentation';
+import { homeTestimonials, type HomeTestimonial } from '../lib/homepageContent';
+
+const { items = homeTestimonials } = Astro.props as {
+  items?: HomeTestimonial[];
+};
+
+function formatPersonaLabel(value: string) {
+  const normalized = String(value || '').trim();
+  return normalized ? toTitleCase(normalized) : 'Verified buyer';
+}
 ---
 
 <section class="testimonials section" aria-labelledby="testimonials-title">
@@ -14,7 +23,7 @@ import { homeTestimonials } from '../lib/homepageContent';
     </div>
 
     <div class="testimonial-grid">
-      {homeTestimonials.map((item) => (
+      {items.map((item) => (
         <article class="testimonial-card surface-card">
           <div class="testimonial-stars" aria-label={`${item.rating} out of 5 stars`}>
             {Array.from({ length: 5 }).map((_, index) => (
@@ -26,7 +35,7 @@ import { homeTestimonials } from '../lib/homepageContent';
             <span class="testimonial-avatar">{getInitials(item.name)}</span>
             <div>
               <strong>{item.name}</strong>
-              <span>{item.location}</span>
+              <span>{formatPersonaLabel(item.persona)}</span>
             </div>
           </div>
         </article>

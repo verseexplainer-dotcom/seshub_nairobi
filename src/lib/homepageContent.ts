@@ -1,43 +1,45 @@
 export const techBrands = ['Apple', 'Samsung', 'HP', 'Dell', 'Lenovo', 'Asus', 'Acer', 'Canon', 'Epson', 'Microsoft'];
 
+export interface HomeTestimonial {
+  id?: string;
+  name: string;
+  persona: string;
+  rating: number;
+  quote: string;
+}
+
 export const homeTestimonials = [
   {
-    name: 'Grace Wanjiru',
-    location: 'Westlands, Nairobi',
+    name: 'Anita Njeri',
+    persona: 'student',
     rating: 5,
-    quote: 'I ordered a refurbished EliteBook in the morning and had it delivered the same afternoon. The condition matched the listing and the team answered every question quickly.'
+    quote: 'I was unsure about refurbished laptops, but their grading was clear and my Grade A MacBook feels excellent.'
   },
   {
-    name: 'Kevin Otieno',
-    location: 'Kilimani, Nairobi',
+    name: 'Brian Omondi',
+    persona: 'student',
     rating: 5,
-    quote: 'The WhatsApp checkout flow felt direct and human. I confirmed stock, paid on delivery, and the laptop came fully tested with the exact SSD and RAM advertised.'
+    quote: 'Got a Grade A HP EliteBook for campus work. Clean, affordable, and delivered fast in Nairobi.'
   },
   {
-    name: 'Mercy Achieng',
-    location: 'Karen, Nairobi',
+    name: 'David Kiprop',
+    persona: 'business',
     rating: 5,
-    quote: 'I needed a printer urgently for the office. SES ICT HUB gave me the right model, explained setup, and delivered before close of business.'
+    quote: 'Reliable products, fast delivery, and helpful after-sales support. A solid choice for Nairobi businesses.'
   },
   {
-    name: 'Daniel Mwangi',
-    location: 'Thika Road',
-    rating: 4,
-    quote: 'The product photography and specs were clear, and the store backed that up when I visited in person. It felt more trustworthy than most online electronics pages.'
+    name: 'Kevin Mutua',
+    persona: 'cyber_owner',
+    rating: 5,
+    quote: 'Bought refurbished monitors and printers for my cyber cafe. Great value and easy M-PESA payment on delivery.'
   },
   {
-    name: 'Faith Njeri',
-    location: 'South B, Nairobi',
+    name: 'Sarah Wambui',
+    persona: 'business',
     rating: 5,
-    quote: 'I appreciated that they did not pressure the purchase. The team helped me compare two devices and I ended up with a better fit for remote work.'
-  },
-  {
-    name: 'Samuel Kiptoo',
-    location: 'Upper Hill',
-    rating: 5,
-    quote: 'The warranty explanation was clear, the packaging was solid, and the machine booted exactly as expected. I would buy office equipment here again.'
+    quote: 'SES ICT HUB supplied a clean Dell workstation for my office. Professional service and very reliable.'
   }
-];
+] satisfies HomeTestimonial[];
 
 export const blogPosts = [
   {

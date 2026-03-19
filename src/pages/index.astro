@@ -11,13 +11,48 @@ import BlogPreview from '../components/BlogPreview.astro';
 import Newsletter from '../components/Newsletter.astro';
 import { supabase } from '../lib/supabase';
 import { getProductBrand } from '../lib/productPresentation';
+import { homeTestimonials, type HomeTestimonial } from '../lib/homepageContent';
 
 const { data: catalogData } = await supabase
   .from('products')
   .select('id,title,slug,category,price_kes,compare_at_kes,images,short_specs,description,in_stock,stock_qty,condition,refurb_grade,warranty_months,featured_home,featured_rank,brand,updated_at')
   .order('updated_at', { ascending: false });
 
+const { data: testimonialData } = await supabase
+  .from('testimonials')
+  .select('id,name,persona,rating,quote,created_at')
+  .eq('approved', true)
+  .order('created_at', { ascending: false })
+  .order('name', { ascending: true })
+  .limit(12);
+
 const catalog = catalogData ?? [];
+const testimonials: HomeTestimonial[] = [];
+const seenTestimonials = new Set<string>();
+
+for (const item of testimonialData ?? []) {
+  const testimonial = {
+    id: String(item.id ?? ''),
+    name: String(item.name ?? '').trim(),
+    persona: String(item.persona ?? '').trim(),
+    rating: Math.max(1, Math.min(5, Number(item.rating || 5))),
+    quote: String(item.quote ?? '').trim()
+  };
+
+  const testimonialKey = `${testimonial.name.toLowerCase()}::${testimonial.persona.toLowerCase()}`;
+  if (!testimonial.name || !testimonial.quote || seenTestimonials.has(testimonialKey)) {
+    continue;
+  }
+
+  seenTestimonials.add(testimonialKey);
+  testimonials.push(testimonial);
+
+  if (testimonials.length === 6) {
+    break;
+  }
+}
+
+const homepageTestimonials = testimonials.length ? testimonials : homeTestimonials;
 const inStockProducts = catalog.filter((product) => product.in_stock);
 const discountedProducts = inStockProducts.filter((product) => Number(product.compare_at_kes || 0) > Number(product.price_kes || 0));
 
@@ -145,7 +180,7 @@ const dealDeadline = new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString();
     ctaHref="/shop?sort=featured"
     ctaLabel="Explore featured stock"
   />
-  <Testimonials />
+  <Testimonials items={homepageTestimonials} />
   <BlogPreview />
   <Newsletter />
 </Layout>
