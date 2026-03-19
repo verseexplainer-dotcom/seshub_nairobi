@@ -1,0 +1,82 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { blogPosts } from '../lib/homepageContent';
+---
+
+<Layout
+  title="SES ICT HUB Journal"
+  description="Buying guides, storefront tips, and practical electronics advice for Nairobi shoppers and office teams."
+>
+  <section class="blog-page section">
+    <div class="container">
+      <div class="section-intro blog-page-intro">
+        <p class="section-kicker">Journal</p>
+        <h1 class="section-title">Practical buying guides for electronics shoppers</h1>
+        <p class="section-copy">
+          This is a lightweight editorial landing page that can be replaced by CMS-backed content later without needing to redesign the homepage cards.
+        </p>
+      </div>
+
+      <div class="blog-page-grid">
+        {blogPosts.map((post) => (
+          <article class="blog-page-card surface-card" id={post.id}>
+            <div class="blog-page-meta">
+              <span>{post.category}</span>
+              <span>{post.date}</span>
+            </div>
+            <h2>{post.title}</h2>
+            <p>{post.excerpt}</p>
+            <div class="blog-page-body">
+              <p>
+                A full editorial workflow is not wired yet, but the homepage and this page now have a clean, production-friendly structure ready for future CMS or Supabase content integration.
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .blog-page-intro {
+    max-width: 48rem;
+  }
+
+  .blog-page-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .blog-page-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1.35rem;
+  }
+
+  .blog-page-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .blog-page-card p {
+    color: var(--color-text-muted);
+  }
+
+  .blog-page-body {
+    padding-top: 0.9rem;
+    border-top: 1px solid rgba(229, 231, 235, 0.92);
+  }
+
+  @media (min-width: 960px) {
+    .blog-page-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

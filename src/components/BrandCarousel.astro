@@ -1,62 +1,86 @@
 ---
-const brands = [
-  { name: 'HP', logo: '/brands/hp.svg' },
-  { name: 'Lenovo', logo: '/brands/lenovo.svg' },
-  { name: 'Apple', logo: '/brands/apple.svg' },
-  { name: 'Dell', logo: '/brands/dell.svg' },
-  { name: 'Samsung', logo: '/brands/samsung.svg' },
-  { name: 'Asus', logo: '/brands/asus.svg' },
-];
+import { techBrands } from '../lib/homepageContent';
+
+const tickerBrands = [...techBrands, ...techBrands];
 ---
 
-<section class="brand-carousel">
-  <div class="container">
+<section class="brand-ticker" aria-label="Popular technology brands">
+  <div class="brand-ticker-inner">
     <div class="brand-track">
-      {brands.map(brand => (
-        <a href={`/shop?brand=${brand.name}`} class="brand-item">
-          <!-- In a real app, these would be proper logos from Supabase storage -->
-          <div class="brand-logo-placeholder">{brand.name}</div>
+      {tickerBrands.map((brand, index) => (
+        <a href={`/shop?brand=${encodeURIComponent(brand)}`} class="brand-pill" aria-label={`Browse ${brand} products`} data-brand-order={index}>
+          <span>{brand}</span>
         </a>
       ))}
-      <!-- Duplicate for seamless loop if using CSS animation, but for now simple grid -->
     </div>
   </div>
 </section>
 
 <style>
-  .brand-carousel {
-    padding: var(--space-lg) 0;
-    background-color: var(--white);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
+  .brand-ticker {
     overflow: hidden;
+    padding: 1rem 0;
+    border-block: 1px solid rgba(229, 231, 235, 0.92);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+  }
+
+  .brand-ticker-inner {
+    display: flex;
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 1) 12%, rgba(0, 0, 0, 1) 88%, transparent);
   }
 
   .brand-track {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-xl);
-    flex-wrap: wrap;
+    gap: 0.85rem;
+    min-width: max-content;
+    padding-inline: 1rem;
+    animation: brand-marquee 30s linear infinite;
+    will-change: transform;
   }
 
-  @media (max-width: 640px) {
-    .brand-track {
-      gap: var(--space-md);
-      justify-content: center;
+  .brand-ticker:hover .brand-track {
+    animation-play-state: paused;
+  }
+
+  .brand-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.8rem 1.1rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
+    color: #334155;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .brand-pill:hover {
+    transform: translateY(-2px);
+    border-color: rgba(37, 99, 235, 0.24);
+    color: var(--color-primary);
+  }
+
+  @keyframes brand-marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
     }
   }
 
-  .brand-logo-placeholder {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--text-muted);
-    opacity: 0.5;
-    transition: opacity 0.2s ease;
-  }
-
-  .brand-item:hover .brand-logo-placeholder {
-    opacity: 1;
-    color: var(--primary);
+  @media (prefers-reduced-motion: reduce) {
+    .brand-track {
+      animation: none;
+    }
   }
 </style>

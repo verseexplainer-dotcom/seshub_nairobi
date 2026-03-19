@@ -4,7 +4,7 @@ import type { SessionLocals } from '../lib/app-types';
 import { getSiteAssets } from '../lib/siteAssets';
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
+const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const locals = Astro.locals as SessionLocals;
 const profile = locals.profile;
 const user = locals.user;

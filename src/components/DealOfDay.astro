@@ -1,0 +1,275 @@
+---
+import { buildImageOnError, getProductImageSources, getSiteAssets } from '../lib/siteAssets';
+import { buildWhatsAppLink } from '../lib/storefront';
+import { formatKES, getAvailabilityLabel } from '../lib/productPresentation';
+
+interface Props {
+  product: any | null;
+  deadlineISO: string;
+}
+
+const { product, deadlineISO } = Astro.props as Props;
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const heroImage = siteAssets.hero;
+const imageSource = getProductImageSources(Array.isArray(product?.images) ? product.images[0] : undefined, import.meta.env.PUBLIC_SUPABASE_URL, siteAssets.productPlaceholder);
+const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const imageOnError = buildImageOnError(imageSource.fallback, finalFallbackImage);
+const hasDiscount = Number(product?.compare_at_kes || 0) > Number(product?.price_kes || 0);
+const discountAmount = Math.max(0, Number(product?.compare_at_kes || 0) - Number(product?.price_kes || 0));
+const dealLabel = product?.title || "today's offer";
+const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of the day details for ${dealLabel}.`);
+---
+
+<section class="deal-of-day section" aria-labelledby="deal-of-day-title">
+  <div class="container">
+    <div class="deal-panel">
+      <div class="deal-copy">
+        <p class="section-kicker">Deal of the day</p>
+        <h2 id="deal-of-day-title">A live offer window for shoppers ready to move fast</h2>
+        <p class="deal-text">
+          {product
+            ? `Today’s spotlight keeps the price sharp on ${product.title}. Confirm availability quickly, reserve on WhatsApp, or add it to cart before the timer runs out.`
+            : 'The next timed promotion is loading. Chat on WhatsApp if you want the current best-priced option immediately.'}
+        </p>
+
+        <div class="deal-countdown" data-deal-countdown data-target={deadlineISO} aria-label="Countdown to deal end">
+          <div class="deal-countdown-item">
+            <strong data-time="days">00</strong>
+            <span>Days</span>
+          </div>
+          <div class="deal-countdown-item">
+            <strong data-time="hours">00</strong>
+            <span>Hours</span>
+          </div>
+          <div class="deal-countdown-item">
+            <strong data-time="minutes">00</strong>
+            <span>Minutes</span>
+          </div>
+          <div class="deal-countdown-item">
+            <strong data-time="seconds">00</strong>
+            <span>Seconds</span>
+          </div>
+        </div>
+
+        <div class="deal-actions">
+          <a href={product ? `/product/${product.slug}` : '/shop'} class="pill-button primary">Shop the offer</a>
+          <a href={whatsappHref} class="pill-button ghost" target="_blank" rel="noopener noreferrer">Reserve on WhatsApp</a>
+        </div>
+      </div>
+
+      <div class="deal-card surface-card">
+        <div class="deal-card-media">
+          <img src={product ? imageSource.src : heroImage.src} alt={product?.title || 'Deal of the day visual'} loading="lazy" decoding="async" onerror={product ? imageOnError : buildImageOnError(heroImage.fallback, finalFallbackImage)} />
+        </div>
+
+        <div class="deal-card-body">
+          <div class="deal-card-meta">
+            <span class="deal-card-pill">Limited time</span>
+            <span class="deal-card-pill subtle">{product ? getAvailabilityLabel(product) : 'Live pricing'}</span>
+          </div>
+
+          <div class="deal-card-copy">
+            <h3>{product?.title || 'Fresh promotion coming through'}</h3>
+            <p>
+              {product
+                ? hasDiscount
+                  ? `Save ${formatKES(discountAmount)} on this item while the promotion is active.`
+                  : 'Timed deal pricing is live now while stock lasts.'
+                : 'Use the main shop view to compare current live catalog pricing and stock.'}
+            </p>
+          </div>
+
+          <div class="deal-card-price">
+            <strong>{product ? formatKES(product.price_kes) : 'Live catalog pricing'}</strong>
+            {product && hasDiscount && <span>{formatKES(product.compare_at_kes)}</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .deal-of-day {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .deal-panel {
+    display: grid;
+    gap: 1.5rem;
+    padding: clamp(1.4rem, 3vw, 2rem);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 2rem;
+    background:
+      radial-gradient(circle at top right, rgba(56, 189, 248, 0.2), transparent 30%),
+      linear-gradient(135deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.96));
+    box-shadow: var(--shadow-md);
+  }
+
+  .deal-copy {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+
+  .deal-copy h2 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.05em;
+    max-width: 12ch;
+  }
+
+  .deal-text {
+    max-width: 58ch;
+    color: var(--color-text-muted);
+  }
+
+  .deal-countdown {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .deal-countdown-item {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.95rem;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.84);
+  }
+
+  .deal-countdown-item strong {
+    font-size: 1.6rem;
+    letter-spacing: -0.04em;
+  }
+
+  .deal-countdown-item span {
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .deal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .deal-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .deal-card-media {
+    overflow: hidden;
+    border-radius: 1.4rem;
+    background:
+      radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 42%),
+      linear-gradient(180deg, #f8fbff, #edf4ff);
+    aspect-ratio: 16 / 11;
+  }
+
+  .deal-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+  }
+
+  .deal-card-body {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .deal-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .deal-card-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.85rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .deal-card-pill.subtle {
+    background: rgba(15, 23, 42, 0.06);
+    color: #475569;
+  }
+
+  .deal-card-copy {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .deal-card-copy p {
+    color: var(--color-text-muted);
+  }
+
+  .deal-card-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .deal-card-price strong {
+    font-size: 1.6rem;
+    letter-spacing: -0.04em;
+  }
+
+  .deal-card-price span {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+  }
+
+  @media (min-width: 760px) {
+    .deal-countdown {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .deal-panel {
+      grid-template-columns: minmax(0, 1.15fr) minmax(24rem, 0.85fr);
+      align-items: center;
+    }
+  }
+</style>
+
+<script>
+  const countdownRoot = document.querySelector('[data-deal-countdown]') as HTMLElement | null;
+
+  function updateDealCountdown() {
+    if (!countdownRoot) return;
+
+    const target = countdownRoot.dataset.target ? new Date(countdownRoot.dataset.target).getTime() : 0;
+    const distance = Math.max(0, target - Date.now());
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((distance / (1000 * 60)) % 60);
+    const seconds = Math.floor((distance / 1000) % 60);
+
+    const parts = { days, hours, minutes, seconds };
+
+    Object.entries(parts).forEach(([key, value]) => {
+      const node = countdownRoot.querySelector(`[data-time="${key}"]`);
+      if (node) node.textContent = String(value).padStart(2, '0');
+    });
+  }
+
+  updateDealCountdown();
+  window.setInterval(updateDealCountdown, 1000);
+</script>

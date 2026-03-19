@@ -1,129 +1,146 @@
 ---
 ---
-<section class="newsletter">
-  <div class="container newsletter-content">
-    <div class="newsletter-text">
-      <h2 class="section-title">Join our newsletter</h2>
-      <p>Get exclusive deals, tech tips, and stock alerts directly in your inbox.</p>
-    </div>
-    
-    <form class="newsletter-form" id="newsletter-form">
-      <div class="form-group">
-        <input 
-          type="email" 
-          id="newsletter-email" 
-          name="email" 
-          placeholder="Enter your email address" 
-          required 
-          aria-label="Email address"
-        />
-        <button type="submit" class="pill-button primary">Subscribe</button>
+
+<section class="newsletter section" aria-labelledby="newsletter-title">
+  <div class="container">
+    <div class="newsletter-shell">
+      <div class="newsletter-copy">
+        <p class="section-kicker">Newsletter</p>
+        <h2 id="newsletter-title" class="section-title">Get stock alerts, deal drops, and practical buying advice first</h2>
+        <p class="section-copy">
+          This stays validation-ready and API-friendly, while the visual treatment now feels closer to a polished ecommerce campaign card.
+        </p>
       </div>
-      <label class="consent-label">
-        <input type="checkbox" name="consent" required />
-        <span>I agree to receive marketing emails and stock alerts.</span>
-      </label>
-      <div id="newsletter-message" class="newsletter-message hidden"></div>
-    </form>
+
+      <form class="newsletter-form" id="newsletter-form">
+        <div class="newsletter-input-row">
+          <label class="sr-only" for="newsletter-email">Email address</label>
+          <input
+            type="email"
+            id="newsletter-email"
+            name="email"
+            placeholder="Enter your email address"
+            required
+            autocomplete="email"
+            inputmode="email"
+          />
+          <button type="submit" class="pill-button primary">Join the list</button>
+        </div>
+
+        <label class="newsletter-consent">
+          <input type="checkbox" name="consent" required />
+          <span>I agree to receive promotions, restock alerts, and useful tech-buying updates.</span>
+        </label>
+
+        <div id="newsletter-message" class="newsletter-message" aria-live="polite" hidden></div>
+      </form>
+    </div>
   </div>
 </section>
 
 <style>
-  .newsletter {
-    background-color: var(--primary);
-    color: var(--white);
-    padding: var(--space-xl) 0;
+  .newsletter-shell {
+    position: relative;
+    display: grid;
+    gap: 1.5rem;
+    padding: clamp(1.4rem, 3vw, 2rem);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 2rem;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.22), transparent 30%),
+      radial-gradient(circle at bottom right, rgba(37, 211, 102, 0.16), transparent 28%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+    box-shadow: var(--shadow-md);
   }
 
-  .newsletter-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: var(--space-lg);
+  .newsletter-shell::after {
+    content: "";
+    position: absolute;
+    inset: auto -8% -35% auto;
+    width: 14rem;
+    height: 14rem;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.12);
+    filter: blur(38px);
   }
 
-  @media (min-width: 1024px) {
-    .newsletter-content {
-      flex-direction: row;
-      text-align: left;
-      justify-content: space-between;
-    }
+  .newsletter-copy,
+  .newsletter-form {
+    position: relative;
+    z-index: 1;
   }
 
-  .newsletter-text h2 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
-  }
-
-  .newsletter-text p {
-    font-size: 1.125rem;
-    opacity: 0.9;
+  .newsletter-copy .section-intro {
+    margin-bottom: 0;
   }
 
   .newsletter-form {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .newsletter-input-row {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .newsletter-input-row input {
     width: 100%;
-    max-width: 500px;
+    min-height: 3.5rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(229, 231, 235, 0.92);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
   }
 
-  .form-group {
+  .newsletter-consent {
     display: flex;
-    gap: 0.5rem;
-    background-color: var(--white);
-    padding: 0.5rem;
-    border-radius: var(--radius-full);
-    margin-bottom: var(--space-sm);
-  }
-
-  input[type="email"] {
-    flex: 1;
-    border: none;
-    padding: 0 1rem;
-    font-size: 1rem;
-    outline: none;
-    background: transparent;
-  }
-
-  .consent-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
-    opacity: 0.8;
+    align-items: start;
+    gap: 0.65rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
   }
 
   .newsletter-message {
-    margin-top: var(--space-sm);
-    font-weight: 600;
+    font-weight: 700;
   }
 
-  .hidden {
-    display: none;
+  .newsletter-message.success {
+    color: var(--color-success);
   }
 
-  .success {
-    color: #34D399;
+  .newsletter-message.error {
+    color: var(--color-danger);
   }
 
-  .error {
-    color: #F87171;
+  @media (min-width: 980px) {
+    .newsletter-shell {
+      grid-template-columns: minmax(0, 1.1fr) minmax(22rem, 0.9fr);
+      align-items: center;
+    }
+
+    .newsletter-input-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
   }
 </style>
 
 <script>
-  const form = document.getElementById('newsletter-form') as HTMLFormElement;
+  const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
   const messageEl = document.getElementById('newsletter-message');
 
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
     const formData = new FormData(form);
     const email = formData.get('email');
     const consent = formData.get('consent') === 'on';
 
     if (messageEl) {
+      messageEl.hidden = false;
       messageEl.textContent = 'Subscribing...';
-      messageEl.classList.remove('hidden', 'success', 'error');
+      messageEl.classList.remove('success', 'error');
     }
 
     try {
@@ -137,28 +154,29 @@
         })
       });
 
-      if (response.ok) {
-        await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            session_id: localStorage.getItem('ses_session_id'),
-            event_type: 'newsletter_signup_intent',
-            payload: { source_page: window.location.pathname }
-          })
-        }).catch(() => null);
-
-        if (messageEl) {
-          messageEl.textContent = 'Welcome to the hub! ✓';
-          messageEl.classList.add('success');
-        }
-        form.reset();
-      } else {
+      if (!response.ok) {
         throw new Error('Failed to subscribe');
       }
-    } catch (err) {
+
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: localStorage.getItem('ses_session_id'),
+          event_type: 'newsletter_signup_intent',
+          payload: { email, consent, source_page: window.location.pathname }
+        })
+      }).catch(() => null);
+
       if (messageEl) {
-        messageEl.textContent = 'Something went wrong. Please try again.';
+        messageEl.textContent = 'You are on the list. Watch for stock drops and limited offers.';
+        messageEl.classList.add('success');
+      }
+
+      form.reset();
+    } catch {
+      if (messageEl) {
+        messageEl.textContent = 'We could not complete the signup right now. Please try again shortly.';
         messageEl.classList.add('error');
       }
     }

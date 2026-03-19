@@ -3,6 +3,7 @@ import '../styles/global.css';
 import AnnouncementStrip from '../components/AnnouncementStrip.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { getSiteAssets } from '../lib/siteAssets';
 
 interface Props {
   title: string;
@@ -11,10 +12,12 @@ interface Props {
   canonical?: string;
 }
 
-const { 
-  title, 
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+
+const {
+  title,
   description = "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.",
-  image = "/product-placeholder.svg",
+  image = siteAssets.hero.src,
   canonical
 } = Astro.props;
 
@@ -24,7 +27,9 @@ const plainDescription = String(description || '')
   .replace(/\s+/g, ' ')
   .trim()
   .slice(0, 320);
-const safeDescription = plainDescription || "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.";
+const safeDescription =
+  plainDescription ||
+  'SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.';
 const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
 ---
 
@@ -75,9 +80,61 @@ const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
     <Footer />
     
     <script>
-      // Session ID logic
       if (!localStorage.getItem('ses_session_id')) {
         localStorage.setItem('ses_session_id', crypto.randomUUID());
+      }
+
+      if (!window.__sesCartHandlerBound) {
+        window.__sesCartHandlerBound = true;
+
+        document.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('[data-add-to-cart]') : null;
+          if (!(button instanceof HTMLButtonElement)) return;
+          if (!button.dataset.id || !button.dataset.title || !button.dataset.slug) return;
+
+          const item = {
+            id: button.dataset.id,
+            title: button.dataset.title,
+            price_kes: Number(button.dataset.price || '0'),
+            slug: button.dataset.slug,
+            image: button.dataset.image,
+            imageFallback: button.dataset.imageFallback,
+            qty: 1
+          };
+
+          const cart = JSON.parse(localStorage.getItem('ses_cart') || '[]') as Array<{
+            id: string | number;
+            title: string;
+            price_kes: number;
+            slug: string;
+            image?: string | undefined;
+            imageFallback?: string | undefined;
+            qty: number;
+          }>;
+          const existing = cart.find((entry) => String(entry.id) === String(item.id));
+
+          if (existing) {
+            existing.qty += 1;
+            if (!existing.imageFallback && item.imageFallback) {
+              existing.imageFallback = item.imageFallback;
+            }
+          } else {
+            cart.push(item);
+          }
+
+          localStorage.setItem('ses_cart', JSON.stringify(cart));
+          window.dispatchEvent(new Event('cart-updated'));
+
+          const originalText = button.dataset.originalLabel || button.textContent || 'Add to cart';
+          button.dataset.originalLabel = originalText;
+          button.textContent = 'Added';
+          button.style.backgroundColor = '#047857';
+
+          window.setTimeout(() => {
+            button.textContent = originalText;
+            button.style.backgroundColor = '';
+          }, 1400);
+        });
       }
     </script>
   </body>

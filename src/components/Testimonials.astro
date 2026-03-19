@@ -1,0 +1,108 @@
+---
+import { getInitials } from '../lib/productPresentation';
+import { homeTestimonials } from '../lib/homepageContent';
+---
+
+<section class="testimonials section" aria-labelledby="testimonials-title">
+  <div class="container">
+    <div class="section-intro">
+      <p class="section-kicker">Testimonials</p>
+      <h2 id="testimonials-title" class="section-title">Proof from customers who wanted clarity before they paid</h2>
+      <p class="section-copy">
+        Social proof stays local, realistic, and conversion-friendly, with enough detail to reinforce trust instead of sounding generic.
+      </p>
+    </div>
+
+    <div class="testimonial-grid">
+      {homeTestimonials.map((item) => (
+        <article class="testimonial-card surface-card">
+          <div class="testimonial-stars" aria-label={`${item.rating} out of 5 stars`}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <span class={index < item.rating ? 'filled' : ''}>★</span>
+            ))}
+          </div>
+          <p class="testimonial-quote">{item.quote}</p>
+          <div class="testimonial-meta">
+            <span class="testimonial-avatar">{getInitials(item.name)}</span>
+            <div>
+              <strong>{item.name}</strong>
+              <span>{item.location}</span>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .testimonials {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 1));
+  }
+
+  .testimonial-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .testimonial-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1.35rem;
+  }
+
+  .testimonial-stars {
+    display: inline-flex;
+    gap: 0.2rem;
+    color: rgba(148, 163, 184, 0.55);
+  }
+
+  .testimonial-stars .filled {
+    color: #f59e0b;
+  }
+
+  .testimonial-quote {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .testimonial-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .testimonial-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--color-primary);
+    font-weight: 800;
+  }
+
+  .testimonial-meta div {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .testimonial-meta span:last-child {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (min-width: 780px) {
+    .testimonial-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1160px) {
+    .testimonial-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

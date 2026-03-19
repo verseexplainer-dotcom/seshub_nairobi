@@ -1,0 +1,95 @@
+---
+import { blogPosts } from '../lib/homepageContent';
+---
+
+<section class="blog-preview section" aria-labelledby="blog-preview-title">
+  <div class="container">
+    <div class="blog-preview-head">
+      <div class="section-intro">
+        <p class="section-kicker">From the journal</p>
+        <h2 id="blog-preview-title" class="section-title">Practical buying guidance for local shoppers and office teams</h2>
+        <p class="section-copy">
+          Lightweight editorial blocks now, structured so they can move to CMS-backed content later without changing the homepage layout.
+        </p>
+      </div>
+
+      <a href="/blog" class="pill-button ghost">View all articles</a>
+    </div>
+
+    <div class="blog-preview-grid">
+      {blogPosts.map((post) => (
+        <article class="blog-card surface-card" id={post.id}>
+          <div class="blog-meta">
+            <span>{post.category}</span>
+            <span>{post.date}</span>
+          </div>
+          <h3><a href={post.href}>{post.title}</a></h3>
+          <p>{post.excerpt}</p>
+          <a href={post.href} class="link-arrow">Read more</a>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .blog-preview {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 250, 252, 0.95));
+  }
+
+  .blog-preview-head {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .blog-preview-head .section-intro {
+    margin-bottom: 0;
+  }
+
+  .blog-preview-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .blog-card {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1.35rem;
+  }
+
+  .blog-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .blog-card h3 {
+    font-size: 1.2rem;
+    line-height: 1.35;
+  }
+
+  .blog-card h3 a:hover {
+    color: var(--color-primary);
+  }
+
+  .blog-card p {
+    color: var(--color-text-muted);
+  }
+
+  @media (min-width: 960px) {
+    .blog-preview-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .blog-preview-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -1,147 +1,440 @@
 ---
-import { getSiteAssets } from '../lib/siteAssets';
+import { buildImageOnError, getProductImageSources, getSiteAssets } from '../lib/siteAssets';
+import { buildWhatsAppLink } from '../lib/storefront';
+import { formatKES, getAvailabilityLabel, getProductBrand } from '../lib/productPresentation';
+
+interface Props {
+  spotlightProduct?: any | null;
+  totalProducts?: number;
+  brandCount?: number;
+  dealCount?: number;
+}
+
+const { spotlightProduct = null, totalProducts = 0, brandCount = 0, dealCount = 0 } = Astro.props as Props;
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const heroImage = siteAssets.hero;
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder).trim();
-const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src='/product-placeholder.svg';}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
+const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const heroOnError = buildImageOnError(heroImage.fallback, finalFallbackImage);
+const spotlightImage = getProductImageSources(Array.isArray(spotlightProduct?.images) ? spotlightProduct.images[0] : undefined, import.meta.env.PUBLIC_SUPABASE_URL, siteAssets.productPlaceholder);
+const spotlightImageOnError = buildImageOnError(spotlightImage.fallback, finalFallbackImage);
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I would like help choosing a laptop, smartphone, desktop, or printer from the homepage.');
+const stats = [
+  { value: `${totalProducts}+`, label: 'Live products' },
+  { value: `${brandCount}+`, label: 'Major brands' },
+  { value: `${dealCount}+`, label: 'Active deals' }
+];
 ---
 
-<section class="hero">
-  <div class="container hero-content">
-    <div class="hero-text">
-      <h1 class="hero-title">Achieve Peak Computing Performance Without the High Cost of New Tech</h1>
-      <p class="hero-subtitle">Tested devices with clear specs, fair pricing, and fast delivery across Kenya.</p>
-      
+<section class="hero-section" aria-labelledby="hero-title">
+  <img src={heroImage.src} alt="" class="hero-background" loading="eager" decoding="async" onerror={heroOnError} />
+  <div class="hero-overlay"></div>
+  <div class="hero-noise" aria-hidden="true"></div>
+
+  <div class="container hero-shell">
+    <div class="hero-copy">
+      <span class="hero-live-badge">
+        <span class="hero-live-dot"></span>
+        Live catalog · updated for Nairobi shoppers
+      </span>
+
+      <p class="section-kicker hero-kicker">SES ICT HUB | Nairobi</p>
+      <h1 id="hero-title">Premium electronics with a faster route from browse to doorstep</h1>
+      <p class="hero-text">
+        Explore laptops, smartphones, printers, desktops, and accessories with clearer pricing, verified stock context,
+        and direct WhatsApp help when you want a faster buying decision.
+      </p>
+
       <div class="hero-actions">
-        <a href="/shop" class="pill-button primary">Browse Shop</a>
-        <a href="https://wa.me/254720480475" class="pill-button" style="background-color: #25D366; color: white;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.435 5.617 1.436h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-          WhatsApp Checkout
-        </a>
+        <a href="/shop" class="pill-button primary lg">Browse Shop</a>
+        <a href={whatsappHref} class="pill-button ghost lg" target="_blank" rel="noopener noreferrer">Checkout on WhatsApp</a>
       </div>
 
-      <div class="hero-trust">
-        <div class="trust-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>2-Hour Nairobi Delivery</span>
-        </div>
-        <div class="trust-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>M-PESA</span>
-        </div>
-        <div class="trust-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Cash on Delivery</span>
-        </div>
+      <div class="hero-stats" role="list" aria-label="Storefront highlights">
+        {stats.map((item) => (
+          <article class="hero-stat-card" role="listitem">
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+          </article>
+        ))}
       </div>
     </div>
-    
-    <div class="hero-image">
-      <div class="hero-image-placeholder relative h-full w-full rounded-2xl overflow-hidden shadow-2xl">
-        <img 
-          src={heroImage}
-          alt="Premium Refurbished Laptop" 
-          class="object-cover w-full h-full"
-          onerror={imageOnError}
-        />
+
+    <div class="hero-visual">
+      <div class="hero-floating-card hero-main-card">
+        <div class="hero-card-topline">
+          <span class="hero-card-chip">Featured now</span>
+          <span class="hero-card-chip subtle">{spotlightProduct ? getAvailabilityLabel(spotlightProduct) : 'Live support'}</span>
+        </div>
+
+        <div class="hero-card-media">
+          <img
+            src={spotlightProduct ? spotlightImage.src : heroImage.src}
+            alt={spotlightProduct?.title || 'Premium electronics showcase'}
+            loading="lazy"
+            decoding="async"
+            onerror={spotlightProduct ? spotlightImageOnError : heroOnError}
+          />
+        </div>
+
+        <div class="hero-card-copy">
+          <p>{spotlightProduct ? getProductBrand(spotlightProduct) : 'SES curated selection'}</p>
+          <h2>{spotlightProduct?.title || 'Curated business, student, and everyday tech picks'}</h2>
+          <div class="hero-card-price">
+            <strong>{spotlightProduct ? formatKES(spotlightProduct.price_kes) : 'Fast stock confirmation'}</strong>
+            {Number(spotlightProduct?.compare_at_kes || 0) > Number(spotlightProduct?.price_kes || 0) && <span>{formatKES(spotlightProduct.compare_at_kes)}</span>}
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-floating-card hero-side-note">
+        <span class="hero-note-title">Why this layout works</span>
+        <p>Browse on-site, shortlist quickly, then switch to WhatsApp only when you need human confirmation.</p>
+      </div>
+
+      <div class="hero-floating-card hero-mini-proof">
+        <strong>Same-day Nairobi options</strong>
+        <span>Pickup, delivery, or reserve-first flow</span>
       </div>
     </div>
   </div>
 </section>
 
 <style>
-  .hero {
-    background-color: var(--white);
-    padding: var(--space-xl) 0;
+  .hero-section {
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100svh - 5.5rem);
+    padding: clamp(4.5rem, 9vw, 6.5rem) 0 clamp(3.5rem, 7vw, 5rem);
+    color: #f8fafc;
     overflow: hidden;
   }
 
-  .hero-content {
+  .hero-background,
+  .hero-overlay,
+  .hero-noise {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-background {
+    object-fit: cover;
+    object-position: center;
+    z-index: -3;
+  }
+
+  .hero-overlay {
+    z-index: -2;
+    background:
+      linear-gradient(108deg, rgba(7, 13, 25, 0.9) 0%, rgba(7, 13, 25, 0.64) 40%, rgba(7, 13, 25, 0.58) 100%),
+      radial-gradient(circle at top right, rgba(37, 99, 235, 0.46), transparent 28%);
+  }
+
+  .hero-noise {
+    z-index: -1;
+    opacity: 0.14;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.8), transparent 90%);
+  }
+
+  .hero-shell {
     display: grid;
-    grid-template-columns: 1fr;
+    gap: 2rem;
     align-items: center;
-    gap: var(--space-xl);
   }
 
-  @media (min-width: 1024px) {
-    .hero-content {
-      grid-template-columns: 1.2fr 0.8fr;
-    }
+  .hero-copy {
+    display: grid;
+    gap: 1.2rem;
   }
 
-  .hero-title {
-    font-size: 2.5rem;
+  .hero-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    min-height: 2.3rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.26);
+    backdrop-filter: blur(18px);
+    font-size: 0.82rem;
     font-weight: 800;
-    line-height: 1.1;
-    color: var(--text-main);
-    margin-bottom: var(--space-md);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
-  @media (min-width: 768px) {
-    .hero-title {
-      font-size: 3.5rem;
-    }
+  .hero-live-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.45);
+    animation: pulse-dot 1.8s ease-out infinite;
   }
 
-  .text-accent {
-    color: var(--accent);
+  .hero-kicker {
+    color: #93c5fd;
   }
 
-  .hero-subtitle {
-    font-size: 1.125rem;
-    color: var(--text-muted);
-    margin-bottom: var(--space-lg);
-    max-width: 600px;
+  .hero-copy h1,
+  .hero-card-copy h2 {
+    color: #ffffff;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2.5rem, 7vw, 5.25rem);
+    letter-spacing: -0.06em;
+    line-height: 0.95;
+    max-width: 11ch;
+  }
+
+  .hero-text {
+    max-width: 62ch;
+    color: rgba(226, 232, 240, 0.86);
+    font-size: clamp(1rem, 2.2vw, 1.12rem);
   }
 
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-lg);
+    gap: 0.75rem;
   }
 
-  .hero-trust {
+  .hero-actions .pill-button.ghost {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+
+  .hero-actions .pill-button.ghost:hover {
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .hero-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
+    gap: 0.85rem;
+    margin-top: 0.35rem;
   }
 
-  @media (min-width: 640px) {
-    .hero-trust {
-      display: flex;
-      gap: var(--space-md);
+  .hero-stat-card,
+  .hero-floating-card {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.5rem;
+    background: rgba(15, 23, 42, 0.28);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  }
+
+  .hero-stat-card {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.95rem 1rem;
+  }
+
+  .hero-stat-card strong {
+    font-size: 1.55rem;
+    letter-spacing: -0.04em;
+  }
+
+  .hero-stat-card span {
+    color: rgba(226, 232, 240, 0.76);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .hero-visual {
+    position: relative;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .hero-main-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    animation: float-main 7s ease-in-out infinite;
+  }
+
+  .hero-card-topline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .hero-card-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.85rem;
+    padding: 0.28rem 0.72rem;
+    border-radius: 999px;
+    background: rgba(96, 165, 250, 0.16);
+    color: #bfdbfe;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hero-card-chip.subtle {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(226, 232, 240, 0.8);
+  }
+
+  .hero-card-media {
+    overflow: hidden;
+    border-radius: 1.3rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+    aspect-ratio: 4 / 3;
+  }
+
+  .hero-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+  }
+
+  .hero-card-copy {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .hero-card-copy p {
+    color: #93c5fd;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hero-card-copy h2 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    line-height: 1.2;
+  }
+
+  .hero-card-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+  }
+
+  .hero-card-price strong {
+    font-size: 1.5rem;
+    letter-spacing: -0.04em;
+  }
+
+  .hero-card-price span {
+    color: rgba(226, 232, 240, 0.62);
+    text-decoration: line-through;
+  }
+
+  .hero-side-note,
+  .hero-mini-proof {
+    padding: 1rem 1.05rem;
+  }
+
+  .hero-side-note {
+    max-width: 18rem;
+    justify-self: end;
+    animation: float-note 8.5s ease-in-out infinite;
+  }
+
+  .hero-side-note .hero-note-title {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  .hero-side-note p,
+  .hero-mini-proof span {
+    color: rgba(226, 232, 240, 0.78);
+    font-size: 0.94rem;
+  }
+
+  .hero-mini-proof {
+    max-width: 15rem;
+    animation: float-proof 7.5s ease-in-out infinite;
+  }
+
+  .hero-mini-proof strong {
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  @keyframes pulse-dot {
+    0% {
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.45);
+    }
+
+    70% {
+      box-shadow: 0 0 0 12px rgba(52, 211, 153, 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
     }
   }
 
-  .trust-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-main);
+  @keyframes float-main {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-8px);
+    }
   }
 
-  .hero-image-placeholder {
-    background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-    border-radius: var(--radius-lg);
-    aspect-ratio: 4/3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    box-shadow: var(--shadow-md);
+  @keyframes float-note {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+
+    50% {
+      transform: translate(-10px, 8px);
+    }
   }
 
-  .placeholder-icon {
-    font-size: 5rem;
+  @keyframes float-proof {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+
+    50% {
+      transform: translate(8px, -6px);
+    }
   }
 
-  @media (min-width: 1024px) {
-    .hero-image-placeholder {
-      transform: rotate(2deg);
+  @media (min-width: 760px) {
+    .hero-stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .hero-shell {
+      grid-template-columns: minmax(0, 1.05fr) minmax(24rem, 0.95fr);
+      gap: 3rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-live-dot,
+    .hero-main-card,
+    .hero-side-note,
+    .hero-mini-proof {
+      animation: none;
     }
   }
 </style>

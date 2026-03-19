@@ -1,0 +1,174 @@
+---
+import HomeProductCard from './HomeProductCard.astro';
+import { buildWhatsAppLink } from '../lib/storefront';
+
+interface Props {
+  id: string;
+  kicker: string;
+  title: string;
+  description: string;
+  products: any[];
+  context?: 'arrival' | 'seller' | 'default';
+  variant?: 'light' | 'contrast';
+  ctaHref?: string;
+  ctaLabel?: string;
+}
+
+const {
+  id,
+  kicker,
+  title,
+  description,
+  products,
+  context = 'default',
+  variant = 'light',
+  ctaHref = '/category/all',
+  ctaLabel = 'Browse all products'
+} = Astro.props as Props;
+
+const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like help finding ${title.toLowerCase()}.`);
+---
+
+<section class={`product-showcase section ${variant === 'contrast' ? 'contrast' : ''}`} aria-labelledby={id}>
+  <div class="container">
+    <div class="product-showcase-head">
+      <div class="section-intro">
+        <p class="section-kicker">{kicker}</p>
+        <h2 id={id} class="section-title">{title}</h2>
+        <p class="section-copy">{description}</p>
+      </div>
+
+      <div class="product-showcase-actions">
+        <a href={ctaHref} class={`pill-button ${variant === 'contrast' ? 'ghost showcase-ghost' : 'primary'}`}>{ctaLabel}</a>
+        <a href={whatsappHref} class={`pill-button ${variant === 'contrast' ? 'showcase-whatsapp' : 'ghost'}`} target="_blank" rel="noopener noreferrer">
+          Ask on WhatsApp
+        </a>
+      </div>
+    </div>
+
+    {products.length > 0 ? (
+      <div class="product-showcase-grid">
+        {products.map((product, index) => (
+          <HomeProductCard product={product} context={context} index={index} tone={variant === 'contrast' ? 'contrast' : 'light'} />
+        ))}
+      </div>
+    ) : (
+      <div class={`product-showcase-empty surface-card ${variant === 'contrast' ? 'contrast' : ''}`}>
+        <div>
+          <h3>Fresh stock is being prepared.</h3>
+          <p>Use WhatsApp for a live recommendation while the catalog sync finishes.</p>
+        </div>
+        <a href={whatsappHref} class="pill-button success" target="_blank" rel="noopener noreferrer">Get live help</a>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .product-showcase {
+    position: relative;
+  }
+
+  .product-showcase.contrast {
+    background:
+      radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 32%),
+      linear-gradient(180deg, #091223 0%, #0f1d36 100%);
+    color: #f8fafc;
+  }
+
+  .product-showcase.contrast .section-title,
+  .product-showcase.contrast .section-copy,
+  .product-showcase.contrast .section-kicker {
+    color: inherit;
+  }
+
+  .product-showcase.contrast .section-kicker {
+    color: #93c5fd;
+  }
+
+  .product-showcase.contrast .section-copy {
+    color: rgba(226, 232, 240, 0.76);
+  }
+
+  .product-showcase-head {
+    display: grid;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .product-showcase-head .section-intro {
+    margin-bottom: 0;
+  }
+
+  .product-showcase-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .showcase-ghost {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+
+  .showcase-whatsapp {
+    background: #25d366;
+    color: #ffffff;
+  }
+
+  .showcase-whatsapp:hover {
+    background: #1da851;
+  }
+
+  .product-showcase-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .product-showcase-empty {
+    display: grid;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.4rem;
+  }
+
+  .product-showcase-empty.contrast {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(9, 18, 35, 0.62);
+  }
+
+  .product-showcase-empty.contrast h3 {
+    color: #ffffff;
+  }
+
+  .product-showcase-empty p {
+    color: var(--color-text-muted);
+  }
+
+  .product-showcase-empty.contrast p {
+    color: rgba(226, 232, 240, 0.74);
+  }
+
+  @media (min-width: 760px) {
+    .product-showcase-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .product-showcase-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .product-showcase-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .product-showcase-empty {
+      grid-template-columns: minmax(0, 1fr) auto;
+      justify-content: space-between;
+    }
+  }
+</style>

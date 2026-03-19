@@ -9,7 +9,7 @@ interface Props {
 const { product } = Astro.props;
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const finalFallbackImage = '/product-placeholder.svg';
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder || finalFallbackImage).trim();
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src || finalFallbackImage).trim();
 const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(finalFallbackImage)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
 const presentation = getProductPresentation(product, {
   publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,

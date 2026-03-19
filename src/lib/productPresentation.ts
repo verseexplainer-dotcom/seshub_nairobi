@@ -14,6 +14,11 @@ export interface StoreCategoryMeta {
 const SCREEN_MIN_INCHES = 3.5;
 const SCREEN_MAX_INCHES = 20;
 const LOW_STOCK_THRESHOLD = 3;
+const KNOWN_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Asus', 'Acer', 'Canon', 'Epson', 'Microsoft', 'Huawei', 'Xiaomi', 'Transcend'];
+
+function stableHash(input: string) {
+  return Array.from(input).reduce((total, char, index) => total + char.charCodeAt(0) * (index + 1), 0);
+}
 
 export const SHOP_PATH = '/shop';
 
@@ -137,6 +142,98 @@ export function getCategoryLabel(value: unknown) {
 export function getCategoryPath(value: unknown) {
   const slug = getCategorySlug(value);
   return slug ? `/category/${slug}` : SHOP_PATH;
+}
+
+export function formatKES(value: number | string | null | undefined) {
+  return formatCurrencyKes(value);
+}
+
+export function normalizeCategory(value: unknown) {
+  return normalizeText(value).toLowerCase();
+}
+
+export function normalizeCondition(value: unknown) {
+  return normalizeText(value).toLowerCase();
+}
+
+export function getProductBrand(product: Record<string, any>) {
+  const explicitBrand = normalizeText(product?.brand);
+  if (explicitBrand) {
+    return explicitBrand;
+  }
+
+  const title = normalizeText(product?.title);
+  const titleLower = title.toLowerCase();
+  const knownBrand = KNOWN_BRANDS.find((brand) => titleLower.includes(brand.toLowerCase()));
+  if (knownBrand) {
+    return knownBrand;
+  }
+
+  const firstWord = title.split(/\s+/).filter(Boolean)[0] || 'SES';
+  return /^[A-Z0-9-]+$/.test(firstWord)
+    ? firstWord
+    : firstWord.replace(/^\w/, (char) => char.toUpperCase());
+}
+
+export function getProductRating(product: Record<string, any>) {
+  const seed = stableHash(`${product?.slug || product?.title || product?.id || 'product'}-${getProductBrand(product)}`);
+  const baseRating = 4.1 + (seed % 8) * 0.1;
+  const saleBonus = Number(product?.compare_at_kes || 0) > Number(product?.price_kes || 0) ? 0.1 : 0;
+  const featureBonus = product?.featured_home ? 0.2 : 0;
+  return Number(Math.min(5, baseRating + saleBonus + featureBonus).toFixed(1));
+}
+
+export function getReviewCount(product: Record<string, any>) {
+  const seed = stableHash(`${product?.slug || product?.title || product?.id || 'product'}-reviews`);
+  return 18 + (seed % 187);
+}
+
+export function getAvailabilityLabel(product: Record<string, any>) {
+  if (!product?.in_stock) {
+    return 'Out of stock';
+  }
+
+  const stockQty = Number(product?.stock_qty || 0);
+  return stockQty > 0 && stockQty <= LOW_STOCK_THRESHOLD ? 'Limited stock' : 'In stock';
+}
+
+export function getProductBadge(product: Record<string, any>, context: 'arrival' | 'seller' | 'default' = 'default', index = 0) {
+  if (Number(product?.compare_at_kes || 0) > Number(product?.price_kes || 0)) {
+    return 'SALE';
+  }
+
+  if (context === 'arrival' || index <= 1) {
+    return 'NEW';
+  }
+
+  if (product?.featured_home || Number(product?.stock_qty || 0) <= LOW_STOCK_THRESHOLD) {
+    return 'HOT';
+  }
+
+  return context === 'seller' ? 'HOT' : 'NEW';
+}
+
+export function getProductBadgeTone(badge: string) {
+  if (badge === 'SALE') {
+    return 'sale';
+  }
+
+  if (badge === 'HOT') {
+    return 'hot';
+  }
+
+  return 'new';
+}
+
+export function getInitials(name: string) {
+  const initials = String(name || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('');
+
+  return initials || 'SE';
 }
 
 export function getConditionMeta(value: unknown) {
