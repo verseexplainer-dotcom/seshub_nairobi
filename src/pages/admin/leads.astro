@@ -1,0 +1,149 @@
+---
+import PortalShell from '../../components/PortalShell.astro';
+import StatusPill from '../../components/StatusPill.astro';
+import { adminNavItems } from '../../lib/navigation';
+import { formatDateTime, formatKes, titleCaseStatus } from '../../lib/order-utils';
+import { createAdminSupabaseClient } from '../../lib/supabase-admin';
+
+const adminSupabase = createAdminSupabaseClient(Astro.locals);
+
+const [
+  { data: orderIntentsData },
+  { data: newsletterData },
+  { data: eventsData }
+] = await Promise.all([
+  adminSupabase
+    .from('order_intents')
+    .select('id, customer_name, phone, total_kes, status, source_page, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50),
+  adminSupabase
+    .from('newsletter_signups')
+    .select('id, email, source_page, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50),
+  adminSupabase
+    .from('events')
+    .select('event_type, created_at')
+    .order('created_at', { ascending: false })
+    .limit(250)
+]);
+const orderIntents = orderIntentsData ?? [];
+const newsletter = newsletterData ?? [];
+const events = eventsData ?? [];
+
+const funnelCounts = ['checkout_start', 'submit_order_intent', 'whatsapp_checkout_redirect'].map(
+  (eventType) => ({
+    eventType,
+    count: events.filter((event) => event.event_type === eventType).length
+  })
+);
+---
+
+<PortalShell
+  title="Leads"
+  intro="Inspect raw order intents and newsletter signups alongside recent funnel events from the storefront."
+  navItems={adminNavItems}
+  currentPath={Astro.url.pathname}
+  badge="Admin"
+>
+  <div class="stack">
+    <section class="metrics-grid">
+      {funnelCounts.map((item) => (
+        <article class="app-card metric-card">
+          <span>{titleCaseStatus(item.eventType)}</span>
+          <strong>{item.count}</strong>
+          <p>Recent storefront events in the loaded admin sample window.</p>
+        </article>
+      ))}
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Raw Order Intents</h2>
+          <p>Legacy and guest checkout leads remain visible here even before staff action.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lead</th>
+              <th>Phone</th>
+              <th>Total</th>
+              <th>Source</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orderIntents.map((intent) => (
+              <tr>
+                <td>
+                  <div class="detail-row compact">
+                    <strong>{intent.customer_name}</strong>
+                    <span>{intent.id}</span>
+                  </div>
+                </td>
+                <td>{intent.phone}</td>
+                <td>{formatKes(intent.total_kes)}</td>
+                <td>{intent.source_page || 'Unknown'}</td>
+                <td>
+                  <StatusPill
+                    label={titleCaseStatus(intent.status)}
+                    tone={intent.status === 'new' ? 'warning' : 'success'}
+                  />
+                </td>
+                <td>{formatDateTime(intent.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Newsletter Signups</h2>
+          <p>Most recent email opt-ins collected from the storefront.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Source</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {newsletter.map((signup) => (
+              <tr>
+                <td>
+                  <strong>{signup.email}</strong>
+                </td>
+                <td>{signup.source_page || 'Unknown'}</td>
+                <td>{formatDateTime(signup.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .detail-row.compact {
+    gap: 0.1rem;
+  }
+</style>

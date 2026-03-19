@@ -1,0 +1,180 @@
+---
+import AlertBanner from '../../../components/AlertBanner.astro';
+import PortalShell from '../../../components/PortalShell.astro';
+import StatusPill from '../../../components/StatusPill.astro';
+import { accountNavItems } from '../../../lib/navigation';
+import { describeOrderEvent, formatDateTime, formatKes, getFulfillmentStatusTone, getPaymentStatusTone, titleCaseStatus } from '../../../lib/order-utils';
+import { createServerSupabaseClient } from '../../../lib/supabase-server';
+
+const supabase = createServerSupabaseClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+  locals: Astro.locals
+});
+const orderNumber = Astro.params.orderNumber;
+const message = Astro.url.searchParams.get('message');
+const error = Astro.url.searchParams.get('error');
+
+const { data: order } = await supabase
+  .from('orders')
+  .select('*, order_items(*), order_status_events(*)')
+  .eq('order_number', orderNumber)
+  .single();
+
+if (!order) {
+  return Astro.redirect('/account/orders?error=Order%20not%20found.');
+}
+
+const statusEvents = [...(order.order_status_events || [])].sort((a, b) =>
+  a.created_at.localeCompare(b.created_at)
+);
+const whatsappText = encodeURIComponent(
+  `Hello SES ICT HUB, I need help with order ${order.order_number}.`
+);
+---
+
+<PortalShell
+  title={`Order ${order.order_number}`}
+  intro="Review item snapshots, delivery details, and the status timeline for this order."
+  navItems={accountNavItems}
+  currentPath="/account/orders"
+  badge="Account"
+>
+  <div class="stack">
+    <AlertBanner tone="danger" message={error} />
+    <AlertBanner tone="success" message={message} />
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Order Summary</h2>
+          <p>Placed {formatDateTime(order.created_at)}</p>
+        </div>
+        <div class="app-actions">
+          <StatusPill
+            label={titleCaseStatus(order.payment_status)}
+            tone={getPaymentStatusTone(order.payment_status)}
+          />
+          <StatusPill
+            label={titleCaseStatus(order.fulfillment_status)}
+            tone={getFulfillmentStatusTone(order.fulfillment_status)}
+          />
+        </div>
+      </div>
+
+      <div class="app-grid cols-2">
+        <div class="detail-list">
+          <div class="detail-row">
+            <span>Customer</span>
+            <strong>{order.customer_name}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Phone</span>
+            <strong>{order.customer_phone}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Location</span>
+            <strong>{order.customer_location || 'Not provided'}</strong>
+          </div>
+        </div>
+
+        <div class="detail-list">
+          <div class="detail-row">
+            <span>Total</span>
+            <strong>{formatKes(order.total_kes)}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Payment status</span>
+            <strong>{titleCaseStatus(order.payment_status)}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Fulfillment status</span>
+            <strong>{titleCaseStatus(order.fulfillment_status)}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Items</h2>
+          <p>Snapshots keep your order history stable even if the catalog changes later.</p>
+        </div>
+      </div>
+
+      <div class="stack sm">
+        {(order.order_items || []).map((item: any) => (
+          <article class="line-item">
+            <div>
+              <strong>{item.product_title}</strong>
+              <p class="muted">
+                {item.qty} x {formatKes(item.unit_price_kes)}
+                {item.product_sku ? ` • SKU ${item.product_sku}` : ''}
+              </p>
+            </div>
+            <strong>{formatKes(item.line_total_kes)}</strong>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Status Timeline</h2>
+          <p>Every major update is recorded to preserve an audit trail.</p>
+        </div>
+        <a
+          class="pill-button accent"
+          href={`https://wa.me/254720480475?text=${whatsappText}`}
+          target="_blank"
+        >
+          Contact Support
+        </a>
+      </div>
+
+      <div class="timeline">
+        {statusEvents.map((event: any) => (
+          <article class="timeline-item">
+            <strong>{describeOrderEvent(event.event_type)}</strong>
+            <p class="muted">{formatDateTime(event.created_at)}</p>
+            <div class="app-actions">
+              <StatusPill
+                label={`Payment: ${titleCaseStatus(event.payment_status)}`}
+                tone={getPaymentStatusTone(event.payment_status)}
+              />
+              <StatusPill
+                label={`Fulfillment: ${titleCaseStatus(event.fulfillment_status)}`}
+                tone={getFulfillmentStatusTone(event.fulfillment_status)}
+              />
+            </div>
+            {event.note && <p>{event.note}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .line-item,
+  .timeline-item {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .line-item:first-child,
+  .timeline-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .timeline {
+    display: grid;
+  }
+</style>

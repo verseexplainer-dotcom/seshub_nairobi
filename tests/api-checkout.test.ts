@@ -103,8 +103,8 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
       );
     }
 
-    return new Response(JSON.stringify([{ id: 'order-uuid-123' }]), {
-      status: 201,
+    return new Response(JSON.stringify([{ order_id: 'order-uuid-123', order_number: 'SES-20260319-00001' }]), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }) as typeof fetch;
@@ -141,7 +141,76 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
   const body = await response.json();
   assert.equal(body.ok, true);
   assert.equal(body.order_id, 'order-uuid-123');
+  assert.equal(body.order_number, 'SES-20260319-00001');
   assert.match(body.whatsapp_url, /wa\.me/);
+});
+
+test('checkout forwards the signed-in user to order creation', async (t) => {
+  const requests: Array<{ url: string; body: Record<string, unknown> | null }> = [];
+
+  globalThis.fetch = (async (input, init) => {
+    const url = String(input);
+    const bodyText = typeof init?.body === 'string' ? init.body : '';
+    const body = bodyText ? JSON.parse(bodyText) : null;
+    requests.push({ url, body });
+
+    if (url.includes('/rest/v1/products')) {
+      return new Response(
+        JSON.stringify([
+          {
+            id: 'prod-1',
+            title: 'HP EliteBook',
+            slug: 'hp-elitebook-840-g5',
+            price_kes: 42000,
+            in_stock: true
+          }
+        ]),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(JSON.stringify([{ order_id: 'order-uuid-456', order_number: 'SES-20260319-00002' }]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }) as typeof fetch;
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const response = await POST({
+    request: new Request('https://example.com/api/checkout/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: validCart,
+        total_kes: 42000,
+        customer_name: 'Jane Doe',
+        phone: '0712345678',
+        location: 'Westlands',
+        consent: true,
+        source_page: 'cart'
+      })
+    }),
+    locals: {
+      user: {
+        id: 'user-123',
+        email: 'jane@example.com'
+      },
+      runtime: {
+        env: {
+          PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
+          SUPABASE_SERVICE_ROLE_KEY: 'service-role'
+        }
+      }
+    }
+  } as any);
+
+  assert.equal(response.status, 200);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1]?.body?.p_user_id, 'user-123');
+  assert.equal(requests[1]?.body?.p_customer_email, 'jane@example.com');
 });
 
 test('checkout rejects out-of-stock items', async (t) => {

@@ -152,6 +152,46 @@ async function fetchCatalogProducts(
   return map;
 }
 
+function buildCreateOrderRpcUrl(supabaseUrl: string) {
+  return `${supabaseUrl.replace(/\/$/, '')}/rest/v1/rpc/create_checkout_order`;
+}
+
+function extractUpstreamMessage(payloadText: string) {
+  const trimmed = payloadText.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  try {
+    const payload = JSON.parse(trimmed) as unknown;
+    if (isRecord(payload)) {
+      if (typeof payload.message === 'string' && payload.message.trim()) {
+        return payload.message.trim();
+      }
+
+      if (typeof payload.error === 'string' && payload.error.trim()) {
+        return payload.error.trim();
+      }
+
+      if (isRecord(payload.error) && typeof payload.error.message === 'string' && payload.error.message.trim()) {
+        return payload.error.message.trim();
+      }
+    }
+  } catch {
+    // Fall back to the raw upstream payload.
+  }
+
+  return trimmed;
+}
+
+function getSessionUser(locals: unknown) {
+  const user = (locals as { user?: { id?: unknown; email?: unknown } | null } | null)?.user;
+  return {
+    id: typeof user?.id === 'string' ? user.id : null,
+    email: typeof user?.email === 'string' ? user.email : null
+  };
+}
+
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const payloadBytes = Number(request.headers.get('content-length') || 0);
@@ -238,18 +278,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return errorResponse(400, 'TOTAL_MISMATCH', 'Your cart pricing changed. Please refresh and try again.');
     }
 
-    const payload: Record<string, unknown> = {
-      cart,
-      total_kes: computedTotalKes,
-      customer_name: customerName,
-      phone: normalizedPhone,
-      location,
-      consent,
-      source_page: sourcePage,
-      status: 'new'
+    const sessionUser = getSessionUser(locals);
+    const orderCreatePayload: Record<string, unknown> = {
+      p_cart: cart,
+      p_total_kes: computedTotalKes,
+      p_customer_name: customerName,
+      p_phone: normalizedPhone,
+      p_location: location,
+      p_consent: consent,
+      p_source_page: sourcePage,
+      p_user_id: sessionUser.id,
+      p_customer_email: sessionUser.email
     };
 
-    const insertResponse = await fetch(`${supabaseUrl.replace(/\/$/, '')}/rest/v1/order_intents?select=id`, {
+    const orderCreateResponse = await fetch(buildCreateOrderRpcUrl(supabaseUrl), {
       method: 'POST',
       headers: {
         apikey: serviceRoleKey,
@@ -257,28 +299,39 @@ export const POST: APIRoute = async ({ request, locals }) => {
         'Content-Type': 'application/json',
         Prefer: 'return=representation'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(orderCreatePayload)
     });
 
-    if (!insertResponse.ok) {
-      const upstreamError = await insertResponse.text().catch(() => '');
-      console.error('order_intents insert error', insertResponse.status, upstreamError);
-      return errorResponse(502, 'ORDER_INTENT_INSERT_FAILED', 'Failed to save order intent.');
+    if (!orderCreateResponse.ok) {
+      const upstreamError = await orderCreateResponse.text().catch(() => '');
+      const upstreamMessage = extractUpstreamMessage(upstreamError);
+
+      if (orderCreateResponse.status === 409 || /out of stock|insufficient stock/i.test(upstreamMessage)) {
+        return errorResponse(409, 'OUT_OF_STOCK', upstreamMessage || 'One or more items are out of stock.');
+      }
+
+      if (/total validation failed/i.test(upstreamMessage)) {
+        return errorResponse(400, 'TOTAL_MISMATCH', 'Your cart pricing changed. Please refresh and try again.');
+      }
+
+      if (orderCreateResponse.status >= 400 && orderCreateResponse.status < 500) {
+        return errorResponse(400, 'ORDER_CREATE_FAILED', upstreamMessage || 'Failed to save order.');
+      }
+
+      console.error('create_checkout_order error', orderCreateResponse.status, upstreamError);
+      return errorResponse(502, 'ORDER_CREATE_FAILED', 'Failed to save order.');
     }
 
-    const insertedPayload = (await insertResponse.json().catch(() => null)) as
-      | Array<{ id?: string }>
-      | { id?: string }
+    const insertedPayload = (await orderCreateResponse.json().catch(() => null)) as
+      | Array<{ order_id?: string; order_number?: string | null }>
+      | { order_id?: string; order_number?: string | null }
       | null;
-    const orderRef = Array.isArray(insertedPayload)
-      ? typeof insertedPayload[0]?.id === 'string'
-        ? insertedPayload[0].id
-        : null
-      : typeof insertedPayload?.id === 'string'
-        ? insertedPayload.id
-        : null;
+    const orderRow = Array.isArray(insertedPayload) ? insertedPayload[0] : insertedPayload;
+    const orderId = typeof orderRow?.order_id === 'string' ? orderRow.order_id : null;
+    const orderNumber = typeof orderRow?.order_number === 'string' ? orderRow.order_number : null;
+    const orderRef = orderNumber || orderId;
 
-    if (!orderRef) {
+    if (!orderId || !orderRef) {
       return errorResponse(502, 'ORDER_REF_MISSING', 'Order was created but no order reference was returned.');
     }
 
@@ -288,7 +341,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     return jsonResponse({
       ok: true,
-      order_id: orderRef,
+      order_id: orderId,
+      order_number: orderRef,
       whatsapp_url: whatsappUrl,
       url: whatsappUrl
     });

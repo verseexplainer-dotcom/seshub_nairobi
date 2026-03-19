@@ -6,6 +6,9 @@ export default defineConfig({
     site: 'https://sesicthub.co.ke',
     output: 'server',
     adapter: cloudflare(),
+    session: {
+        driver: 'memory'
+    },
     build: {
         assets: '_assets'
     }

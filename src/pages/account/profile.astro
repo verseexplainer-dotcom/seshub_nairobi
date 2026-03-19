@@ -1,0 +1,75 @@
+---
+import AlertBanner from '../../components/AlertBanner.astro';
+import PortalShell from '../../components/PortalShell.astro';
+import type { SessionLocals } from '../../lib/app-types';
+import { accountNavItems } from '../../lib/navigation';
+
+const locals = Astro.locals as SessionLocals;
+const profile = locals.profile;
+const user = locals.user;
+const message = Astro.url.searchParams.get('message');
+const error = Astro.url.searchParams.get('error');
+---
+
+<PortalShell
+  title="Profile"
+  intro="Update the contact and delivery details used to prefill future checkouts."
+  navItems={accountNavItems}
+  currentPath={Astro.url.pathname}
+  badge="Account"
+>
+  <div class="stack">
+    <AlertBanner tone="danger" message={error} />
+    <AlertBanner tone="success" message={message} />
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Your Details</h2>
+          <p>Email is managed through Supabase Auth. Profile fields stay editable here.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="/api/account/profile" class="app-form">
+        <div class="app-form-grid cols-2">
+          <div class="form-field">
+            <label for="full_name">Full name</label>
+            <input id="full_name" name="full_name" type="text" value={profile?.full_name || ''} />
+          </div>
+
+          <div class="form-field">
+            <label for="phone">Phone</label>
+            <input id="phone" name="phone" type="tel" value={profile?.phone || ''} />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="default_location">Default delivery location</label>
+          <input
+            id="default_location"
+            name="default_location"
+            type="text"
+            value={profile?.default_location || ''}
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="email_readonly">Email address</label>
+          <input id="email_readonly" type="email" value={user?.email || ''} readonly />
+        </div>
+
+        <button type="submit" class="pill-button primary">Save Profile</button>
+      </form>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Security</h2>
+          <p>Need to change your password? Use the secure recovery flow.</p>
+        </div>
+        <a class="pill-button" href="/auth/reset-password">Reset Password</a>
+      </div>
+    </section>
+  </div>
+</PortalShell>

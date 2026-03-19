@@ -1,0 +1,101 @@
+---
+import AlertBanner from '../../components/AlertBanner.astro';
+import PortalShell from '../../components/PortalShell.astro';
+import StatusPill from '../../components/StatusPill.astro';
+import type { SessionLocals } from '../../lib/app-types';
+import { accountNavItems } from '../../lib/navigation';
+import { formatDateTime, formatKes, getFulfillmentStatusTone, getPaymentStatusTone, titleCaseStatus } from '../../lib/order-utils';
+import { createServerSupabaseClient } from '../../lib/supabase-server';
+
+const locals = Astro.locals as SessionLocals;
+const supabase = createServerSupabaseClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+  locals
+});
+const message = Astro.url.searchParams.get('message');
+const error = Astro.url.searchParams.get('error');
+
+const { data } = await supabase
+  .from('orders')
+  .select('id, order_number, total_kes, payment_status, fulfillment_status, created_at')
+  .order('created_at', { ascending: false });
+const orders = data ?? [];
+---
+
+<PortalShell
+  title="Your Orders"
+  intro="Every order placed while signed in is listed here with payment and fulfillment status."
+  navItems={accountNavItems}
+  currentPath={Astro.url.pathname}
+  badge="Account"
+>
+  <div class="stack">
+    <AlertBanner tone="danger" message={error} />
+    <AlertBanner tone="success" message={message} />
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>Order History</h2>
+          <p>{orders.length} linked orders found.</p>
+        </div>
+        <a class="pill-button primary" href="/cart">Place another order</a>
+      </div>
+
+      {orders.length > 0 ? (
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Placed</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Fulfillment</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr>
+                  <td>
+                    <strong>{order.order_number}</strong>
+                  </td>
+                  <td>{formatDateTime(order.created_at)}</td>
+                  <td>{formatKes(order.total_kes)}</td>
+                  <td>
+                    <StatusPill
+                      label={titleCaseStatus(order.payment_status)}
+                      tone={getPaymentStatusTone(order.payment_status)}
+                    />
+                  </td>
+                  <td>
+                    <StatusPill
+                      label={titleCaseStatus(order.fulfillment_status)}
+                      tone={getFulfillmentStatusTone(order.fulfillment_status)}
+                    />
+                  </td>
+                  <td>
+                    <a class="text-link" href={`/account/orders/${order.order_number}`}>Details</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="muted">
+          No linked orders yet. Guest orders stay available to staff in the admin dashboard,
+          but only signed-in orders appear here in v1.
+        </p>
+      )}
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .table-wrap {
+    overflow-x: auto;
+  }
+</style>

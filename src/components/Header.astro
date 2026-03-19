@@ -1,5 +1,6 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
+import type { SessionLocals } from '../lib/app-types';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 
 const navLinks = [
@@ -12,6 +13,16 @@ const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const logoImage = siteAssets.logo;
 const logoFallback = siteAssets.logoFallback;
 const logoOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(logoFallback)};}`;
+const locals = Astro.locals as SessionLocals;
+const user = locals.user;
+const isStaff = locals.isStaff;
+const authLinks = user
+  ? [
+      { name: 'Account', href: '/account' },
+      ...(isStaff ? [{ name: 'Admin', href: '/admin' }] : []),
+      { name: 'Logout', href: '/auth/logout' }
+    ]
+  : [{ name: 'Sign In', href: '/auth/login' }];
 ---
 
 <header class="header">
@@ -40,6 +51,13 @@ const logoOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;}e
     </nav>
 
     <div class="header-actions">
+      <div class="account-links">
+        {authLinks.map((link) => (
+          <a href={link.href} class={`account-link ${link.name === 'Logout' ? 'logout' : ''}`}>
+            {link.name}
+          </a>
+        ))}
+      </div>
       <a href="/shop" class="pill-button primary header-cta">Browse Shop</a>
       <div class="cart-shell" data-cart-shell>
         <a href="/cart" class="cart-link" aria-label="View Cart">
@@ -66,6 +84,9 @@ const logoOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;}e
     <div class="container">
       <ul class="mobile-nav-list">
         {navLinks.map(link => (
+          <li><a href={link.href} class="mobile-nav-link">{link.name}</a></li>
+        ))}
+        {authLinks.map((link) => (
           <li><a href={link.href} class="mobile-nav-link">{link.name}</a></li>
         ))}
         <li><a href="/shop" class="pill-button primary mobile-cta">Browse Shop</a></li>
@@ -171,6 +192,28 @@ const logoOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;}e
     display: flex;
     align-items: center;
     gap: var(--space-md);
+  }
+
+  .account-links {
+    display: none;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  @media (min-width: 1024px) {
+    .account-links {
+      display: flex;
+    }
+  }
+
+  .account-link {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .account-link.logout {
+    color: var(--accent-hover);
   }
 
   .header-cta {

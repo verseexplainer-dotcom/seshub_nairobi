@@ -9,7 +9,6 @@ import { sanitizeProductDescription } from '../../lib/sanitize';
 import { getProductPresentation, getWarrantyLabel, normalizeText } from '../../lib/productPresentation';
 
 export const prerender = false;
-
 const { slug } = Astro.params;
 
 let product: Record<string, any> | null = null;

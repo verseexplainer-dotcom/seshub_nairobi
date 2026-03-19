@@ -1,0 +1,238 @@
+---
+import PortalShell from '../../components/PortalShell.astro';
+import StatusPill from '../../components/StatusPill.astro';
+import { adminNavItems } from '../../lib/navigation';
+import { formatDateTime, titleCaseStatus } from '../../lib/order-utils';
+import { createAdminSupabaseClient } from '../../lib/supabase-admin';
+
+const adminSupabase = createAdminSupabaseClient(Astro.locals);
+const searchParams = Astro.url.searchParams;
+const q = searchParams.get('q')?.trim().toLowerCase() || '';
+const message = searchParams.get('message');
+const error = searchParams.get('error');
+
+const { data: authUsersData, error: authUsersError } = await adminSupabase.auth.admin.listUsers({
+  page: 1,
+  perPage: 200
+});
+
+const authUsers = authUsersData?.users || [];
+const userIds = authUsers.map((user) => user.id);
+
+const [{ data: profilesData }, { data: ordersData }] = userIds.length
+  ? await Promise.all([
+      adminSupabase
+        .from('profiles')
+        .select('user_id, full_name, phone, role, is_active, created_at, updated_at')
+        .in('user_id', userIds),
+      adminSupabase
+        .from('orders')
+        .select('user_id, created_at')
+        .in('user_id', userIds)
+    ])
+  : [{ data: [] }, { data: [] }];
+const profiles = profilesData ?? [];
+const orders = ordersData ?? [];
+
+const profileMap = new Map(profiles.map((profile) => [profile.user_id, profile]));
+const orderStats = new Map<string, { count: number; latest: string | null }>();
+
+for (const order of orders) {
+  if (!order.user_id) continue;
+  const current = orderStats.get(order.user_id) || { count: 0, latest: null };
+  current.count += 1;
+  if (!current.latest || current.latest < order.created_at) {
+    current.latest = order.created_at;
+  }
+  orderStats.set(order.user_id, current);
+}
+
+const rows = authUsers
+  .map((user) => {
+    const profile = profileMap.get(user.id);
+    const stats = orderStats.get(user.id) || { count: 0, latest: null };
+    const searchBlob = [
+      user.email,
+      profile?.full_name,
+      profile?.phone,
+      profile?.role
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return {
+      id: user.id,
+      email: user.email || 'No email',
+      full_name: profile?.full_name || user.user_metadata?.full_name || 'Unnamed user',
+      phone: profile?.phone || user.phone || '',
+      role: profile?.role || 'customer',
+      is_active: profile?.is_active ?? true,
+      created_at: user.created_at,
+      last_sign_in_at: user.last_sign_in_at,
+      order_count: stats.count,
+      latest_order_at: stats.latest,
+      matches: !q || searchBlob.includes(q)
+    };
+  })
+  .filter((row) => row.matches)
+  .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+const canManageUsers = Astro.locals.isAdmin;
+---
+
+<PortalShell
+  title="Users"
+  intro="Review customer accounts, track account activity, and manage staff roles when you are signed in as an admin."
+  navItems={adminNavItems}
+  currentPath={Astro.url.pathname}
+  badge="Admin"
+>
+  <div class="stack">
+    {authUsersError && <div class="app-alert danger">{authUsersError.message}</div>}
+    {error && <div class="app-alert danger">{error}</div>}
+    {message && <div class="app-alert success">{message}</div>}
+
+    <section class="app-card">
+      <form class="app-form">
+        <div class="app-form-grid cols-2">
+          <div class="form-field">
+            <label for="q">Search users</label>
+            <input id="q" name="q" value={q} placeholder="Email, phone, role, or name" />
+          </div>
+        </div>
+
+        <div class="app-actions">
+          <button type="submit" class="pill-button primary">Search</button>
+          <a class="pill-button" href="/admin/users">Reset</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="app-card">
+      <div class="section-heading">
+        <div>
+          <h2>User Directory</h2>
+          <p>{rows.length} users returned.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Orders</th>
+              <th>Recent Activity</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr>
+                <td>
+                  <div class="detail-row compact">
+                    <strong>{row.full_name}</strong>
+                    <span>{row.email}</span>
+                    {row.phone && <span>{row.phone}</span>}
+                  </div>
+                </td>
+                <td>
+                  <StatusPill
+                    label={titleCaseStatus(row.role)}
+                    tone={row.role === 'admin' ? 'info' : row.role === 'staff' ? 'warning' : 'neutral'}
+                  />
+                </td>
+                <td>
+                  <StatusPill
+                    label={row.is_active ? 'Active' : 'Inactive'}
+                    tone={row.is_active ? 'success' : 'danger'}
+                  />
+                </td>
+                <td>
+                  <div class="detail-row compact">
+                    <strong>{row.order_count}</strong>
+                    <span>
+                      {row.latest_order_at
+                        ? `Latest ${formatDateTime(row.latest_order_at)}`
+                        : 'No orders yet'}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="detail-row compact">
+                    <strong>{formatDateTime(row.created_at)}</strong>
+                    <span>
+                      {row.last_sign_in_at
+                        ? `Signed in ${formatDateTime(row.last_sign_in_at)}`
+                        : 'Never signed in'}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  {canManageUsers ? (
+                    <div class="stack sm">
+                      <form
+                        method="POST"
+                        action={`/api/admin/users/${row.id}/role`}
+                        class="inline-form"
+                      >
+                        <input type="hidden" name="redirect_to" value={`/admin/users${Astro.url.search}`} />
+                        <select name="role">
+                          <option value="customer" selected={row.role === 'customer'}>Customer</option>
+                          <option value="staff" selected={row.role === 'staff'}>Staff</option>
+                          <option value="admin" selected={row.role === 'admin'}>Admin</option>
+                        </select>
+                        <button type="submit" class="pill-button primary">Save</button>
+                      </form>
+
+                      <form
+                        method="POST"
+                        action={`/api/admin/users/${row.id}/active`}
+                        class="inline-form"
+                      >
+                        <input type="hidden" name="redirect_to" value={`/admin/users${Astro.url.search}`} />
+                        <input type="hidden" name="is_active" value={row.is_active ? 'false' : 'true'} />
+                        <button type="submit" class="pill-button">
+                          {row.is_active ? 'Deactivate' : 'Reactivate'}
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <span class="muted">Admin-only controls</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</PortalShell>
+
+<style>
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .detail-row.compact {
+    gap: 0.1rem;
+  }
+
+  .inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .inline-form select {
+    min-width: 130px;
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.8rem;
+    border: 1px solid var(--border);
+    font: inherit;
+  }
+</style>

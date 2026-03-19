@@ -1,0 +1,168 @@
+---
+import Layout from '../layouts/Layout.astro';
+import type { SessionLocals } from '../lib/app-types';
+
+interface NavItem {
+  href: string;
+  label: string;
+  description: string;
+}
+
+interface Props {
+  title: string;
+  intro: string;
+  navItems: NavItem[];
+  currentPath: string;
+  badge?: string;
+}
+
+const {
+  title,
+  intro,
+  navItems,
+  currentPath,
+  badge = 'Portal'
+} = Astro.props;
+const profile = (Astro.locals as SessionLocals).profile;
+
+function isActive(href: string) {
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+}
+---
+
+<Layout title={title}>
+  <section class="portal-shell">
+    <div class="container portal-grid">
+      <aside class="portal-sidebar">
+        <span class="portal-badge">{badge}</span>
+        <h1>{title}</h1>
+        <p class="portal-intro">{intro}</p>
+
+        {profile && (
+          <div class="portal-user-card">
+            <strong>{profile.full_name || 'SES account'}</strong>
+            <span>{profile.role}</span>
+            {profile.phone && <span>{profile.phone}</span>}
+          </div>
+        )}
+
+        <nav class="portal-nav" aria-label={`${badge} navigation`}>
+          {navItems.map((item) => (
+            <a class={`portal-nav-link ${isActive(item.href) ? 'active' : ''}`} href={item.href}>
+              <strong>{item.label}</strong>
+              <span>{item.description}</span>
+            </a>
+          ))}
+        </nav>
+      </aside>
+
+      <div class="portal-content">
+        <slot />
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .portal-shell {
+    padding: clamp(2rem, 5vw, 4rem) 0;
+  }
+
+  .portal-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1100px) {
+    .portal-grid {
+      grid-template-columns: 320px minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+
+  .portal-sidebar {
+    display: grid;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(circle at top right, rgba(29, 78, 216, 0.13), transparent 40%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.94));
+    box-shadow: var(--shadow-md);
+  }
+
+  .portal-badge {
+    display: inline-flex;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary);
+    background: rgba(29, 78, 216, 0.1);
+  }
+
+  .portal-sidebar h1 {
+    font-size: clamp(1.7rem, 3vw, 2.25rem);
+    line-height: 1.1;
+  }
+
+  .portal-intro {
+    color: var(--text-muted);
+  }
+
+  .portal-user-card {
+    display: grid;
+    gap: 0.2rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid var(--border);
+  }
+
+  .portal-user-card span {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .portal-nav {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .portal-nav-link {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid transparent;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.88);
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .portal-nav-link span {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .portal-nav-link:hover,
+  .portal-nav-link.active {
+    transform: translateY(-1px);
+    border-color: rgba(29, 78, 216, 0.2);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+  }
+
+  .portal-nav-link.active {
+    background: linear-gradient(180deg, rgba(29, 78, 216, 0.1), rgba(255, 255, 255, 0.95));
+  }
+
+  .portal-content {
+    display: grid;
+    gap: 1rem;
+  }
+</style>
