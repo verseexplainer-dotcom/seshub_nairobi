@@ -59,7 +59,7 @@ export CLOUDFLARE_API_TOKEN='<your-token>'
 ```
 
 Locked deploy account id is set in `wrangler.jsonc`:
-- `e1d8076a3dc603837814ca828736561f`
+- 
 
 ## Local Development
 ```bash
