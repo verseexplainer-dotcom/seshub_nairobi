@@ -59,11 +59,11 @@ export const blogPosts = [
     href: '/blog#printer-setup-basics'
   },
   {
-    id: 'fast-delivery-buying-flow',
-    category: 'Storefront Tips',
+    id: 'same-day-delivery-help',
+    category: 'Shop Tips',
     date: 'March 5, 2026',
-    title: 'How to confirm stock quickly and move from browse to delivery on the same day',
-    excerpt: 'The fastest path from homepage browsing to WhatsApp confirmation when the order is time-sensitive.',
-    href: '/blog#fast-delivery-buying-flow'
+    title: 'How to confirm stock quickly and arrange delivery the same day',
+    excerpt: "Message us on WhatsApp and we'll help you confirm stock, price, and delivery before you buy.",
+    href: '/blog#same-day-delivery-help'
   }
 ];

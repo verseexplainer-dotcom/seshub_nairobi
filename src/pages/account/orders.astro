@@ -25,7 +25,7 @@ const orders = data ?? [];
 
 <PortalShell
   title="Your Orders"
-  intro="Every order placed while signed in is listed here with payment and fulfillment status."
+  intro="Orders placed while signed in will show here."
   navItems={accountNavItems}
   currentPath={Astro.url.pathname}
   badge="Account"
@@ -38,7 +38,7 @@ const orders = data ?? [];
       <div class="section-heading">
         <div>
           <h2>Order History</h2>
-          <p>{orders.length} linked orders found.</p>
+          <p>{orders.length} orders saved to your account.</p>
         </div>
         <a class="pill-button primary" href="/cart">Place another order</a>
       </div>
@@ -86,8 +86,7 @@ const orders = data ?? [];
         </div>
       ) : (
         <p class="muted">
-          No linked orders yet. Guest orders stay available to staff in the admin dashboard,
-          but only signed-in orders appear here in v1.
+          You do not have any saved orders yet. If you need help finding an older order, message us on WhatsApp and we'll help you.
         </p>
       )}
     </section>

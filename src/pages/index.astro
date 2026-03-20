@@ -93,56 +93,56 @@ const categoryCards = [
     title: 'Laptops',
     count: categoryCounts.laptops || 0,
     href: '/category/laptops',
-    description: 'Portable business, study, and creative work machines.',
+    description: 'Good picks for work, school, and everyday use.',
     accent: '#2563eb'
   },
   {
     title: 'Smartphones',
     count: categoryCounts.smartphones || 0,
     href: '/category/smartphones',
-    description: 'Daily drivers, premium upgrades, and reliable resale stock.',
+    description: 'Everyday phones, upgrades, and dependable options.',
     accent: '#0f766e'
   },
   {
     title: 'Printers',
     count: categoryCounts.printers || 0,
     href: '/category/printers',
-    description: 'Home and office printers with practical setup guidance.',
+    description: 'Home and office printers, plus help choosing the right one.',
     accent: '#7c3aed'
   },
   {
     title: 'Shop All',
     count: categoryCounts.shop || 0,
     href: '/shop',
-    description: 'Browse the full live catalog with search, sorting, and stock-aware product cards.',
+    description: 'See everything we have in stock right now.',
     accent: '#ea580c'
   },
   {
     title: 'In Stock',
     count: categoryCounts.inStock || 0,
     href: '/shop?in_stock=1',
-    description: 'Focus on products currently marked available for faster checkout decisions.',
+    description: 'Start with items available right now.',
     accent: '#2563eb'
   },
   {
     title: 'Newest',
     count: categoryCounts.newest || 0,
     href: '/shop?sort=newest',
-    description: 'Jump to the latest additions from the current catalog sync.',
+    description: 'See the latest items we have added.',
     accent: '#16a34a'
   },
   {
     title: 'Featured',
     count: categoryCounts.featured || 0,
     href: '/shop?sort=featured',
-    description: 'See featured products and high-priority stock from the live storefront.',
+    description: 'Picks we recommend when you want a good place to start.',
     accent: '#1d4ed8'
   },
   {
     title: 'Budget Picks',
     count: categoryCounts.budget || 0,
     href: '/shop?sort=price_asc',
-    description: 'Start with lower prices first, then refine by brand, stock, and category.',
+    description: 'Start with lower prices, then narrow it down.',
     accent: '#d97706'
   }
 ];
@@ -152,7 +152,7 @@ const dealDeadline = new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString();
 
 <Layout
   title="Premium electronics for Nairobi buyers"
-  description="Shop laptops, smartphones, printers, desktops, and accessories from SES ICT HUB with a premium homepage experience, live deals, and faster WhatsApp-assisted checkout."
+  description="Shop laptops, smartphones, printers, desktops, and accessories from SES ICT HUB with clear prices, current deals, and help on WhatsApp from our team."
 >
   <Hero spotlightProduct={spotlightProduct} totalProducts={inStockProducts.length} brandCount={brandCount} dealCount={dealCount} />
   <BrandCarousel />
@@ -160,8 +160,8 @@ const dealDeadline = new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString();
   <ProductShowcaseSection
     id="new-arrivals-title"
     kicker="New arrivals"
-    title="Fresh additions from the live catalog"
-    description="Latest in-stock products surfaced from the current inventory, designed to feel premium without disconnecting from the actual Supabase catalog."
+    title="Fresh picks in the shop"
+    description="These are the latest items we have added. Message us on WhatsApp and we'll help you compare."
     products={newArrivals}
     context="arrival"
     ctaHref="/shop?sort=newest"
@@ -172,13 +172,13 @@ const dealDeadline = new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString();
   <ProductShowcaseSection
     id="best-sellers-title"
     kicker="Best sellers"
-    title="Popular products with stronger buyer momentum"
-    description="This section uses featured ranking and stock weight as a clean fallback until true order-volume based best-seller signals are available."
+    title="Popular picks our customers keep asking for"
+    description="A mix of products customers ask about often and stock we are happy to recommend."
     products={fallbackBestSellers}
     context="seller"
     variant="contrast"
     ctaHref="/shop?sort=featured"
-    ctaLabel="Explore featured stock"
+    ctaLabel="See featured picks"
   />
   <Testimonials items={homepageTestimonials} />
   <BlogPreview />

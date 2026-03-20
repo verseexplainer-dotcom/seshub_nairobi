@@ -25,11 +25,11 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of
     <div class="deal-panel">
       <div class="deal-copy">
         <p class="section-kicker">Deal of the day</p>
-        <h2 id="deal-of-day-title">A live offer window for shoppers ready to move fast</h2>
+        <h2 id="deal-of-day-title">Today’s offer if you want to move quickly</h2>
         <p class="deal-text">
           {product
-            ? `Today’s spotlight keeps the price sharp on ${product.title}. Confirm availability quickly, reserve on WhatsApp, or add it to cart before the timer runs out.`
-            : 'The next timed promotion is loading. Chat on WhatsApp if you want the current best-priced option immediately.'}
+            ? `We have marked down ${product.title} for a short time. Message us on WhatsApp if you want us to confirm stock or hold it for you.`
+            : "If you want today's best-priced option, message us on WhatsApp and we'll help you."}
         </p>
 
         <div class="deal-countdown" data-deal-countdown data-target={deadlineISO} aria-label="Countdown to deal end">
@@ -52,8 +52,8 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of
         </div>
 
         <div class="deal-actions">
-          <a href={product ? `/product/${product.slug}` : '/shop'} class="pill-button primary">Shop the offer</a>
-          <a href={whatsappHref} class="pill-button ghost" target="_blank" rel="noopener noreferrer">Reserve on WhatsApp</a>
+          <a href={product ? `/product/${product.slug}` : '/shop'} class="pill-button primary">See the offer</a>
+          <a href={whatsappHref} class="pill-button ghost" target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>
         </div>
       </div>
 
@@ -65,22 +65,22 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of
         <div class="deal-card-body">
           <div class="deal-card-meta">
             <span class="deal-card-pill">Limited time</span>
-            <span class="deal-card-pill subtle">{product ? getAvailabilityLabel(product) : 'Live pricing'}</span>
+            <span class="deal-card-pill subtle">{product ? getAvailabilityLabel(product) : 'Ask for price'}</span>
           </div>
 
           <div class="deal-card-copy">
-            <h3>{product?.title || 'Fresh promotion coming through'}</h3>
+            <h3>{product?.title || 'Ask us what is on offer today'}</h3>
             <p>
               {product
                 ? hasDiscount
-                  ? `Save ${formatKES(discountAmount)} on this item while the promotion is active.`
-                  : 'Timed deal pricing is live now while stock lasts.'
-                : 'Use the main shop view to compare current live catalog pricing and stock.'}
+                  ? `Save ${formatKES(discountAmount)} on this item while this offer lasts.`
+                  : 'This item is ready to order while stock lasts.'
+                : "Open the shop or message us on WhatsApp and we'll help you find the best option."}
             </p>
           </div>
 
           <div class="deal-card-price">
-            <strong>{product ? formatKES(product.price_kes) : 'Live catalog pricing'}</strong>
+            <strong>{product ? formatKES(product.price_kes) : 'Ask for price'}</strong>
             {product && hasDiscount && <span>{formatKES(product.compare_at_kes)}</span>}
           </div>
         </div>

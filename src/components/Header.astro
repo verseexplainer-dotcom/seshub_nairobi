@@ -25,7 +25,9 @@ const mobileLinks = [...mainShopLinks, ...supportLinks];
 <header class="site-header">
   <div class="container header-shell">
     <a href="/" class="brand" aria-label="SES ICT HUB home">
-      <img src={logoImage.src} alt="SES ICT HUB logo" class="brand-logo" loading="eager" decoding="async" onerror={logoOnError} />
+      <span class="brand-mark">
+        <img src={logoImage.src} alt="SES ICT HUB logo" class="brand-logo" loading="eager" decoding="async" onerror={logoOnError} />
+      </span>
       <span class="brand-copy">
         <span class="brand-name">SES ICT HUB</span>
         <span class="brand-meta">Moi Avenue, Nairobi</span>
@@ -118,28 +120,47 @@ const mobileLinks = [...mainShopLinks, ...supportLinks];
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 1rem;
-    min-height: 5.35rem;
+    min-height: 6.1rem;
   }
 
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.95rem;
     min-width: 0;
   }
 
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(5.6rem, 17vw, 8.75rem);
+    height: clamp(3.35rem, 8.5vw, 4.9rem);
+    padding: 0.1rem 0.35rem;
+    border-radius: 1.35rem;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    background:
+      radial-gradient(circle at top left, rgba(255, 255, 255, 1), rgba(241, 245, 255, 0.98)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+    box-shadow:
+      0 12px 28px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
   .brand-logo {
-    width: clamp(3.6rem, 8vw, 4.4rem);
-    height: clamp(3.6rem, 8vw, 4.4rem);
-    padding: 0.45rem;
-    border-radius: 50%;
-    object-fit: cover;
-    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(2.65);
+    transform-origin: center;
+    display: block;
   }
 
   .brand-copy {
-    display: none;
+    display: grid;
+    gap: 0.14rem;
     min-width: 0;
   }
 
@@ -147,17 +168,19 @@ const mobileLinks = [...mainShopLinks, ...supportLinks];
   .brand-meta {
     display: block;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .brand-name {
-    font-size: 1.02rem;
+    font-size: 1rem;
     font-weight: 800;
     letter-spacing: -0.03em;
   }
 
   .brand-meta {
     color: var(--color-text-muted);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 700;
   }
 
@@ -299,10 +322,67 @@ const mobileLinks = [...mainShopLinks, ...supportLinks];
     width: 100%;
   }
 
-  @media (min-width: 520px) {
-    .brand-copy,
+  @media (max-width: 419px) {
+    .header-shell {
+      min-height: 5.9rem;
+      gap: 0.75rem;
+    }
+
+    .brand {
+      gap: 0.7rem;
+    }
+
+    .brand-mark {
+      width: 5rem;
+      height: 3rem;
+      border-radius: 1.15rem;
+    }
+
+    .brand-logo {
+      transform: scale(2.45);
+    }
+
+    .brand-name {
+      font-size: 0.92rem;
+    }
+
+    .brand-meta {
+      display: none;
+    }
+  }
+
+  @media (min-width: 420px) {
     .cart-label {
       display: block;
+    }
+  }
+
+  @media (min-width: 720px) {
+    .header-shell {
+      min-height: 6.45rem;
+    }
+
+    .brand {
+      gap: 1.1rem;
+    }
+
+    .brand-mark {
+      width: clamp(7rem, 14vw, 9.4rem);
+      height: clamp(3.85rem, 7vw, 5.2rem);
+      border-radius: 1.55rem;
+      padding-inline: 0.45rem;
+    }
+
+    .brand-logo {
+      transform: scale(2.9);
+    }
+
+    .brand-name {
+      font-size: 1.14rem;
+    }
+
+    .brand-meta {
+      font-size: 0.84rem;
     }
   }
 

@@ -33,7 +33,7 @@ const latestOrder = orders[0] ?? null;
 
 <PortalShell
   title="Your Account"
-  intro="Keep delivery details current and track orders that were placed while you were signed in."
+  intro="See your recent orders and keep your details up to date."
   navItems={accountNavItems}
   currentPath={Astro.url.pathname}
   badge="Account"
@@ -44,19 +44,19 @@ const latestOrder = orders[0] ?? null;
 
     <section class="metrics-grid">
       <article class="app-card metric-card">
-        <span>Linked Orders</span>
+        <span>Saved Orders</span>
         <strong>{orders.length}</strong>
-        <p>Orders placed while you were signed in.</p>
+        <p>Orders saved to your account.</p>
       </article>
 
       <article class="app-card metric-card">
-        <span>Active Orders</span>
+        <span>Orders In Progress</span>
         <strong>{activeOrders}</strong>
-        <p>Orders still in progress or awaiting delivery.</p>
+        <p>Orders we are still preparing or delivering.</p>
       </article>
 
       <article class="app-card metric-card">
-        <span>Profile Status</span>
+        <span>Account</span>
         <strong>{profile?.is_active ? 'Active' : 'Pending'}</strong>
         <p>{user?.email || 'No email address available.'}</p>
       </article>
@@ -67,7 +67,7 @@ const latestOrder = orders[0] ?? null;
         <div class="section-heading">
           <div>
             <h2>Latest Order</h2>
-            <p>Your newest linked order appears here immediately after checkout.</p>
+            <p>Your latest saved order appears here.</p>
           </div>
           <a class="text-link" href="/account/orders">View all orders</a>
         </div>
@@ -107,8 +107,7 @@ const latestOrder = orders[0] ?? null;
         ) : (
           <div class="stack sm">
             <p>
-              No linked orders yet. Guest checkout still works, but only signed-in orders
-              appear in this dashboard.
+              You do not have any saved orders yet. If you need help finding an older order, message us on WhatsApp and we'll help you.
             </p>
             <a class="pill-button primary" href="/cart">Go to cart</a>
           </div>
@@ -118,8 +117,8 @@ const latestOrder = orders[0] ?? null;
       <article class="app-card">
         <div class="section-heading">
           <div>
-            <h2>Saved Profile</h2>
-            <p>Used to prefill checkout and support faster follow-up.</p>
+            <h2>Saved Details</h2>
+            <p>These details help us fill in your order faster next time.</p>
           </div>
           <a class="text-link" href="/account/profile">Edit profile</a>
         </div>

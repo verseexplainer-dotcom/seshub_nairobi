@@ -18,8 +18,8 @@ const canonical = slug === 'all'
 
 const title = slug === 'all' ? 'Shop Electronics' : category?.label || 'Shop';
 const description = slug === 'all'
-  ? 'Legacy all-products catalog view for SES ICT HUB. Browse the main shop page for the primary discovery experience.'
-  : `${category?.label} at SES ICT HUB with live pricing, spec filters, and stock-aware product cards.`;
+  ? 'Browse the main shop page to see everything we have available right now.'
+  : `${category?.label} at SES ICT HUB with current prices, useful filters, and honest stock updates.`;
 ---
 
 <Layout title={title} description={description} canonical={canonical}>

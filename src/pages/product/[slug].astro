@@ -115,8 +115,8 @@ const reassuranceCards = [
     icon: siteAssets.trustIcons.payments
   },
   {
-    title: 'Inspection support',
-    body: 'Ask for a live WhatsApp walk-through or visit the shop before you commit.',
+    title: 'See it before you buy',
+    body: 'Message us on WhatsApp if you want to see it before you buy, or visit the shop.',
     icon: siteAssets.trustIcons.security
   }
 ];
@@ -128,9 +128,9 @@ const trustChips = [
   { label: 'Store pickup available' }
 ].filter(Boolean) as Array<{ label: string }>;
 const buyingHighlights = [
-  warrantyLongLabel ? { title: warrantyLongLabel, body: 'Shown from this product record when warranty data is available.' } : null,
+  warrantyLongLabel ? { title: warrantyLongLabel, body: 'We will confirm the warranty with you before you buy.' } : null,
   { title: '7-day defect return window', body: 'Applies to undisclosed functional defects, as outlined in the FAQ.' },
-  { title: 'Nairobi CBD delivery from KSh 200', body: 'Delivery is often free or a small fee within Nairobi CBD.' }
+  { title: 'Nairobi CBD delivery from KSh 200', body: 'We will confirm delivery cost with you before you buy.' }
 ].filter(Boolean) as Array<{ title: string; body: string }>;
 const breadcrumbData = {
   '@context': 'https://schema.org',
@@ -193,8 +193,8 @@ const productStructuredData = {
       <section class="product-search-card" aria-label="Search the catalog">
         <div>
           <p class="eyebrow">Need another option?</p>
-          <h2>Search the catalog without leaving this product page.</h2>
-          <p class="product-search-copy">Look up another product title or brand, then jump into filtered category pages when you want to compare further.</p>
+          <h2>Search the shop without leaving this page.</h2>
+          <p class="product-search-copy">Search for another product or brand, or message us on WhatsApp if you want help comparing.</p>
         </div>
         <SearchBar variant="inline" placeholder="Search products or brands..." />
       </section>
@@ -348,7 +348,7 @@ const productStructuredData = {
           {safeDescriptionHtml ? (
             <div class="description-copy" set:html={safeDescriptionHtml} />
           ) : (
-            <p class="summary-copy">More description details will be confirmed during your WhatsApp inquiry.</p>
+            <p class="summary-copy">Message us on WhatsApp and we'll confirm the details for you.</p>
           )}
         </section>
       </div>
@@ -361,15 +361,15 @@ const productStructuredData = {
         <div class="faq-list">
           <details>
             <summary>Can I inspect the item before paying?</summary>
-            <p>Yes. You can visit the shop, request a WhatsApp walk-through, or confirm delivery inspection options before finalizing the order.</p>
+            <p>Yes. You can visit the shop, request a WhatsApp walk-through, or ask us how inspection works before you buy.</p>
           </details>
           <details>
             <summary>How do delivery and pickup work?</summary>
-            <p>We support Nairobi delivery where available and in-store pickup from Moi Avenue. Countrywide dispatch can also be arranged.</p>
+            <p>We offer Nairobi delivery where available and in-store pickup from Moi Avenue. If you are outside Nairobi, message us and we will help arrange delivery.</p>
           </details>
           <details>
             <summary>What payment methods are available?</summary>
-            <p>M-PESA is supported, and some local orders can be completed on delivery depending on the arrangement.</p>
+            <p>You can pay by M-PESA, and some local orders can be paid on delivery. You can confirm with us before buying.</p>
           </details>
         </div>
       </section>

@@ -1,122 +1,134 @@
 ---
 import AlertBanner from '../../components/AlertBanner.astro';
+import AuthShell from '../../components/AuthShell.astro';
 import Layout from '../../layouts/Layout.astro';
 import { getSafeRedirectPath } from '../../lib/auth-utils';
 
 const error = Astro.url.searchParams.get('error');
 const message = Astro.url.searchParams.get('message');
 const next = getSafeRedirectPath(Astro.url.searchParams.get('next'), '/account');
+
+const features = [
+  {
+    title: 'See your saved orders',
+    description: 'Check what you bought and any updates we have shared.'
+  },
+  {
+    title: 'Save delivery details',
+    description: 'Keep your name, phone number, and area ready for next time.'
+  },
+  {
+    title: 'Need help?',
+    description: 'Message us on WhatsApp and one of our team will assist you.'
+  }
+];
 ---
 
 <Layout title="Create Account">
-  <section class="auth-section">
-    <div class="container auth-grid">
-      <div class="auth-copy">
-        <span class="portal-badge">Secure Signup</span>
-        <h1>Create a customer account without changing the guest checkout flow.</h1>
-        <p>
-          Customer accounts are optional. Staff accounts are not public self-signup and
-          must be promoted by an admin after invite or manual creation.
-        </p>
+  <AuthShell
+    badge="New here?"
+    spotlight="Save your details for next time"
+    title="Create an account so ordering next time is easier."
+    intro="Save your name, phone number, and delivery area so you do not have to type them each time. If you need help, message us on WhatsApp and we'll help you."
+    features={features}
+    noteEyebrow="Good To Know"
+    noteTitle="This account helps with future orders."
+    noteCopy="Save your details here so ordering next time is quicker and easier."
+  >
+    <div class="app-card auth-card">
+      <div class="auth-card-header">
+        <span class="auth-card-kicker">Create account</span>
+        <div>
+          <h2>Set up your account</h2>
+          <p>It only takes a minute.</p>
+        </div>
       </div>
 
-      <div class="app-card auth-card">
-        <div class="stack sm">
-          <AlertBanner tone="danger" message={error} />
-          <AlertBanner tone="success" message={message} />
-        </div>
+      <div class="stack sm">
+        <AlertBanner tone="danger" message={error} />
+        <AlertBanner tone="success" message={message} />
+      </div>
 
-        <form method="POST" action="/api/auth/sign-up" class="app-form">
-          <input type="hidden" name="next" value={next} />
+      <form method="POST" action="/api/auth/sign-up" class="app-form">
+        <input type="hidden" name="next" value={next} />
 
-          <div class="app-form-grid cols-2">
-            <div class="form-field">
-              <label for="full_name">Full name</label>
-              <input id="full_name" name="full_name" type="text" autocomplete="name" required />
-            </div>
-
-            <div class="form-field">
-              <label for="phone">Phone</label>
-              <input id="phone" name="phone" type="tel" autocomplete="tel" />
-            </div>
-          </div>
-
+        <div class="app-form-grid cols-2">
           <div class="form-field">
-            <label for="email">Email address</label>
-            <input id="email" name="email" type="email" autocomplete="email" required />
-          </div>
-
-          <div class="form-field">
-            <label for="default_location">Default delivery location</label>
-            <input id="default_location" name="default_location" type="text" autocomplete="address-level2" />
-          </div>
-
-          <div class="form-field">
-            <label for="password">Password</label>
+            <label for="full_name">Full name</label>
             <input
-              id="password"
-              name="password"
-              type="password"
-              minlength="8"
-              autocomplete="new-password"
+              id="full_name"
+              name="full_name"
+              type="text"
+              autocomplete="name"
+              placeholder="Your full name"
               required
             />
-            <small>Use at least 8 characters.</small>
           </div>
 
-          <button type="submit" class="pill-button primary">Create Account</button>
-        </form>
+          <div class="form-field">
+            <label for="phone">Phone</label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              autocomplete="tel"
+              placeholder="Optional"
+            />
+            <small>Add a number so one of our team can assist you on WhatsApp or call.</small>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="email">Email address</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            required
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="default_location">Default delivery location</label>
+          <input
+            id="default_location"
+            name="default_location"
+            type="text"
+            autocomplete="address-level2"
+            placeholder="Optional"
+          />
+          <small>Add the area you usually use so we can help faster next time.</small>
+        </div>
+
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="At least 8 characters"
+            required
+          />
+          <small>Use at least 8 characters. A unique password is best.</small>
+        </div>
+
+        <button type="submit" class="pill-button primary auth-submit">Create Account</button>
+      </form>
+
+      <div class="auth-card-footer">
+        <div class="auth-inline-note">
+          <strong>Already registered?</strong>
+          <span>Sign in to see your saved orders or continue shopping.</span>
+        </div>
 
         <div class="auth-links">
           <a class="text-link" href={`/auth/login?next=${encodeURIComponent(next)}`}>Already have an account?</a>
         </div>
       </div>
     </div>
-  </section>
+  </AuthShell>
 </Layout>
-
-<style>
-  .auth-section {
-    padding: clamp(2.5rem, 7vw, 5rem) 0;
-  }
-
-  .auth-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    align-items: start;
-  }
-
-  @media (min-width: 980px) {
-    .auth-grid {
-      grid-template-columns: 1.1fr 0.9fr;
-    }
-  }
-
-  .auth-copy {
-    display: grid;
-    gap: 1rem;
-    align-content: start;
-  }
-
-  .auth-copy h1 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.05;
-  }
-
-  .auth-copy p {
-    color: var(--text-muted);
-    max-width: 56ch;
-  }
-
-  .auth-card {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .auth-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 1.25rem;
-  }
-</style>

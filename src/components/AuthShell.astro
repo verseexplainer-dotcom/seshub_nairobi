@@ -1,0 +1,247 @@
+---
+interface Feature {
+  title: string;
+  description: string;
+}
+
+interface Props {
+  badge: string;
+  title: string;
+  intro: string;
+  features?: Feature[];
+  spotlight?: string;
+  noteEyebrow?: string;
+  noteTitle?: string;
+  noteCopy?: string;
+}
+
+const {
+  badge,
+  title,
+  intro,
+  features = [],
+  spotlight,
+  noteEyebrow,
+  noteTitle,
+  noteCopy
+} = Astro.props;
+---
+
+<section class="auth-shell">
+  <div class="container auth-shell-grid">
+    <div class="auth-shell-hero">
+      <div class="auth-shell-badges">
+        <span class="auth-shell-badge">{badge}</span>
+        {spotlight && <span class="auth-shell-spotlight">{spotlight}</span>}
+      </div>
+
+      <div class="auth-shell-copy">
+        <h1>{title}</h1>
+        <p>{intro}</p>
+      </div>
+
+      {features.length > 0 && (
+        <div class="auth-shell-features">
+          {features.map((feature) => (
+            <article class="auth-shell-feature">
+              <strong>{feature.title}</strong>
+              <span>{feature.description}</span>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {(noteTitle || noteCopy) && (
+        <div class="auth-shell-note">
+          {noteEyebrow && <span class="auth-shell-note-eyebrow">{noteEyebrow}</span>}
+          {noteTitle && <h2>{noteTitle}</h2>}
+          {noteCopy && <p>{noteCopy}</p>}
+        </div>
+      )}
+    </div>
+
+    <div class="auth-shell-form">
+      <slot />
+    </div>
+  </div>
+</section>
+
+<style>
+  .auth-shell {
+    position: relative;
+    padding: clamp(2.5rem, 7vw, 5.5rem) 0;
+    overflow: clip;
+  }
+
+  .auth-shell::before,
+  .auth-shell::after {
+    content: '';
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    filter: blur(18px);
+    opacity: 0.7;
+  }
+
+  .auth-shell::before {
+    top: 1rem;
+    left: max(1rem, calc(50% - 42rem));
+    width: 16rem;
+    height: 16rem;
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  .auth-shell::after {
+    right: max(1rem, calc(50% - 40rem));
+    bottom: 2rem;
+    width: 14rem;
+    height: 14rem;
+    background: rgba(14, 165, 233, 0.08);
+  }
+
+  .auth-shell-grid {
+    position: relative;
+    display: grid;
+    gap: clamp(1.25rem, 3vw, 2.25rem);
+    align-items: stretch;
+  }
+
+  .auth-shell-hero {
+    position: relative;
+    display: grid;
+    gap: 1.4rem;
+    min-width: 0;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    border-radius: 2rem;
+    background:
+      radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 30%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.92) 58%, rgba(219, 234, 254, 0.86));
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+
+  .auth-shell-hero::after {
+    content: '';
+    position: absolute;
+    inset: auto -3rem -4.5rem auto;
+    width: 14rem;
+    height: 14rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.16), transparent 68%);
+    pointer-events: none;
+  }
+
+  .auth-shell-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .auth-shell-badge,
+  .auth-shell-spotlight,
+  .auth-shell-note-eyebrow {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    border-radius: var(--radius-full);
+    padding: 0.42rem 0.82rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .auth-shell-badge,
+  .auth-shell-note-eyebrow {
+    color: var(--color-primary);
+    background: rgba(29, 78, 216, 0.1);
+  }
+
+  .auth-shell-spotlight {
+    color: var(--color-dark);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+  }
+
+  .auth-shell-copy {
+    display: grid;
+    gap: 1rem;
+    max-width: 58ch;
+  }
+
+  .auth-shell-copy h1 {
+    font-size: clamp(2.3rem, 5vw, 4rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+  }
+
+  .auth-shell-copy p {
+    color: rgba(15, 23, 42, 0.74);
+    font-size: clamp(1rem, 1.5vw, 1.08rem);
+    max-width: 54ch;
+  }
+
+  .auth-shell-features {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .auth-shell-feature {
+    position: relative;
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem 1.05rem;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
+  }
+
+  .auth-shell-feature strong {
+    color: var(--color-dark);
+    font-size: 1rem;
+  }
+
+  .auth-shell-feature span {
+    color: var(--text-muted);
+    font-size: 0.94rem;
+  }
+
+  .auth-shell-note {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 42rem;
+    padding: 1rem 1.05rem;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(248, 250, 252, 0.8);
+  }
+
+  .auth-shell-note h2 {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .auth-shell-note p {
+    color: var(--text-muted);
+  }
+
+  .auth-shell-form {
+    display: grid;
+    align-items: center;
+  }
+
+  @media (min-width: 720px) {
+    .auth-shell-features {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 980px) {
+    .auth-shell-grid {
+      grid-template-columns: minmax(0, 1.08fr) minmax(21rem, 0.92fr);
+    }
+  }
+</style>

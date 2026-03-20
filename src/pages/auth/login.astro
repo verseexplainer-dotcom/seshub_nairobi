@@ -1,52 +1,89 @@
 ---
 import AlertBanner from '../../components/AlertBanner.astro';
+import AuthShell from '../../components/AuthShell.astro';
 import Layout from '../../layouts/Layout.astro';
 import { getSafeRedirectPath } from '../../lib/auth-utils';
 
 const error = Astro.url.searchParams.get('error');
 const message = Astro.url.searchParams.get('message');
 const next = getSafeRedirectPath(Astro.url.searchParams.get('next'), '/account');
+
+const features = [
+  {
+    title: 'See your saved orders',
+    description: 'Check past orders and recent updates in one place.'
+  },
+  {
+    title: 'Keep your details ready',
+    description: 'Your name, phone number, and delivery area stay ready for next time.'
+  },
+  {
+    title: 'Need help signing in?',
+    description: 'Reach out on WhatsApp if you need help and one of our team will assist you.'
+  }
+];
 ---
 
 <Layout title="Sign In">
-  <section class="auth-section">
-    <div class="container auth-grid">
-      <div class="auth-copy">
-        <span class="portal-badge">Customer Access</span>
-        <h1>Sign in to track orders and manage your profile.</h1>
-        <p>
-          Logged-in checkout links orders to your account. Staff members also use the
-          same sign-in flow to access `/admin`.
-        </p>
+  <AuthShell
+    badge="Welcome back"
+    spotlight="Need help? Message us"
+    title="Sign in and pick up where you left off."
+    intro="See your saved orders, keep your details ready, and message us on WhatsApp if you need help."
+    features={features}
+    noteEyebrow="Need Help?"
+    noteTitle="You can still order as a guest."
+    noteCopy="If you'd rather not sign in, that's okay. Message us on WhatsApp and we'll help you."
+  >
+    <div class="app-card auth-card">
+      <div class="auth-card-header">
+        <span class="auth-card-kicker">Welcome back</span>
+        <div>
+          <h2>Sign in to your account</h2>
+          <p>Use the email address you signed up with.</p>
+        </div>
       </div>
 
-      <div class="app-card auth-card">
-        <div class="stack sm">
-          <AlertBanner tone="danger" message={error} />
-          <AlertBanner tone="success" message={message} />
+      <div class="stack sm">
+        <AlertBanner tone="danger" message={error} />
+        <AlertBanner tone="success" message={message} />
+      </div>
+
+      <form method="POST" action="/api/auth/login" class="app-form">
+        <input type="hidden" name="next" value={next} />
+
+        <div class="form-field">
+          <label for="email">Email address</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            required
+          />
         </div>
 
-        <form method="POST" action="/api/auth/login" class="app-form">
-          <input type="hidden" name="next" value={next} />
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
 
-          <div class="form-field">
-            <label for="email">Email address</label>
-            <input id="email" name="email" type="email" autocomplete="email" required />
-          </div>
+        <button type="submit" class="pill-button primary auth-submit">Sign In</button>
+      </form>
 
-          <div class="form-field">
-            <label for="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              required
-            />
-          </div>
-
-          <button type="submit" class="pill-button primary">Sign In</button>
-        </form>
+      <div class="auth-card-footer">
+        <div class="auth-inline-note">
+          <strong>Need an account first?</strong>
+          <span>Create one to save your details for next time.</span>
+        </div>
 
         <div class="auth-links">
           <a class="text-link" href={`/auth/sign-up?next=${encodeURIComponent(next)}`}>Create an account</a>
@@ -54,51 +91,5 @@ const next = getSafeRedirectPath(Astro.url.searchParams.get('next'), '/account')
         </div>
       </div>
     </div>
-  </section>
+  </AuthShell>
 </Layout>
-
-<style>
-  .auth-section {
-    padding: clamp(2.5rem, 7vw, 5rem) 0;
-  }
-
-  .auth-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    align-items: start;
-  }
-
-  @media (min-width: 980px) {
-    .auth-grid {
-      grid-template-columns: 1.1fr 0.9fr;
-    }
-  }
-
-  .auth-copy {
-    display: grid;
-    gap: 1rem;
-    align-content: start;
-  }
-
-  .auth-copy h1 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.05;
-  }
-
-  .auth-copy p {
-    color: var(--text-muted);
-    max-width: 56ch;
-  }
-
-  .auth-card {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .auth-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 1.25rem;
-  }
-</style>

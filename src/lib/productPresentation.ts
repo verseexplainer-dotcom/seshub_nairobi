@@ -27,11 +27,11 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
     slug: 'laptops',
     label: 'Laptops',
     dbValue: 'Laptops',
-    intro: 'Portable business and study machines with verified specs, clear grading, and delivery-ready stock.',
+    intro: 'Laptops for work, school, and everyday use, with clear specs and honest stock updates.',
     heroEyebrow: 'Portable performance',
     heroDescription:
-      'Browse laptops with clear CPU, RAM, storage, warranty, and stock signals so buyers can compare quickly without guesswork.',
-    highlights: ['CPU and RAM filters', 'Warranty shown when available', 'Stock shown honestly']
+      "Compare laptops by CPU, RAM, storage, warranty, and price. If you need help choosing, message us on WhatsApp.",
+    highlights: ['CPU and RAM filters', 'Warranty shown when available', 'Reach out on WhatsApp if you need help']
   },
   {
     slug: 'smartphones',
@@ -40,18 +40,18 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
     intro: 'Smartphones with fair pricing, honest condition labels, and trusted Kenya delivery and pickup options.',
     heroEyebrow: 'Everyday mobility',
     heroDescription:
-      'Compare smartphones by brand, storage, price, and stock without relying on hidden or inferred product claims.',
-    highlights: ['Condition shown clearly', 'Compare-at savings when real', 'WhatsApp support for quick help']
+      "Compare smartphones by brand, storage, price, and stock. Reach out on WhatsApp if you need help.",
+    highlights: ['Condition shown clearly', 'Savings shown clearly', 'Message us on WhatsApp and we’ll help you']
   },
   {
     slug: 'printers',
     label: 'Printers',
     dbValue: 'Printers',
-    intro: 'Printers for office, school, and business workflows with pricing, stock, and product descriptions kept straightforward.',
+    intro: 'Printers for school, office, and business use with clear prices and honest stock updates.',
     heroEyebrow: 'Reliable print output',
     heroDescription:
-      'Find printers with live price and stock visibility, plus clean product details that stay close to the buying action.',
-    highlights: ['Brand filter', 'Price sorting', 'Store-level delivery guidance']
+      "Check brand, price, and stock, then message us on WhatsApp if you want help choosing the right one.",
+    highlights: ['Brand filter', 'Price sorting', 'Ask us about delivery']
   }
 ];
 

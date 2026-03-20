@@ -35,7 +35,7 @@ const whatsappText = encodeURIComponent(
 
 <PortalShell
   title={`Order ${order.order_number}`}
-  intro="Review item snapshots, delivery details, and the status timeline for this order."
+  intro="See the items in this order, where it is going, and the latest update."
   navItems={accountNavItems}
   currentPath="/account/orders"
   badge="Account"
@@ -99,7 +99,7 @@ const whatsappText = encodeURIComponent(
       <div class="section-heading">
         <div>
           <h2>Items</h2>
-          <p>Snapshots keep your order history stable even if the catalog changes later.</p>
+          <p>This list shows the item details saved when you placed the order.</p>
         </div>
       </div>
 
@@ -123,14 +123,14 @@ const whatsappText = encodeURIComponent(
       <div class="section-heading">
         <div>
           <h2>Status Timeline</h2>
-          <p>Every major update is recorded to preserve an audit trail.</p>
+          <p>We keep each update here so you can see what has changed.</p>
         </div>
         <a
           class="pill-button accent"
           href={`https://wa.me/254720480475?text=${whatsappText}`}
           target="_blank"
         >
-          Contact Support
+          Message us on WhatsApp
         </a>
       </div>
 

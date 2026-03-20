@@ -20,9 +20,9 @@ const spotlightImage = getProductImageSources(Array.isArray(spotlightProduct?.im
 const spotlightImageOnError = buildImageOnError(spotlightImage.fallback, finalFallbackImage);
 const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I would like help choosing a laptop, smartphone, desktop, or printer from the homepage.');
 const stats = [
-  { value: `${totalProducts}+`, label: 'Live products' },
-  { value: `${brandCount}+`, label: 'Major brands' },
-  { value: `${dealCount}+`, label: 'Active deals' }
+  { value: `${totalProducts}+`, label: 'Products in shop' },
+  { value: `${brandCount}+`, label: 'Brands available' },
+  { value: `${dealCount}+`, label: 'Deals today' }
 ];
 ---
 
@@ -35,19 +35,19 @@ const stats = [
     <div class="hero-copy">
       <span class="hero-live-badge">
         <span class="hero-live-dot"></span>
-        Live catalog · updated for Nairobi shoppers
+        Nairobi shop · ready to help
       </span>
 
       <p class="section-kicker hero-kicker">SES ICT HUB | Nairobi</p>
-      <h1 id="hero-title">Premium electronics with a faster route from browse to doorstep</h1>
+      <h1 id="hero-title">Laptops, phones, printers, and more, with help when you need it</h1>
       <p class="hero-text">
-        Explore laptops, smartphones, printers, desktops, and accessories with clearer pricing, verified stock context,
-        and direct WhatsApp help when you want a faster buying decision.
+        Browse clear prices, check what is available, and message us on WhatsApp if you want help choosing.
+        One of our team will assist you.
       </p>
 
       <div class="hero-actions">
         <a href="/shop" class="pill-button primary lg">Browse Shop</a>
-        <a href={whatsappHref} class="pill-button ghost lg" target="_blank" rel="noopener noreferrer">Checkout on WhatsApp</a>
+        <a href={whatsappHref} class="pill-button ghost lg" target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>
       </div>
 
       <div class="hero-stats" role="list" aria-label="Storefront highlights">
@@ -64,7 +64,7 @@ const stats = [
       <div class="hero-floating-card hero-main-card">
         <div class="hero-card-topline">
           <span class="hero-card-chip">Featured now</span>
-          <span class="hero-card-chip subtle">{spotlightProduct ? getAvailabilityLabel(spotlightProduct) : 'Live support'}</span>
+          <span class="hero-card-chip subtle">{spotlightProduct ? getAvailabilityLabel(spotlightProduct) : 'Need help choosing?'}</span>
         </div>
 
         <div class="hero-card-media">
@@ -78,23 +78,23 @@ const stats = [
         </div>
 
         <div class="hero-card-copy">
-          <p>{spotlightProduct ? getProductBrand(spotlightProduct) : 'SES curated selection'}</p>
-          <h2>{spotlightProduct?.title || 'Curated business, student, and everyday tech picks'}</h2>
+          <p>{spotlightProduct ? getProductBrand(spotlightProduct) : 'SES ICT HUB pick'}</p>
+          <h2>{spotlightProduct?.title || 'Phones, laptops, printers, and everyday tech for work, school, and home'}</h2>
           <div class="hero-card-price">
-            <strong>{spotlightProduct ? formatKES(spotlightProduct.price_kes) : 'Fast stock confirmation'}</strong>
+            <strong>{spotlightProduct ? formatKES(spotlightProduct.price_kes) : 'Message us for price'}</strong>
             {Number(spotlightProduct?.compare_at_kes || 0) > Number(spotlightProduct?.price_kes || 0) && <span>{formatKES(spotlightProduct.compare_at_kes)}</span>}
           </div>
         </div>
       </div>
 
       <div class="hero-floating-card hero-side-note">
-        <span class="hero-note-title">Why this layout works</span>
-        <p>Browse on-site, shortlist quickly, then switch to WhatsApp only when you need human confirmation.</p>
+        <span class="hero-note-title">Need help choosing?</span>
+        <p>Message us on WhatsApp and we'll help you compare options before you buy.</p>
       </div>
 
       <div class="hero-floating-card hero-mini-proof">
         <strong>Same-day Nairobi options</strong>
-        <span>Pickup, delivery, or reserve-first flow</span>
+        <span>Pickup, delivery, or reserve on WhatsApp</span>
       </div>
     </div>
   </div>
@@ -413,6 +413,102 @@ const stats = [
 
     50% {
       transform: translate(8px, -6px);
+    }
+  }
+
+  @media (max-width: 759px) {
+    .hero-section {
+      min-height: auto;
+      padding: 2.75rem 0 2.25rem;
+    }
+
+    .hero-background {
+      object-position: 72% 20%;
+      transform: scale(1.08);
+      transform-origin: center;
+    }
+
+    .hero-overlay {
+      background:
+        linear-gradient(180deg, rgba(7, 13, 25, 0.76) 0%, rgba(7, 13, 25, 0.54) 34%, rgba(7, 13, 25, 0.72) 100%),
+        radial-gradient(circle at 82% 16%, rgba(37, 99, 235, 0.34), transparent 34%);
+    }
+
+    .hero-shell {
+      gap: 1.25rem;
+    }
+
+    .hero-copy {
+      gap: 1rem;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(2.35rem, 11vw, 3.85rem);
+      max-width: 9.5ch;
+    }
+
+    .hero-text {
+      max-width: 30ch;
+    }
+
+    .hero-actions {
+      gap: 0.65rem;
+    }
+
+    .hero-actions .pill-button.lg {
+      padding-inline: 1.35rem;
+    }
+
+    .hero-stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 0;
+    }
+
+    .hero-stat-card {
+      gap: 0.2rem;
+      padding: 0.8rem 0.75rem;
+      border-radius: 1.15rem;
+    }
+
+    .hero-stat-card strong {
+      font-size: 1.15rem;
+    }
+
+    .hero-stat-card span {
+      font-size: 0.72rem;
+    }
+
+    .hero-visual {
+      gap: 0.75rem;
+      margin-top: -0.15rem;
+    }
+
+    .hero-main-card {
+      max-width: min(100%, 26rem);
+      padding: 0.85rem;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    }
+
+    .hero-card-media {
+      aspect-ratio: 16 / 11;
+    }
+
+    .hero-card-media img {
+      padding: 0.7rem;
+    }
+
+    .hero-card-copy h2 {
+      font-size: 1.1rem;
+    }
+
+    .hero-card-price strong {
+      font-size: 1.3rem;
+    }
+
+    .hero-side-note,
+    .hero-mini-proof {
+      display: none;
     }
   }
 
