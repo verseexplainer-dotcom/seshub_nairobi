@@ -4,26 +4,31 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EXPECTED_ACCOUNT_ID="e1d8076a3dc603837814ca828736561f"
 CONFIG_FILE="$PROJECT_ROOT/wrangler.jsonc"
-ENV_FILE="$PROJECT_ROOT/.env.local"
+ENV_FILES=(
+  "$PROJECT_ROOT/.env"
+  "$PROJECT_ROOT/.env.local"
+)
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
   echo "Error: $CONFIG_FILE not found."
   exit 1
 fi
 
-if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
-fi
+for env_file in "${ENV_FILES[@]}"; do
+  if [[ -f "$env_file" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$env_file"
+    set +a
+  fi
+done
 
 export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-$EXPECTED_ACCOUNT_ID}"
 
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
   cat <<'EOF'
 Error: CLOUDFLARE_API_TOKEN is required for deploy.
-Set it in .env.local or your shell before running deploy:
+Set it in .env, .env.local, or your shell before running deploy:
   export CLOUDFLARE_API_TOKEN='<your-token>'
 EOF
   exit 1

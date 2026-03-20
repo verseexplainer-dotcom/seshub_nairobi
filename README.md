@@ -43,7 +43,7 @@ Compatibility note:
   All writes should go through `src/pages/api/*` routes using `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Environment Variables
-Create `.env.local`:
+Create `.env` or `.env.local`:
 
 ```env
 PUBLIC_SUPABASE_URL=https://<project>.supabase.co
@@ -52,7 +52,7 @@ SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 PUBLIC_FALLBACK_IMAGE_URL=https://<project>.supabase.co/storage/v1/object/public/site-assets/product-placeholder.webp
 ```
 
-Set Cloudflare deploy token in shell/CI (do not commit):
+Set Cloudflare deploy token in `.env`, `.env.local`, or shell/CI (do not commit):
 
 ```bash
 export CLOUDFLARE_API_TOKEN='<your-token>'

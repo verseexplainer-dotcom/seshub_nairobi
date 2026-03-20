@@ -1,19 +1,19 @@
 ---
-import { getSiteAssets } from '../lib/siteAssets';
+import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const printersCardOnError = `this.onerror=null;this.src=${JSON.stringify(siteAssets.categoryCards.printersLegacy)}`;
+const printersCardOnError = buildImageOnError(siteAssets.categoryCards.printersLegacy.fallback);
 
 const categories = STOREFRONT_CATEGORIES.map((category) => ({
   name: category.label,
   slug: category.slug,
   image:
     category.slug === 'laptops'
-      ? siteAssets.categoryCards.laptops
+      ? siteAssets.categoryCards.laptops.src
       : category.slug === 'printers'
-        ? siteAssets.categoryCards.printers
-        : siteAssets.categoryCards.smartphones,
+        ? siteAssets.categoryCards.printers.src
+        : siteAssets.categoryCards.smartphones.src,
   alt: `${category.label} collection`,
   onerror: category.slug === 'printers' ? printersCardOnError : undefined
 }));

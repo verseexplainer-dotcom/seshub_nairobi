@@ -10,14 +10,15 @@ This project deploys only to a Cloudflare Worker using `wrangler deploy`.
 
 ## Required Deployment Credential
 
-Set this in `.env.local` or your shell/CI secret store (never commit real value):
+Set this in `.env`, `.env.local`, or your shell/CI secret store (never commit real value):
 
 ```bash
 CLOUDFLARE_ACCOUNT_ID=e1d8076a3dc603837814ca828736561f
 export CLOUDFLARE_API_TOKEN='<your-token>'
 ```
 
-Project npm scripts now load `.env.local` automatically for Wrangler commands.
+Project npm scripts now load `.env` and `.env.local` automatically for Wrangler commands.
+`.env.local` takes precedence if both files exist.
 
 ## Verify Account Context
 

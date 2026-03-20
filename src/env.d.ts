@@ -15,6 +15,10 @@ declare global {
       } & Record<string, unknown>;
     }
   }
+
+  interface Window {
+    __sesCartHandlerBound?: boolean;
+  }
 }
 
 export {};
