@@ -64,6 +64,7 @@ test('search suggest handles special characters safely', async (t) => {
   const body = await response.json();
   assert.equal(body.ok, true);
   assert.equal(body.products.length, 1);
-  assert.equal(calledUrls.length, 2);
+  assert.equal(calledUrls.length, 3);
+  assert.ok(calledUrls.some((url) => url.includes('brand=')));
   assert.ok(calledUrls.every((url) => !url.includes('<script>')));
 });

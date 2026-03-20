@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { absoluteUrl, buildPathWithMessage } from '../../../lib/auth-utils';
+import { absoluteUrl, buildPathWithMessage, redirectResponse } from '../../../lib/auth-utils';
 import { createServerSupabaseClient } from '../../../lib/supabase-server';
 
 export const prerender = false;
@@ -9,14 +9,11 @@ export const POST: APIRoute = async (context) => {
   const email = String(formData.get('email') || '').trim();
 
   if (!email) {
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/reset-password', {
-          error: 'Enter the email address tied to your account.'
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/reset-password', {
+        error: 'Enter the email address tied to your account.'
+      })
     );
   }
 
@@ -30,14 +27,11 @@ export const POST: APIRoute = async (context) => {
     redirectTo
   });
 
-  return Response.redirect(
-    new URL(
-      buildPathWithMessage('/auth/reset-password', {
-        [error ? 'error' : 'message']:
-          error?.message || 'Check your email for the password reset link.'
-      }),
-      context.request.url
-    ),
-    303
+  return redirectResponse(
+    context.request,
+    buildPathWithMessage('/auth/reset-password', {
+      [error ? 'error' : 'message']:
+        error?.message || 'Check your email for the password reset link.'
+    })
   );
 };

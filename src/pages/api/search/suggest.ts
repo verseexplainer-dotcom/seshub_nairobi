@@ -8,6 +8,7 @@ const MIN_QUERY_LENGTH = 2;
 const MAX_QUERY_LENGTH = 64;
 const MAX_RESULTS = 6;
 const ALL_CATEGORIES = STOREFRONT_CATEGORIES.map((category) => category.slug);
+type SearchKey = 'title' | 'slug' | 'brand';
 
 function normalizeQuery(raw: string) {
   return raw.replace(/\s+/g, ' ').trim();
@@ -17,7 +18,7 @@ function escapeLikeTerm(raw: string) {
   return raw.replace(/[%_*]/g, '').trim();
 }
 
-function buildSearchUrl(supabaseUrl: string, key: 'title' | 'slug', term: string) {
+function buildSearchUrl(supabaseUrl: string, key: SearchKey, term: string) {
   const params = new URLSearchParams({
     select: 'title,slug,price_kes,in_stock',
     limit: String(MAX_RESULTS)
@@ -31,7 +32,7 @@ function buildSearchUrl(supabaseUrl: string, key: 'title' | 'slug', term: string
 async function fetchProducts(
   supabaseUrl: string,
   supabaseAnonKey: string,
-  key: 'title' | 'slug',
+  key: SearchKey,
   term: string
 ) {
   const response = await fetch(buildSearchUrl(supabaseUrl, key, term), {
@@ -87,19 +88,20 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const [titleMatch, slugMatch] = await Promise.all([
+    const [titleMatch, brandMatch, slugMatch] = await Promise.all([
       fetchProducts(supabaseUrl, supabaseAnonKey, 'title', searchTerm),
+      fetchProducts(supabaseUrl, supabaseAnonKey, 'brand', searchTerm),
       fetchProducts(supabaseUrl, supabaseAnonKey, 'slug', searchTerm)
     ]);
 
-    if (!titleMatch.ok && !slugMatch.ok) {
+    if (!titleMatch.ok && !brandMatch.ok && !slugMatch.ok) {
       return errorResponse(502, 'SEARCH_UPSTREAM_ERROR', 'Unable to fetch search results right now.', {
         products: [],
         categories: []
       });
     }
 
-    const mergedProducts = [...titleMatch.data, ...slugMatch.data];
+    const mergedProducts = [...titleMatch.data, ...brandMatch.data, ...slugMatch.data];
     const dedupedProducts = Array.from(
       new Map(
         mergedProducts.map((item) => [

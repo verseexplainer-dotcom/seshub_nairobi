@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { buildPathWithMessage, getSafeRedirectPath } from '../../../lib/auth-utils';
+import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../../lib/auth-utils';
 import { getSessionContext, redirectToLogin } from '../../../lib/server-auth';
 
 export const prerender = false;
@@ -36,14 +36,11 @@ export const POST: APIRoute = async (context) => {
     });
   }
 
-  return Response.redirect(
-    new URL(
-      buildPathWithMessage(redirectTo, {
-        [profileError ? 'error' : 'message']:
-          profileError?.message || 'Profile updated successfully.'
-      }),
-      context.request.url
-    ),
-    303
+  return redirectResponse(
+    context.request,
+    buildPathWithMessage(redirectTo, {
+      [profileError ? 'error' : 'message']:
+        profileError?.message || 'Profile updated successfully.'
+    })
   );
 };

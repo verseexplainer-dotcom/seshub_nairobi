@@ -37,6 +37,15 @@ export function absoluteUrl(request: Request, path: string) {
   return new URL(path, request.url).toString();
 }
 
+export function redirectResponse(request: Request, path: string, status = 303) {
+  return new Response(null, {
+    status,
+    headers: {
+      Location: new URL(path, request.url).toString()
+    }
+  });
+}
+
 export function normalizePhoneForWhatsApp(phone: string | null | undefined) {
   const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return '';

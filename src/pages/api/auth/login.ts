@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { buildPathWithMessage, getSafeRedirectPath } from '../../../lib/auth-utils';
+import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../../lib/auth-utils';
 import { ensureUserProfile } from '../../../lib/server-auth';
 import { createServerSupabaseClient } from '../../../lib/supabase-server';
 
@@ -15,15 +15,12 @@ export const POST: APIRoute = async (context) => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/login', {
-          error: error?.message || 'Unable to sign in.',
-          next
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/login', {
+        error: error?.message || 'Unable to sign in.',
+        next
+      })
     );
   }
 
@@ -31,15 +28,12 @@ export const POST: APIRoute = async (context) => {
 
   if (profile?.is_active === false) {
     await supabase.auth.signOut();
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/login', {
-          error: 'Your account is inactive. Contact support for access.',
-          next
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/login', {
+        error: 'Your account is inactive. Contact support for access.',
+        next
+      })
     );
   }
 
@@ -48,5 +42,5 @@ export const POST: APIRoute = async (context) => {
       ? '/admin'
       : next;
 
-  return Response.redirect(new URL(destination, context.request.url), 303);
+  return redirectResponse(context.request, destination);
 };

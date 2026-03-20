@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import type { ProfileRecord, SessionLocals } from './app-types';
-import { buildPathWithMessage, getSafeRedirectPath } from './auth-utils';
+import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from './auth-utils';
 import { createServerSupabaseClient } from './supabase-server';
 
 type SessionContextInput = {
@@ -98,10 +98,10 @@ export function redirectToLogin(request: Request) {
     next: getSafeRedirectPath(next, '/account')
   });
 
-  return Response.redirect(new URL(destination, request.url), 303);
+  return redirectResponse(request, destination);
 }
 
 export function redirectToAccount(request: Request, error: string) {
   const destination = buildPathWithMessage('/account', { error });
-  return Response.redirect(new URL(destination, request.url), 303);
+  return redirectResponse(request, destination);
 }

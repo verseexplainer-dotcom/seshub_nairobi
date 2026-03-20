@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { absoluteUrl, buildPathWithMessage, getSafeRedirectPath } from '../../../lib/auth-utils';
+import { absoluteUrl, buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../../lib/auth-utils';
 import { ensureUserProfile } from '../../../lib/server-auth';
 import { createServerSupabaseClient } from '../../../lib/supabase-server';
 
@@ -15,15 +15,12 @@ export const POST: APIRoute = async (context) => {
   const next = getSafeRedirectPath(formData.get('next'), '/account');
 
   if (!fullName || !email || password.length < 8) {
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/sign-up', {
-          error: 'Name, email, and an 8 character password are required.',
-          next
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/sign-up', {
+        error: 'Name, email, and an 8 character password are required.',
+        next
+      })
     );
   }
 
@@ -45,15 +42,12 @@ export const POST: APIRoute = async (context) => {
   });
 
   if (error) {
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/sign-up', {
-          error: error.message,
-          next
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/sign-up', {
+        error: error.message,
+        next
+      })
     );
   }
 
@@ -64,17 +58,14 @@ export const POST: APIRoute = async (context) => {
         ? '/admin'
         : next;
 
-    return Response.redirect(new URL(destination, context.request.url), 303);
+    return redirectResponse(context.request, destination);
   }
 
-  return Response.redirect(
-    new URL(
-      buildPathWithMessage('/auth/login', {
-        message: 'Check your email to confirm your account before signing in.',
-        next
-      }),
-      context.request.url
-    ),
-    303
+  return redirectResponse(
+    context.request,
+    buildPathWithMessage('/auth/login', {
+      message: 'Check your email to confirm your account before signing in.',
+      next
+    })
   );
 };

@@ -25,6 +25,7 @@ const activeCategory = categorySlug !== 'all' ? getStoreCategoryBySlug(categoryS
 const searchParams = Astro.url.searchParams;
 const pageSize = 24;
 const currentPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
+const FACET_BATCH_SIZE = 1000;
 const selectedSort = new Set(['featured', 'newest', 'price_asc', 'price_desc']).has(searchParams.get('sort') || '')
   ? (searchParams.get('sort') as 'featured' | 'newest' | 'price_asc' | 'price_desc')
   : 'featured';
@@ -67,6 +68,7 @@ const selectColumns = [
   'description',
   'warranty_months',
   'images',
+  'image_overrides',
   'featured_home',
   'featured_rank',
   'cpu',
@@ -130,6 +132,29 @@ const applyFilters = (query: any) => {
   return query;
 };
 
+async function fetchFacetRows() {
+  const firstBatchResponse = await applyCategoryScope(
+    supabase.from('products').select(facetSelectColumns, { count: 'exact' })
+  ).range(0, FACET_BATCH_SIZE - 1);
+
+  const firstBatch = firstBatchResponse.data || [];
+  const totalRows = typeof firstBatchResponse.count === 'number' ? firstBatchResponse.count : firstBatch.length;
+  if (totalRows <= firstBatch.length) {
+    return firstBatch;
+  }
+
+  // Supabase responses are capped per request, so fetch the remaining rows in batches for complete facets.
+  const remainingRequests: Array<Promise<{ data: Array<Record<string, any>> | null }>> = [];
+  for (let start = FACET_BATCH_SIZE; start < totalRows; start += FACET_BATCH_SIZE) {
+    remainingRequests.push(
+      applyCategoryScope(supabase.from('products').select(facetSelectColumns)).range(start, start + FACET_BATCH_SIZE - 1)
+    );
+  }
+
+  const remainingResponses = await Promise.all(remainingRequests);
+  return firstBatch.concat(remainingResponses.flatMap((response) => response.data || []));
+}
+
 let products: Array<Record<string, any>> = [];
 let totalCount = 0;
 let facetRows: Array<Record<string, any>> = [];
@@ -156,9 +181,9 @@ if (isSupabaseConfigured) {
       break;
   }
 
-  const [{ data, count }, { data: facetData }] = await Promise.all([
+  const [{ data, count }, facetData] = await Promise.all([
     productsQuery.range(from, to),
-    applyCategoryScope(supabase.from('products').select(facetSelectColumns)).limit(1000)
+    fetchFacetRows()
   ]);
 
   products = data || [];

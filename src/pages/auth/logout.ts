@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { redirectResponse } from '../../lib/auth-utils';
 import { createServerSupabaseClient } from '../../lib/supabase-server';
 
 export const prerender = false;
@@ -6,5 +7,5 @@ export const prerender = false;
 export const GET: APIRoute = async (context) => {
   const supabase = createServerSupabaseClient(context);
   await supabase.auth.signOut();
-  return Response.redirect(new URL('/', context.request.url), 303);
+  return redirectResponse(context.request, '/');
 };

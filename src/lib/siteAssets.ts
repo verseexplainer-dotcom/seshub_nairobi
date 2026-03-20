@@ -54,7 +54,7 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
       payments: siteAsset('payments-secure-icon.webp'),
       security: siteAsset('security-trust-icon.webp')
     },
-    productPlaceholder: siteAsset('product-placeholder.webp')
+    productPlaceholder: siteAsset('product-placeholder.svg')
   };
 }
 

@@ -75,3 +75,21 @@ test('invalid laptop conditions are hidden in storefront presentation', () => {
 
   assert.equal(presentation.condition.label, '');
 });
+
+test('image overrides win over the base image array', () => {
+  const presentation = getProductPresentation(
+    createProduct({
+      images: ['base-image.jpg'],
+      image_overrides: ['override-image.jpg']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  assert.equal(
+    presentation.primaryImageUrl,
+    'https://project.supabase.co/storage/v1/object/public/product-images/override-image.jpg'
+  );
+});

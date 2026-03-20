@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { buildPathWithMessage, getSafeRedirectPath } from '../../lib/auth-utils';
+import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../lib/auth-utils';
 import { getSessionContext } from '../../lib/server-auth';
 
 export const prerender = false;
@@ -9,14 +9,11 @@ export const GET: APIRoute = async (context) => {
   const next = getSafeRedirectPath(context.url.searchParams.get('next'), '/account');
 
   if (!code) {
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/login', {
-          error: 'The confirmation link is missing or expired.'
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/login', {
+        error: 'The confirmation link is missing or expired.'
+      })
     );
   }
 
@@ -24,14 +21,11 @@ export const GET: APIRoute = async (context) => {
   const { error } = await session.supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return Response.redirect(
-      new URL(
-        buildPathWithMessage('/auth/login', {
-          error: error.message
-        }),
-        context.request.url
-      ),
-      303
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/login', {
+        error: error.message
+      })
     );
   }
 
@@ -39,5 +33,5 @@ export const GET: APIRoute = async (context) => {
   const destination =
     next === '/account' && refreshed.isStaff ? '/admin' : next;
 
-  return Response.redirect(new URL(destination, context.request.url), 303);
+  return redirectResponse(context.request, destination);
 };

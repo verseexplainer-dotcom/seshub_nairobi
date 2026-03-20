@@ -1,6 +1,6 @@
 import type { SessionLocals } from './lib/app-types';
 import { defineMiddleware } from 'astro:middleware';
-import { buildPathWithMessage } from './lib/auth-utils';
+import { buildPathWithMessage, redirectResponse } from './lib/auth-utils';
 import { getSessionContext } from './lib/server-auth';
 
 const ACCOUNT_PREFIX = '/account';
@@ -10,10 +10,6 @@ const SIGNUP_PATH = '/auth/sign-up';
 const RESET_PASSWORD_PATH = '/auth/reset-password';
 const CALLBACK_PATH = '/auth/callback';
 const LOGOUT_PATH = '/auth/logout';
-
-function redirect(request: Request, path: string) {
-  return Response.redirect(new URL(path, request.url), 303);
-}
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const session = await getSessionContext(context);
@@ -34,12 +30,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (session.user && session.profile?.is_active === false && path !== LOGOUT_PATH) {
     await session.supabase.auth.signOut();
-    return redirect(
-      context.request,
-      buildPathWithMessage(LOGIN_PATH, {
-        error: 'Your account is inactive. Contact support for access.'
-      })
-    );
+      return redirectResponse(
+        context.request,
+        buildPathWithMessage(LOGIN_PATH, {
+          error: 'Your account is inactive. Contact support for access.'
+        })
+      );
   }
 
   if (
@@ -47,12 +43,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     (path === LOGIN_PATH || path === SIGNUP_PATH) &&
     !context.url.searchParams.has('force')
   ) {
-    return redirect(context.request, session.isStaff ? '/admin' : '/account');
+    return redirectResponse(context.request, session.isStaff ? '/admin' : '/account');
   }
 
   if (path.startsWith(ACCOUNT_PREFIX) && !session.user) {
     const nextPath = `${path}${context.url.search}`;
-    return redirect(
+    return redirectResponse(
       context.request,
       buildPathWithMessage(LOGIN_PATH, { next: nextPath })
     );
@@ -61,14 +57,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (path.startsWith(ADMIN_PREFIX)) {
     if (!session.user) {
       const nextPath = `${path}${context.url.search}`;
-      return redirect(
+      return redirectResponse(
         context.request,
         buildPathWithMessage(LOGIN_PATH, { next: nextPath })
       );
     }
 
     if (!session.isStaff) {
-      return redirect(
+      return redirectResponse(
         context.request,
         buildPathWithMessage('/account', {
           error: 'Staff access is required for that area.'
