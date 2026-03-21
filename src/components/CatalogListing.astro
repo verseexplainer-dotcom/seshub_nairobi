@@ -52,36 +52,7 @@ const hasFilters =
   maxPrice !== null ||
   selectedSort !== 'featured';
 
-const selectColumns = [
-  'id',
-  'slug',
-  'title',
-  'category',
-  'price_kes',
-  'compare_at_kes',
-  'in_stock',
-  'stock_qty',
-  'brand',
-  'condition',
-  'refurb_grade',
-  'short_specs',
-  'description',
-  'warranty_months',
-  'images',
-  'image_overrides',
-  'featured_home',
-  'featured_rank',
-  'cpu',
-  'ram_gb',
-  'storage_gb',
-  'storage_type',
-  'screen_in',
-  'seo_title',
-  'meta_description',
-  'updated_at',
-  'created_at'
-].join(',');
-
+const productSelectColumns = '*';
 const facetSelectColumns = ['category', 'brand', 'cpu', 'ram_gb', 'storage_gb', 'screen_in', 'price_kes', 'in_stock'].join(',');
 const from = (currentPage - 1) * pageSize;
 const to = from + pageSize - 1;
@@ -137,6 +108,17 @@ async function fetchFacetRows() {
     supabase.from('products').select(facetSelectColumns, { count: 'exact' })
   ).range(0, FACET_BATCH_SIZE - 1);
 
+  if (firstBatchResponse.error) {
+    console.error('Catalog facet query failed', {
+      code: firstBatchResponse.error.code,
+      details: firstBatchResponse.error.details,
+      hint: firstBatchResponse.error.hint,
+      message: firstBatchResponse.error.message,
+      path: Astro.url.pathname
+    });
+    return [];
+  }
+
   const firstBatch = firstBatchResponse.data || [];
   const totalRows = typeof firstBatchResponse.count === 'number' ? firstBatchResponse.count : firstBatch.length;
   if (totalRows <= firstBatch.length) {
@@ -161,7 +143,9 @@ let facetRows: Array<Record<string, any>> = [];
 let featuredProducts: Array<Record<string, any>> = [];
 
 if (isSupabaseConfigured) {
-  let productsQuery = applyFilters(applyCategoryScope(supabase.from('products').select(selectColumns, { count: 'exact' })));
+  let productsQuery = applyFilters(
+    applyCategoryScope(supabase.from('products').select(productSelectColumns, { count: 'exact' }))
+  );
 
   switch (selectedSort) {
     case 'price_asc':
@@ -181,10 +165,20 @@ if (isSupabaseConfigured) {
       break;
   }
 
-  const [{ data, count }, facetData] = await Promise.all([
+  const [{ data, count, error: productsError }, facetData] = await Promise.all([
     productsQuery.range(from, to),
     fetchFacetRows()
   ]);
+
+  if (productsError) {
+    console.error('Catalog product query failed', {
+      code: productsError.code,
+      details: productsError.details,
+      hint: productsError.hint,
+      message: productsError.message,
+      path: Astro.url.pathname
+    });
+  }
 
   products = data || [];
   totalCount = typeof count === 'number' ? count : products.length;
@@ -193,7 +187,7 @@ if (isSupabaseConfigured) {
   if (isShopMode) {
     const { data: featuredData } = await supabase
       .from('products')
-      .select(selectColumns)
+      .select(productSelectColumns)
       .eq('featured_home', true)
       .eq('in_stock', true)
       .order('featured_rank', { ascending: true, nullsFirst: false })

@@ -31,6 +31,7 @@ const safeDescription =
   plainDescription ||
   'SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.';
 const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
+const faviconVersion = '20260322';
 ---
 
 <!DOCTYPE html>
@@ -38,11 +39,12 @@ const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" href={`/favicon.ico?v=${faviconVersion}`} sizes="any" />
+    <link rel="shortcut icon" href={`/favicon.ico?v=${faviconVersion}`} />
+    <link rel="icon" type="image/png" sizes="32x32" href={`/favicon-32x32.png?v=${faviconVersion}`} />
+    <link rel="icon" type="image/png" sizes="16x16" href={`/favicon-16x16.png?v=${faviconVersion}`} />
+    <link rel="apple-touch-icon" sizes="180x180" href={`/apple-touch-icon.png?v=${faviconVersion}`} />
+    <link rel="manifest" href={`/site.webmanifest?v=${faviconVersion}`} />
     <meta name="theme-color" content="#ffffff" />
     <meta name="generator" content={Astro.generator} />
     
