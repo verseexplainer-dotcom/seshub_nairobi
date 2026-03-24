@@ -1,5 +1,21 @@
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
+function getPublicEnvAliases(key: string) {
+  if (key === 'PUBLIC_SUPABASE_URL') {
+    return ['PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'];
+  }
+
+  if (key === 'PUBLIC_SUPABASE_ANON_KEY') {
+    return [
+      'PUBLIC_SUPABASE_ANON_KEY',
+      'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    ];
+  }
+
+  return [key];
+}
+
 export type ApiErrorPayload = {
   ok: false;
   error: {
@@ -45,13 +61,22 @@ export function getRuntimeEnv(locals: unknown) {
 }
 
 export function getPublicEnvValue(locals: unknown, key: string) {
-  const runtimeValue = getRuntimeEnv(locals)[key]?.trim();
-  if (runtimeValue) {
-    return runtimeValue;
+  const runtimeEnv = getRuntimeEnv(locals);
+  const buildEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
+
+  for (const candidate of getPublicEnvAliases(key)) {
+    const runtimeValue = runtimeEnv[candidate]?.trim();
+    if (runtimeValue) {
+      return runtimeValue;
+    }
+
+    const buildValue = (buildEnv[candidate] ?? '').trim();
+    if (buildValue) {
+      return buildValue;
+    }
   }
 
-  const buildValue = ((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.[key] ?? '').trim();
-  return buildValue || undefined;
+  return undefined;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

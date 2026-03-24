@@ -1,10 +1,10 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { getBuildRuntimeEnv } from './runtime';
 
 let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
 export function getBrowserSupabaseClient() {
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const { PUBLIC_SUPABASE_URL: supabaseUrl, PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey } = getBuildRuntimeEnv();
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase browser credentials are missing.');

@@ -23,6 +23,9 @@ export type OrderEventType =
 export interface RuntimeEnv {
   PUBLIC_SUPABASE_URL: string | undefined;
   PUBLIC_SUPABASE_ANON_KEY: string | undefined;
+  NEXT_PUBLIC_SUPABASE_URL?: string | undefined;
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?: string | undefined;
+  NEXT_PUBLIC_SUPABASE_ANON_KEY?: string | undefined;
   SUPABASE_SERVICE_ROLE_KEY: string | undefined;
 }
 
