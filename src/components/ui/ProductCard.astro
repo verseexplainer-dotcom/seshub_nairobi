@@ -14,14 +14,15 @@ import { getWarrantyLabel } from '../../lib/productPresentation';
 
 interface Props {
   product: CatalogProduct;
+  publicSupabaseUrl?: string | undefined;
 }
 
-const { product } = Astro.props as Props;
-const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const { product, publicSupabaseUrl } = Astro.props as Props;
+const siteAssets = getSiteAssets(publicSupabaseUrl);
 const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const finalFallback = '/product-placeholder.svg';
 const imageSource = getPrimaryImage(product, {
-  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+  publicSupabaseUrl,
   fallbackImage
 });
 const imageOnError = buildImageOnError(fallbackImage, finalFallback);

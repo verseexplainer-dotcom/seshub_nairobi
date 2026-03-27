@@ -16,8 +16,10 @@ import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
 import { getBrandCounts, getCategoryCounts, getDealsProducts, getHomepageFeaturedProducts, getHomepageProducts } from '../lib/catalog';
 import { blogPosts } from '../lib/homepageContent';
 import { buildUseCaseCollections, getInventorySummary, selectBestValueProducts, selectNewInProducts, selectPremiumProducts } from '../lib/homepage';
+import { getRuntimeEnv } from '../lib/runtime';
 
-const products = await getHomepageProducts();
+const runtimeEnv = getRuntimeEnv(Astro.locals);
+const products = await getHomepageProducts(Astro.locals);
 const featuredProducts = await getHomepageFeaturedProducts(products);
 const categoryCounts = await getCategoryCounts(products);
 const brandCounts = (await getBrandCounts(products)).slice(0, 6);
@@ -37,23 +39,29 @@ const inventorySummary = getInventorySummary(products);
 >
   <div class="homepage-shell">
     <AnnouncementStrip />
-    <HeroShowcase products={featuredProducts.slice(0, 4)} liveCount={inventorySummary.liveCount} brandCount={inventorySummary.brandCount} />
-    <CategoryQuickLinks items={categoryCounts} />
+    <HeroShowcase
+      products={featuredProducts.slice(0, 4)}
+      liveCount={inventorySummary.liveCount}
+      brandCount={inventorySummary.brandCount}
+      publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
+    />
+    <CategoryQuickLinks items={categoryCounts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
     <TrustHighlights />
     <FeaturedProductsGrid
       featured={featuredProducts}
       newIn={newInProducts}
       bestValue={bestValueProducts}
       premium={premiumProducts}
+      publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
     />
     <RefurbishedVsBrandNew
       brandNewCount={inventorySummary.brandNewCount}
       refurbishedCount={inventorySummary.refurbishedCount}
     />
-    <DealsBand products={dealsProducts} />
+    <DealsBand products={dealsProducts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
     <ShopByBrand brands={brandCounts} />
     <UseCaseCollections collections={useCaseCollections} />
-    <WhyBuyFromSES />
+    <WhyBuyFromSES publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
     <LatestGuidesPreview posts={blogPosts} />
     <CustomerActionBanner />
   </div>

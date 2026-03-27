@@ -1,8 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
+import type { SessionLocals } from './app-types';
 import type { CatalogProduct, HomepageBrandCount, HomepageCategoryCount } from '../types/catalog';
 import { buildBrandFilterHref } from './filters';
 import { getProductGallery } from './images';
 import { getCompareAtPrice } from './pricing';
 import { getCategorySlug, normalizeText, parsePositiveNumber } from './productPresentation';
+import { getRuntimeEnv } from './runtime';
 
 const LOW_STOCK_THRESHOLD = 3;
 const HOMEPAGE_PRODUCT_COLUMNS = [
@@ -85,6 +88,7 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
 ];
 
 const PREFERRED_HOME_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Epson'];
+type CatalogRuntimeSource = { locals?: SessionLocals | null } | SessionLocals | null | undefined;
 
 function toStringOrNull(value: unknown) {
   const normalized = normalizeText(value);
@@ -295,12 +299,21 @@ export function getProductSpecChips(product: CatalogProduct, limit = 3) {
   return chips.slice(0, limit);
 }
 
-export async function getHomepageProducts() {
-  const { isSupabaseConfigured, supabase } = await import('./supabase');
+export async function getHomepageProducts(source?: CatalogRuntimeSource) {
+  const env = getRuntimeEnv(source);
+  const supabaseUrl = env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = env.PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!isSupabaseConfigured) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     return [] as CatalogProduct[];
   }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
 
   const { data, error } = await supabase
     .from('products')

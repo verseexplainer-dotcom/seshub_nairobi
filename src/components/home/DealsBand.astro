@@ -9,11 +9,12 @@ import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
 
 interface Props {
   products: CatalogProduct[];
+  publicSupabaseUrl?: string | undefined;
 }
 
-const { products } = Astro.props as Props;
+const { products, publicSupabaseUrl } = Astro.props as Props;
 const [leadDeal, ...moreDeals] = products;
-const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const siteAssets = getSiteAssets(publicSupabaseUrl);
 const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const imageOnError = buildImageOnError(fallbackImage, '/product-placeholder.svg');
 ---
@@ -31,7 +32,7 @@ const imageOnError = buildImageOnError(fallbackImage, '/product-placeholder.svg'
         <article class="lead-deal">
           <a href={`/product/${leadDeal.slug}`} class="deal-media">
             <img
-              src={getPrimaryImage(leadDeal, { publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, fallbackImage })}
+              src={getPrimaryImage(leadDeal, { publicSupabaseUrl, fallbackImage })}
               alt={leadDeal.title}
               loading="lazy"
               decoding="async"

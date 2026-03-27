@@ -41,6 +41,11 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
     logo,
     logoFallback: logo.fallback,
     hero: siteAsset('hero-image.webp'),
+    heroMoments: {
+      primary: siteAsset('hero-image.webp'),
+      secondary: siteAsset('hero-image-1.webp'),
+      tertiary: siteAsset('hero-image-3.webp')
+    },
     categoryCards: {
       laptops: siteAsset('laptop-category-card.webp'),
       desktops: siteAsset('desktop-category-card.webp'),

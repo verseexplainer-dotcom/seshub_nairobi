@@ -30,11 +30,11 @@ function parseImageInput(value: unknown) {
   return [normalized];
 }
 
-export function getFallbackProductImage(publicSupabaseUrl?: string) {
+export function getFallbackProductImage(publicSupabaseUrl?: string | undefined) {
   return getSiteAssets(publicSupabaseUrl).productPlaceholder.src;
 }
 
-export function resolveProductImage(image: unknown, publicSupabaseUrl?: string, fallbackImage?: string) {
+export function resolveProductImage(image: unknown, publicSupabaseUrl?: string | undefined, fallbackImage?: string | undefined) {
   const fallback = normalizeText(fallbackImage) || getFallbackProductImage(publicSupabaseUrl);
   const source = normalizeText(image);
   const normalizedSupabaseUrl = normalizeText(publicSupabaseUrl).replace(/\/$/, '');
@@ -60,7 +60,7 @@ export function resolveProductImage(image: unknown, publicSupabaseUrl?: string, 
 
 export function getProductGallery(
   product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
-  options: { publicSupabaseUrl?: string; fallbackImage?: string } = {}
+  options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
 ) {
   const overrides = parseImageInput(product.image_overrides);
   const images = parseImageInput(product.images);
@@ -75,7 +75,7 @@ export function getProductGallery(
 
 export function getPrimaryImage(
   product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
-  options: { publicSupabaseUrl?: string; fallbackImage?: string } = {}
+  options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
 ) {
   return getProductGallery(product, options)[0] || getFallbackProductImage(options.publicSupabaseUrl);
 }

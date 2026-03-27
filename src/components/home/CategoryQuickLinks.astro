@@ -2,20 +2,31 @@
 import type { HomepageCategoryCount } from '../../types/catalog';
 import CategoryCard from '../ui/CategoryCard.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
+import { getSiteAssets } from '../../lib/siteAssets';
 
 interface Props {
   items: HomepageCategoryCount[];
+  publicSupabaseUrl?: string | undefined;
 }
 
-const { items } = Astro.props as Props;
+const { items, publicSupabaseUrl } = Astro.props as Props;
+const siteAssets = getSiteAssets(publicSupabaseUrl);
+const categoryImages = {
+  Laptops: siteAssets.categoryCards.laptops.src,
+  Smartphones: siteAssets.categoryCards.smartphones.src,
+  Printers: siteAssets.categoryCards.printers.src,
+  Desktops: siteAssets.categoryCards.desktops.src,
+  Accessories: siteAssets.categoryCards.accessories.src,
+  Storage: siteAssets.categoryCards.accessories.src
+} as const;
 ---
 
 <section class="quick-links section">
   <div class="container">
     <SectionHeading
       eyebrow="Shop Faster"
-      title="Jump into the categories shoppers ask for first."
-      description="These counts come from the current catalog so you can move straight into the strongest parts of the store."
+      title="Start with the categories shoppers ask for first."
+      description="Each card uses live catalog counts so visitors can move straight into the strongest parts of the store."
     />
 
     <div class="grid">
@@ -26,6 +37,7 @@ const { items } = Astro.props as Props;
           count={item.count}
           href={item.href}
           accent={item.accent}
+          imageSrc={categoryImages[item.label as keyof typeof categoryImages] ?? siteAssets.categoryCards.accessories.src}
         />
       ))}
     </div>
