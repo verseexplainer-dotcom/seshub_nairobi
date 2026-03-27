@@ -66,7 +66,7 @@ export CLOUDFLARE_API_TOKEN='<your-token>'
 ```
 
 Locked deploy account id is set in `wrangler.jsonc`:
-- `e1d8076a3dc603837814ca828736561f`
+- deploy scripts read the locked value from repo config; you only need to provide `CLOUDFLARE_API_TOKEN`
 
 Supabase Auth redirect allowlists must include:
 - `https://<your-domain>/api/auth/callback`
