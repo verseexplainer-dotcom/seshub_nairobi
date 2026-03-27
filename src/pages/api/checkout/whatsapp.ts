@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
-import { asTrimmedString, errorResponse, getPublicEnvValue, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
+import { recordServerEvent } from '../../../lib/server/analytics';
+import { verifyTurnstileToken } from '../../../lib/server/turnstile';
+import { asTrimmedString, errorResponse, getClientIp, getPublicEnvValue, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
 
 export const prerender = false;
 
@@ -12,15 +14,22 @@ const MAX_ITEM_QTY = 20;
 const MAX_TITLE_LENGTH = 180;
 const MAX_LOCATION_LENGTH = 180;
 const MAX_SOURCE_PAGE_LENGTH = 120;
+const MAX_SESSION_ID_LENGTH = 128;
 const MAX_TOTAL_KES = 20_000_000;
+const MAX_TURNSTILE_TOKEN_LENGTH = 2048;
 const PHONE_REGEX = /^\+?\d{9,15}$/;
 
-function getClientIp(request: Request) {
-  const cfIp = request.headers.get('cf-connecting-ip');
-  if (cfIp) return cfIp.trim();
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return (forwarded.split(',')[0] ?? '').trim();
-  return 'unknown';
+class CheckoutValidationError extends Error {}
+
+class CheckoutUpstreamError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
 }
 
 function isRateLimited(ip: string) {
@@ -67,12 +76,12 @@ function normalizePhone(rawPhone: string) {
 
 function normalizeCart(cart: unknown): RequestedCartItem[] {
   if (!Array.isArray(cart) || cart.length === 0 || cart.length > MAX_CART_ITEMS) {
-    throw new Error('Cart is empty or invalid.');
+    throw new CheckoutValidationError('Cart is empty or invalid.');
   }
 
   return cart.map((item) => {
     if (!isRecord(item)) {
-      throw new Error('Cart contains invalid item data.');
+      throw new CheckoutValidationError('Cart contains invalid item data.');
     }
 
     const id = asTrimmedString(item.id, 64);
@@ -85,7 +94,7 @@ function normalizeCart(cart: unknown): RequestedCartItem[] {
       qty < 1 ||
       qty > MAX_ITEM_QTY
     ) {
-      throw new Error('Cart contains invalid item data.');
+      throw new CheckoutValidationError('Cart contains invalid item data.');
     }
 
     return {
@@ -120,12 +129,12 @@ async function fetchCatalogProducts(
   if (!response.ok) {
     const upstreamError = await response.text().catch(() => '');
     console.error('products lookup error', response.status, upstreamError);
-    throw new Error('Unable to validate cart products right now.');
+    throw new CheckoutUpstreamError(502, 'PRODUCT_LOOKUP_FAILED', 'Unable to validate cart products right now.');
   }
 
   const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
   if (!Array.isArray(rows)) {
-    throw new Error('Unable to validate cart products right now.');
+    throw new CheckoutUpstreamError(502, 'PRODUCT_LOOKUP_FAILED', 'Unable to validate cart products right now.');
   }
 
   const map = new Map<string, CatalogProduct>();
@@ -199,7 +208,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return errorResponse(413, 'PAYLOAD_TOO_LARGE', 'Checkout payload is too large.');
     }
 
-    const ip = getClientIp(request);
+    const ip = getClientIp(request) || 'unknown';
     if (isRateLimited(ip)) {
       return errorResponse(429, 'RATE_LIMITED', 'Too many checkout attempts. Please retry in 5 minutes.');
     }
@@ -217,6 +226,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const consent = body?.consent === true;
     const sourcePage = body?.source_page == null ? null : asTrimmedString(body.source_page, MAX_SOURCE_PAGE_LENGTH);
     const location = body?.location == null ? null : asTrimmedString(body.location, MAX_LOCATION_LENGTH);
+    const sessionId = body?.session_id == null ? null : asTrimmedString(body.session_id, MAX_SESSION_ID_LENGTH);
+    const turnstileToken = asTrimmedString(body.turnstile_token, MAX_TURNSTILE_TOKEN_LENGTH);
 
     if (!customerName) {
       return errorResponse(400, 'INVALID_CUSTOMER_NAME', 'Customer name is required.');
@@ -234,6 +245,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return errorResponse(400, 'INVALID_SOURCE_PAGE', 'source_page is invalid.');
     }
 
+    if (sessionId === null && body.session_id != null) {
+      return errorResponse(400, 'INVALID_SESSION_ID', 'session_id is invalid.');
+    }
+
     if (!consent) {
       return errorResponse(400, 'CONSENT_REQUIRED', 'Consent is required to submit an order intent.');
     }
@@ -241,6 +256,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const env = getRuntimeEnv(locals);
     const supabaseUrl = getPublicEnvValue(locals, 'PUBLIC_SUPABASE_URL');
     const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    const turnstileResult = await verifyTurnstileToken({
+      token: turnstileToken,
+      secretKey: env.TURNSTILE_SECRET_KEY?.trim(),
+      remoteIp: ip,
+      expectedAction: 'checkout_whatsapp'
+    });
+
+    if (!turnstileResult.ok) {
+      return errorResponse(turnstileResult.status, turnstileResult.code, turnstileResult.message);
+    }
 
     if (!supabaseUrl || !serviceRoleKey) {
       return errorResponse(500, 'SUPABASE_CONFIG_MISSING', 'Server configuration missing Supabase credentials.');
@@ -314,7 +339,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         return errorResponse(400, 'TOTAL_MISMATCH', 'Your cart pricing changed. Please refresh and try again.');
       }
 
-      if (orderCreateResponse.status >= 400 && orderCreateResponse.status < 500) {
+      if (/cart is empty or invalid|customer name and phone are required|consent is required/i.test(upstreamMessage)) {
         return errorResponse(400, 'ORDER_CREATE_FAILED', upstreamMessage || 'Failed to save order.');
       }
 
@@ -339,6 +364,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const message = `Hello SES ICT HUB, I want to place order ref ${orderRef}. Items: ${itemsSummary}. Total: KES ${computedTotalKes}.`;
     const whatsappUrl = `https://wa.me/254720480475?text=${encodeURIComponent(message)}`;
 
+    await recordServerEvent({
+      supabaseUrl,
+      serviceRoleKey,
+      eventType: 'whatsapp_checkout_redirect',
+      sessionId,
+      payload: {
+        order_id: orderId,
+        order_number: orderRef,
+        source_page: sourcePage ?? 'cart'
+      }
+    });
+
     return jsonResponse({
       ok: true,
       order_id: orderId,
@@ -347,7 +384,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       url: whatsappUrl
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unexpected server error.';
-    return errorResponse(400, 'CHECKOUT_VALIDATION_FAILED', message);
+    if (error instanceof CheckoutValidationError) {
+      return errorResponse(400, 'CHECKOUT_VALIDATION_FAILED', error.message);
+    }
+
+    if (error instanceof CheckoutUpstreamError) {
+      return errorResponse(error.status, error.code, error.message);
+    }
+
+    console.error('checkout unexpected error', error);
+    return errorResponse(500, 'CHECKOUT_UNEXPECTED_ERROR', 'Unexpected server error.');
   }
 };

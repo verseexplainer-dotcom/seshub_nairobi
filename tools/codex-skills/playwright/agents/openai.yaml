@@ -1,0 +1,4 @@
+interface:
+  display_name: "Playwright"
+  short_description: "Run browser-level route and conversion checks"
+  default_prompt: "Add or run Playwright-style browser checks for storefront, auth, cart, and admin flows in this Astro project."

@@ -32,10 +32,13 @@ The current dataset contains the following product categories:
 - Laptops
 - Smartphones
 - Printers
-
-Agents MUST NOT assume other categories exist unless they appear in the database.
+- Desktops
+- Accessories
 
 If additional categories are added later, agents may extend the UI accordingly.
+
+Import note:
+- Source rows tagged as `storage` should be treated as `Accessories` in the storefront and import pipeline.
 
 ---
 
@@ -147,6 +150,8 @@ Current categories:
 Laptops  
 Smartphones  
 Printers  
+Desktops  
+Accessories  
 
 Category pages should include:
 
@@ -288,6 +293,26 @@ Refactoring large areas of code
 Adding major dependencies  
 
 All changes should be incremental and explained.
+
+---
+
+# Recommended Codex Skills
+
+Prefer these skills when the task matches:
+
+- `frontend-skill` for homepage, category page, product page, and mobile UX work
+- `playwright` for browser-level route checks and conversion-flow validation
+- `cloudflare-deploy` for Wrangler auth, Worker deploys, and release checks
+- `spreadsheet` for CSV imports, price updates, and catalog QA
+- `security-best-practices` for auth, admin, and API hardening review
+- `sentry` for release-time error visibility and post-deploy debugging
+
+Secondary skills:
+
+- `figma` or `figma-implement-design` when a Figma file or node link exists
+- `notion-spec-to-implementation` when changes need structured planning and task tracking
+
+Project-specific companion notes for these skills live in `tools/codex-skills/`.
 
 ---
 

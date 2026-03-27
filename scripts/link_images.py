@@ -151,31 +151,234 @@ def extract_model_key(text: str) -> str:
       "hp-pro-x2-612-g2"                                      → "hp-pro-x2-612-g2"
     """
     norm = normalize(text)
-    
-    # Common patterns for model identifiers:
-    # Brand + Series + ModelNumber (+ optional generation suffix like g3, g5)
-    patterns = [
-        # HP/Dell/Lenovo laptop model patterns (brand-series-model-gen)
-        r'^((?:hp|dell|lenovo|onn|thinkpad|latitude|probook|elitebook|zbook)[\w-]*?-(?:[a-z]*\d+[\w]*(?:-g\d+)?))',
-        # With brand prefix duplicated (dell-dell-refurbished-latitude-7350 → dell-latitude-7350)
-        r'^(?:dell-dell-\w+-)(latitude-\d+)',
-        # Epson printer models
-        r'^(epson-[\w-]*?-[a-z]*\d+[\w]*)',
-        # Canon printer models 
-        r'^(canon-[\w-]*?-[a-z]*\d+[\w]*)',
-        # Transcend models
-        r'^(transcend-[\w-]*?-\d+\w*)',
+    parts = [part for part in norm.split("-") if part]
+    if not parts:
+        return norm
+
+    stop_words = {
+        "core",
+        "intel",
+        "amd",
+        "ryzen",
+        "ram",
+        "ssd",
+        "hdd",
+        "storage",
+        "touch",
+        "touchscreen",
+        "wireless",
+        "wifi",
+        "brand",
+        "new",
+        "refurbished",
+        "refurbish",
+        "refurb",
+        "renewed",
+        "ex",
+        "grade",
+        "laptop",
+        "desktop",
+        "printer",
+        "phone",
+        "smartphone",
+        "nairobi",
+        "business",
+        "portable",
+        "external",
+        "usb",
+        "detachable",
+        "display",
+        "screen",
+        "windows",
+        "bluetooth",
+        "camera",
+        "stylus",
+        "network",
+        "multifunction",
+        "scanner",
+        "copier",
+        "office",
+        "dot",
+        "matrix",
+        "all",
+        "one",
+        "monochrome",
+        "duplex",
+        "fax",
+        "print",
+        "copy",
+        "rom",
+        "lte",
+        "mah",
+        "android",
+        "battery",
+        "speaker",
+        "speakers",
+    }
+
+    result = []
+    seen_model_marker = False
+
+    for index, part in enumerate(parts):
+        next_part = parts[index + 1] if index + 1 < len(parts) else ""
+
+        if result and seen_model_marker:
+            if part in stop_words:
+                break
+            if re.fullmatch(r"\d+(?:gb|tb)", part):
+                break
+            if part in {"5g", "4g", "3g"}:
+                break
+            if re.fullmatch(r"\d+(?:st|nd|rd|th)", part) and next_part in {"gen", "generation"}:
+                break
+            if part.isdigit() and next_part in {"pin", "inch", "inches", "ppm", "mp"}:
+                break
+
+        result.append(part)
+        if re.search(r"\d", part):
+            seen_model_marker = True
+
+    if len(result) >= 2 and result[0] == result[1]:
+        result.pop(1)
+
+    return "-".join(result) if result else norm
+
+
+def is_generic_model_token(part: str) -> bool:
+    return part in {
+        "brand",
+        "new",
+        "refurbished",
+        "refurbish",
+        "refurb",
+        "renewed",
+        "printer",
+        "laptop",
+        "desktop",
+        "smartphone",
+        "phone",
+        "wireless",
+        "wifi",
+        "ecotank",
+        "photo",
+        "color",
+        "colour",
+        "ink",
+        "tank",
+        "connectivity",
+        "high",
+        "volume",
+        "low",
+        "cost",
+        "wide",
+        "format",
+        "business",
+        "office",
+        "portable",
+        "external",
+        "all",
+        "one",
+        "duplex",
+        "touch",
+        "touchscreen",
+        "display",
+        "screen",
+        "with",
+        "without",
+        "and",
+        "the",
+    }
+
+
+def is_obvious_spec_token(part: str, next_part: str = "") -> bool:
+    if not part:
+        return False
+    if re.fullmatch(r"a\d{1,2}", part):
+        return True
+    if re.fullmatch(r"\d+(?:gb|tb|mah|hz|w|wh|yr|yrs)", part):
+        return True
+    if part in {"5g", "4g", "3g"}:
+        return True
+    if re.fullmatch(r"\d+(?:st|nd|rd|th)", part) and next_part in {"gen", "generation"}:
+        return True
+    if part.isdigit() and next_part in {"pin", "inch", "inches", "ppm", "mp", "yr", "yrs", "year", "years", "month", "months", "in"}:
+        return True
+    return False
+
+
+def is_model_suffix_token(part: str) -> bool:
+    return bool(re.fullmatch(r"[ivx]{1,4}", part))
+
+
+def extract_model_signature(text: str) -> str:
+    """
+    Build a more stable model signature than `extract_model_key`.
+
+    This focuses on the brand, the nearest product-line token before the
+    first meaningful model token, and the compact model suffix after it.
+    It is intended to handle cases where filenames and slugs use different
+    descriptor orderings, such as:
+      "epson-l8050-a4-6-colour-photo-printer-ecotank-brand-new"
+      "epson-ecotank-l8050-photo-printer-color-ink-tank-..."
+    """
+    parts = [part for part in normalize(text).split("-") if part]
+    if not parts:
+        return ""
+
+    if len(parts) == 1:
+        return parts[0]
+
+    brand = parts[0]
+    model_index = None
+    for index in range(1, len(parts)):
+        part = parts[index]
+        next_part = parts[index + 1] if index + 1 < len(parts) else ""
+        if re.search(r"\d", part) and not is_obvious_spec_token(part, next_part):
+            model_index = index
+            break
+
+    if model_index is None:
+        return extract_model_key(text)
+
+    prefix_tokens = [
+        part
+        for part in parts[1:model_index]
+        if not is_generic_model_token(part) and not is_obvious_spec_token(part)
     ]
-    
-    for pat in patterns:
-        m = re.match(pat, norm)
-        if m:
-            return m.group(1)
-    
-    return norm
+
+    signature = [brand, *prefix_tokens[-2:]]
+    for index in range(model_index, len(parts)):
+        part = parts[index]
+        next_part = parts[index + 1] if index + 1 < len(parts) else ""
+
+        if index != model_index and is_obvious_spec_token(part, next_part):
+            break
+
+        if index != model_index and is_generic_model_token(part):
+            break
+
+        if index != model_index and not re.search(r"\d", part) and not is_model_suffix_token(part):
+            break
+
+        signature.append(part)
+
+    deduped: list[str] = []
+    for part in signature:
+        if deduped and deduped[-1] == part:
+            continue
+        deduped.append(part)
+
+    return "-".join(deduped)
 
 
-def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenames: list[str]) -> tuple[list[str], float, str]:
+def match_images_smart(
+    slug: str,
+    title: str,
+    filenames: list[str],
+    norm_filenames: list[str],
+    file_model_keys: list[str],
+    file_model_signatures: list[str],
+) -> tuple[list[str], float, str]:
     """
     Match product to images using multiple strategies:
     
@@ -194,7 +397,63 @@ def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenam
     if matches:
         return sorted(set(matches)), 0.92, "slug_containment"
 
-    # Strategy 2: Match on significant shared segments
+    # Strategy 2: Match on extracted model keys.
+    candidate_model_keys = []
+    for raw in [slug, title]:
+        model_key = extract_model_key(raw)
+        if not model_key:
+            continue
+        if not re.search(r"\d", model_key):
+            continue
+        if model_key not in candidate_model_keys:
+            candidate_model_keys.append(model_key)
+
+    exact_model_matches = []
+    contained_model_matches = []
+    for i, file_model_key in enumerate(file_model_keys):
+        for candidate_model_key in candidate_model_keys:
+            if candidate_model_key == file_model_key:
+                exact_model_matches.append(filenames[i])
+                break
+            if candidate_model_key in file_model_key or file_model_key in candidate_model_key:
+                contained_model_matches.append(filenames[i])
+                break
+
+    if exact_model_matches:
+        return sorted(set(exact_model_matches)), 0.88, "model_key_exact"
+
+    if contained_model_matches:
+        return sorted(set(contained_model_matches)), 0.84, "model_key_containment"
+
+    # Strategy 2b: Match on compact model signatures.
+    candidate_signatures = []
+    for raw in [slug, title]:
+        signature = extract_model_signature(raw)
+        if not signature:
+            continue
+        if not re.search(r"\d", signature):
+            continue
+        if signature not in candidate_signatures:
+            candidate_signatures.append(signature)
+
+    exact_signature_matches = []
+    contained_signature_matches = []
+    for i, file_model_signature in enumerate(file_model_signatures):
+        for candidate_signature in candidate_signatures:
+            if candidate_signature == file_model_signature:
+                exact_signature_matches.append(filenames[i])
+                break
+            if candidate_signature in file_model_signature or file_model_signature in candidate_signature:
+                contained_signature_matches.append(filenames[i])
+                break
+
+    if exact_signature_matches:
+        return sorted(set(exact_signature_matches)), 0.87, "model_signature_exact"
+
+    if contained_signature_matches:
+        return sorted(set(contained_signature_matches)), 0.83, "model_signature_containment"
+
+    # Strategy 3: Match on significant shared segments.
     # Split slug into segments and find images sharing the longest prefix
     slug_parts = norm_slug.split("-")
     best_matches = []
@@ -213,7 +472,35 @@ def match_images_smart(slug: str, title: str, filenames: list[str], norm_filenam
         
         # Also try matching without the first word if it's a common modifier
         # e.g., slug="refurbished-hp-elitebook-..." vs file="hp-elitebook-..."
-        skip_words = {"refurbished", "renewed", "refurb", "ex", "uk", "brand", "new", "dell", "hp"}
+        skip_words = {
+            "refurbished",
+            "refurbish",
+            "renewed",
+            "refurb",
+            "ex",
+            "uk",
+            "brand",
+            "new",
+            "dell",
+            "hp",
+            "lenovo",
+            "apple",
+            "samsung",
+            "infinix",
+            "tecno",
+            "redmi",
+            "canon",
+            "epson",
+            "transcend",
+            "laptop",
+            "printer",
+            "desktop",
+            "smartphone",
+            "phone",
+            "touch",
+            "touchscreen",
+            "nairobi",
+        }
         
         # Try skipping leading modifiers in slug
         slug_offset = 0
@@ -290,6 +577,8 @@ def link_images():
 
     # Pre-normalize all filenames once
     norm_filenames = [normalize(fn) for fn in filenames]
+    file_model_keys = [extract_model_key(fn) for fn in filenames]
+    file_model_signatures = [extract_model_signature(fn) for fn in filenames]
 
     # 2. Fetch all products
     print("📦  Fetching products…")
@@ -337,7 +626,14 @@ def link_images():
             else:
                 matched = []
         else:
-            matched, confidence, strategy = match_images_smart(slug, title, filenames, norm_filenames)
+            matched, confidence, strategy = match_images_smart(
+                slug,
+                title,
+                filenames,
+                norm_filenames,
+                file_model_keys,
+                file_model_signatures,
+            )
 
         if not matched:
             no_match.append(slug)

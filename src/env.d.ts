@@ -18,6 +18,9 @@ declare global {
 
   interface Window {
     __sesCartHandlerBound?: boolean;
+    turnstile?: {
+      reset: (widget?: string) => void;
+    };
   }
 }
 

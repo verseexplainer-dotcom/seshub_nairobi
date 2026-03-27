@@ -20,7 +20,7 @@ export const POST: APIRoute = async (context) => {
   const supabase = createServerSupabaseClient(context);
   const redirectTo = absoluteUrl(
     context.request,
-    '/auth/callback?next=/auth/reset-password'
+    '/api/auth/callback?next=/auth/reset-password'
   );
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

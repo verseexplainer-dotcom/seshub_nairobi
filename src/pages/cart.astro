@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import TurnstileWidget from '../components/TurnstileWidget.astro';
 import type { SessionLocals } from '../lib/app-types';
 import { getSiteAssets } from '../lib/siteAssets';
 
@@ -93,6 +94,9 @@ const user = locals.user;
                 <input type="checkbox" name="consent" required />
                 <span>I agree to be contacted via WhatsApp for this order.</span>
               </label>
+
+              <TurnstileWidget widgetId="checkout-turnstile" action="checkout_whatsapp" />
+              <div id="checkout-message" class="checkout-message" aria-live="polite" hidden></div>
 
               <button type="submit" class="pill-button primary checkout-btn" id="checkout-btn">
                 Message us on WhatsApp
@@ -314,6 +318,17 @@ const user = locals.user;
     background-color: #1a73e8; /* Specific blue */
   }
 
+  .checkout-message {
+    margin-bottom: var(--space-sm);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .checkout-message.error,
+  .turnstile-unavailable {
+    color: var(--color-danger);
+  }
+
   .form-disclaimer {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -467,11 +482,20 @@ const user = locals.user;
   // Checkout Logic
   const checkoutForm = document.getElementById('checkout-form') as HTMLFormElement;
   const checkoutBtn = document.getElementById('checkout-btn') as HTMLButtonElement;
+  const checkoutMessage = document.getElementById('checkout-message');
+  const resetTurnstile = () => window.turnstile?.reset?.('checkout-turnstile');
 
   checkoutForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const cart = loadCart();
     const formData = new FormData(checkoutForm);
+    const turnstileToken = formData.get('cf-turnstile-response');
+
+    if (checkoutMessage) {
+      checkoutMessage.hidden = true;
+      checkoutMessage.textContent = '';
+      checkoutMessage.classList.remove('error');
+    }
     
     const payload = {
       cart: cart.map((item) => ({
@@ -484,7 +508,9 @@ const user = locals.user;
       phone: formData.get('phone'),
       location: formData.get('location'),
       consent: formData.get('consent') === 'on',
-      source_page: 'cart'
+      source_page: 'cart',
+      session_id: localStorage.getItem('ses_session_id'),
+      turnstile_token: turnstileToken
     };
 
     checkoutBtn.disabled = true;
@@ -497,33 +523,25 @@ const user = locals.user;
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
       
-      if (data.ok) {
-        // Track the event
-        await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            session_id: localStorage.getItem('ses_session_id'),
-            event_type: 'whatsapp_checkout_redirect',
-            payload: { order_id: data.order_id }
-          })
-        });
-
-        // Redirect to WhatsApp
+      if (response.ok && data?.ok) {
         window.location.href = data.whatsapp_url;
-        
-        // Optionally clear cart after a delay or based on user confirmation
-        // For now, let's keep it until they return or we can clear on successful return to a "thank you" page
       } else {
         throw new Error(data?.error?.message || 'Checkout failed');
       }
     } catch (err) {
       const message = err instanceof Error && err.message ? err.message : "We couldn't open WhatsApp checkout. Please try again or message us directly on WhatsApp.";
-      alert(message);
+      if (checkoutMessage) {
+        checkoutMessage.hidden = false;
+        checkoutMessage.textContent = message;
+        checkoutMessage.classList.add('error');
+      } else {
+        alert(message);
+      }
       checkoutBtn.disabled = false;
       checkoutBtn.textContent = 'Message us on WhatsApp';
+      resetTurnstile();
     }
   });
 

@@ -1,0 +1,27 @@
+---
+import { getPublicEnvValue } from '../lib/server/http';
+
+interface Props {
+  widgetId: string;
+  action: string;
+  theme?: 'auto' | 'light' | 'dark';
+}
+
+const { widgetId, action, theme = 'auto' } = Astro.props as Props;
+const siteKey = getPublicEnvValue(Astro.locals, 'PUBLIC_TURNSTILE_SITE_KEY');
+---
+
+{siteKey ? (
+  <>
+    <div
+      id={widgetId}
+      class="cf-turnstile"
+      data-sitekey={siteKey}
+      data-action={action}
+      data-theme={theme}
+    ></div>
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  </>
+) : (
+  <p class="turnstile-unavailable">Security check is unavailable right now. Please try again later.</p>
+)}

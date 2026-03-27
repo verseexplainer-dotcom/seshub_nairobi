@@ -19,9 +19,10 @@ const heroOnError = buildImageOnError(heroImage.fallback, finalFallbackImage);
 const spotlightImage = getProductImageSources(Array.isArray(spotlightProduct?.images) ? spotlightProduct.images[0] : undefined, import.meta.env.PUBLIC_SUPABASE_URL, siteAssets.productPlaceholder);
 const spotlightImageOnError = buildImageOnError(spotlightImage.fallback, finalFallbackImage);
 const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I would like help choosing a laptop, smartphone, desktop, or printer from the homepage.');
+const spotlightBrand = spotlightProduct ? getProductBrand(spotlightProduct) : '';
 const stats = [
   { value: `${totalProducts}+`, label: 'Products in shop' },
-  { value: `${brandCount}+`, label: 'Brands available' },
+  ...(brandCount > 0 ? [{ value: `${brandCount}+`, label: 'Brands available' }] : []),
   { value: `${dealCount}+`, label: 'Deals today' }
 ];
 ---
@@ -78,7 +79,7 @@ const stats = [
         </div>
 
         <div class="hero-card-copy">
-          <p>{spotlightProduct ? getProductBrand(spotlightProduct) : 'SES ICT HUB pick'}</p>
+          <p>{spotlightBrand || 'SES ICT HUB pick'}</p>
           <h2>{spotlightProduct?.title || 'Phones, laptops, printers, and everyday tech for work, school, and home'}</h2>
           <div class="hero-card-price">
             <strong>{spotlightProduct ? formatKES(spotlightProduct.price_kes) : 'Message us for price'}</strong>

@@ -16,7 +16,7 @@ const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 
 const {
   title,
-  description = "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.",
+  description = "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, desktops, printers, smartphones, and accessories with clear pricing and stock status.",
   image = siteAssets.hero.src,
   canonical
 } = Astro.props;
@@ -29,7 +29,7 @@ const plainDescription = String(description || '')
   .slice(0, 320);
 const safeDescription =
   plainDescription ||
-  'SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, printers, and smartphones with clear pricing and stock status.';
+  'SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, desktops, printers, smartphones, and accessories with clear pricing and stock status.';
 const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
 const faviconVersion = '20260322';
 ---

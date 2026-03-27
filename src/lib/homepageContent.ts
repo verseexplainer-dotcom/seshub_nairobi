@@ -8,39 +8,6 @@ export interface HomeTestimonial {
   quote: string;
 }
 
-export const homeTestimonials = [
-  {
-    name: 'Anita Njeri',
-    persona: 'student',
-    rating: 5,
-    quote: 'I was unsure about refurbished laptops, but their grading was clear and my Grade A MacBook feels excellent.'
-  },
-  {
-    name: 'Brian Omondi',
-    persona: 'student',
-    rating: 5,
-    quote: 'Got a Grade A HP EliteBook for campus work. Clean, affordable, and delivered fast in Nairobi.'
-  },
-  {
-    name: 'David Kiprop',
-    persona: 'business',
-    rating: 5,
-    quote: 'Reliable products, fast delivery, and helpful after-sales support. A solid choice for Nairobi businesses.'
-  },
-  {
-    name: 'Kevin Mutua',
-    persona: 'cyber_owner',
-    rating: 5,
-    quote: 'Bought refurbished monitors and printers for my cyber cafe. Great value and easy M-PESA payment on delivery.'
-  },
-  {
-    name: 'Sarah Wambui',
-    persona: 'business',
-    rating: 5,
-    quote: 'SES ICT HUB supplied a clean Dell workstation for my office. Professional service and very reliable.'
-  }
-] satisfies HomeTestimonial[];
-
 export const blogPosts = [
   {
     id: 'refurbished-laptop-checklist',

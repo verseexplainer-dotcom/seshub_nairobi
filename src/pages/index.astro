@@ -9,9 +9,9 @@ import WhyChooseUs from '../components/WhyChooseUs.astro';
 import Testimonials from '../components/Testimonials.astro';
 import BlogPreview from '../components/BlogPreview.astro';
 import Newsletter from '../components/Newsletter.astro';
+import { buildHomepageTestimonials, countExplicitBrands } from '../lib/homepage';
 import { supabase } from '../lib/supabase';
-import { getProductBrand } from '../lib/productPresentation';
-import { homeTestimonials, type HomeTestimonial } from '../lib/homepageContent';
+import { STOREFRONT_CATEGORIES, getCategoryPath } from '../lib/productPresentation';
 
 const { data: catalogData } = await supabase
   .from('products')
@@ -27,32 +27,7 @@ const { data: testimonialData } = await supabase
   .limit(12);
 
 const catalog = catalogData ?? [];
-const testimonials: HomeTestimonial[] = [];
-const seenTestimonials = new Set<string>();
-
-for (const item of testimonialData ?? []) {
-  const testimonial = {
-    id: String(item.id ?? ''),
-    name: String(item.name ?? '').trim(),
-    persona: String(item.persona ?? '').trim(),
-    rating: Math.max(1, Math.min(5, Number(item.rating || 5))),
-    quote: String(item.quote ?? '').trim()
-  };
-
-  const testimonialKey = `${testimonial.name.toLowerCase()}::${testimonial.persona.toLowerCase()}`;
-  if (!testimonial.name || !testimonial.quote || seenTestimonials.has(testimonialKey)) {
-    continue;
-  }
-
-  seenTestimonials.add(testimonialKey);
-  testimonials.push(testimonial);
-
-  if (testimonials.length === 6) {
-    break;
-  }
-}
-
-const homepageTestimonials = testimonials.length ? testimonials : homeTestimonials;
+const testimonials = buildHomepageTestimonials(testimonialData);
 const inStockProducts = catalog.filter((product) => product.in_stock);
 const discountedProducts = inStockProducts.filter((product) => Number(product.compare_at_kes || 0) > Number(product.price_kes || 0));
 
@@ -74,76 +49,81 @@ const bestSellers = bestSellerCandidates
 const fallbackBestSellers = bestSellers.length >= 4 ? bestSellers : bestSellerCandidates.slice(0, 4);
 const spotlightProduct = newArrivals[0] || fallbackBestSellers[0] || discountedProducts[0] || null;
 const dealProduct = discountedProducts[0] || spotlightProduct;
-const brandCount = new Set(inStockProducts.map((product) => getProductBrand(product))).size;
+const brandCount = countExplicitBrands(inStockProducts);
 const dealCount = discountedProducts.length;
 
-const categoryCounts = {
-  laptops: inStockProducts.filter((product) => String(product.category || '').toLowerCase() === 'laptops').length,
-  smartphones: inStockProducts.filter((product) => String(product.category || '').toLowerCase() === 'smartphones').length,
-  printers: inStockProducts.filter((product) => String(product.category || '').toLowerCase() === 'printers').length,
-  shop: inStockProducts.length,
-  inStock: inStockProducts.length,
-  newest: newArrivals.length,
-  featured: fallbackBestSellers.length,
-  budget: inStockProducts.length
-};
+const categoryCounts = Object.fromEntries(
+  STOREFRONT_CATEGORIES.map((category) => [
+    category.slug,
+    inStockProducts.filter((product) => String(product.category || '').trim().toLowerCase() === category.dbValue.toLowerCase()).length
+  ])
+);
 
-const categoryCards = [
-  {
-    title: 'Laptops',
-    count: categoryCounts.laptops || 0,
-    href: '/category/laptops',
+const CATEGORY_CARD_COPY = {
+  laptops: {
     description: 'Good picks for work, school, and everyday use.',
     accent: '#2563eb'
   },
-  {
-    title: 'Smartphones',
-    count: categoryCounts.smartphones || 0,
-    href: '/category/smartphones',
+  smartphones: {
     description: 'Everyday phones, upgrades, and dependable options.',
     accent: '#0f766e'
   },
-  {
-    title: 'Printers',
-    count: categoryCounts.printers || 0,
-    href: '/category/printers',
-    description: 'Home and office printers, plus help choosing the right one.',
+  desktops: {
+    description: 'Desktop setups for office work, counters, and everyday use.',
     accent: '#7c3aed'
   },
+  printers: {
+    description: 'Home and office printers, plus help choosing the right one.',
+    accent: '#ea580c'
+  },
+  accessories: {
+    description: 'Storage and useful add-ons to complete your setup.',
+    accent: '#d97706'
+  }
+} as const;
+
+const categoryCards = [
+  ...STOREFRONT_CATEGORIES.map((category) => ({
+    title: category.label,
+    count: Number(categoryCounts[category.slug] || 0),
+    href: getCategoryPath(category.slug),
+    description: CATEGORY_CARD_COPY[category.slug].description,
+    accent: CATEGORY_CARD_COPY[category.slug].accent
+  })),
   {
     title: 'Shop All',
-    count: categoryCounts.shop || 0,
+    count: inStockProducts.length,
     href: '/shop',
     description: 'See everything we have in stock right now.',
-    accent: '#ea580c'
+    accent: '#2563eb'
   },
   {
     title: 'In Stock',
-    count: categoryCounts.inStock || 0,
+    count: inStockProducts.length,
     href: '/shop?in_stock=1',
     description: 'Start with items available right now.',
     accent: '#2563eb'
   },
   {
     title: 'Newest',
-    count: categoryCounts.newest || 0,
+    count: newArrivals.length,
     href: '/shop?sort=newest',
     description: 'See the latest items we have added.',
     accent: '#16a34a'
   },
   {
     title: 'Featured',
-    count: categoryCounts.featured || 0,
+    count: fallbackBestSellers.length,
     href: '/shop?sort=featured',
     description: 'Picks we recommend when you want a good place to start.',
     accent: '#1d4ed8'
   },
   {
     title: 'Budget Picks',
-    count: categoryCounts.budget || 0,
+    count: inStockProducts.length,
     href: '/shop?sort=price_asc',
     description: 'Start with lower prices, then narrow it down.',
-    accent: '#d97706'
+    accent: '#0f766e'
   }
 ];
 
@@ -180,7 +160,7 @@ const dealDeadline = new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString();
     ctaHref="/shop?sort=featured"
     ctaLabel="See featured picks"
   />
-  <Testimonials items={homepageTestimonials} />
+  {testimonials.length > 0 && <Testimonials items={testimonials} />}
   <BlogPreview />
   <Newsletter />
 </Layout>

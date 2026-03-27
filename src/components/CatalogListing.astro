@@ -16,7 +16,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface Props {
   mode: 'shop' | 'category';
-  categorySlug?: 'all' | 'laptops' | 'smartphones' | 'printers';
+  categorySlug?: 'all' | 'laptops' | 'desktops' | 'smartphones' | 'printers' | 'accessories';
 }
 
 const { mode, categorySlug = 'all' } = Astro.props;
@@ -344,7 +344,7 @@ const breadcrumbData = isShopMode
         <div class="shop-hero-grid">
           <div>
             <p class="eyebrow">Find what you need</p>
-            <h1>Shop laptops, smartphones, and printers.</h1>
+            <h1>Shop laptops, desktops, smartphones, printers, and accessories.</h1>
             <p class="hero-copy">
               See what is available, compare prices, and message us on WhatsApp if you want help choosing.
             </p>

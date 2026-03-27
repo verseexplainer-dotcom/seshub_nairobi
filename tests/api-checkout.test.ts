@@ -12,9 +12,33 @@ const validCart = [
   }
 ];
 
+function createTurnstileSuccess(action: string) {
+  return new Response(JSON.stringify({ success: true, action }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+function createCheckoutLocals() {
+  return {
+    runtime: {
+      env: {
+        PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role',
+        TURNSTILE_SECRET_KEY: 'turnstile-secret'
+      }
+    }
+  };
+}
+
 test('checkout rejects mismatched totals', async (t) => {
-  globalThis.fetch = (async () =>
-    new Response(
+  globalThis.fetch = (async (input) => {
+    const url = String(input);
+    if (url.includes('turnstile')) {
+      return createTurnstileSuccess('checkout_whatsapp');
+    }
+
+    return new Response(
       JSON.stringify([
         {
           id: 'prod-1',
@@ -25,7 +49,8 @@ test('checkout rejects mismatched totals', async (t) => {
         }
       ]),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )) as typeof fetch;
+    );
+  }) as typeof fetch;
 
   t.after(() => {
     globalThis.fetch = originalFetch;
@@ -42,17 +67,11 @@ test('checkout rejects mismatched totals', async (t) => {
         phone: '0712345678',
         location: 'Westlands',
         consent: true,
-        source_page: 'cart'
+        source_page: 'cart',
+        turnstile_token: 'token-123'
       })
     }),
-    locals: {
-      runtime: {
-        env: {
-          PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
-          SUPABASE_SERVICE_ROLE_KEY: 'service-role'
-        }
-      }
-    }
+    locals: createCheckoutLocals()
   } as any);
 
   assert.equal(response.status, 400);
@@ -83,12 +102,45 @@ test('checkout rejects invalid phone', async () => {
   assert.equal(body.error.code, 'INVALID_PHONE');
 });
 
-test('checkout succeeds and returns whatsapp URL', async (t) => {
-  let call = 0;
-  globalThis.fetch = (async () => {
-    call += 1;
+test('checkout requires turnstile verification', async () => {
+  const response = await POST({
+    request: new Request('https://example.com/api/checkout/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: validCart,
+        total_kes: 42000,
+        customer_name: 'Jane Doe',
+        phone: '0712345678',
+        location: 'Westlands',
+        consent: true,
+        source_page: 'cart'
+      })
+    }),
+    locals: createCheckoutLocals()
+  } as any);
 
-    if (call === 1) {
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.equal(body.error.code, 'TURNSTILE_REQUIRED');
+});
+
+test('checkout succeeds and returns whatsapp URL', async (t) => {
+  const requests: Array<{ url: string; body: Record<string, unknown> | null }> = [];
+  globalThis.fetch = (async (input, init) => {
+    const url = String(input);
+    if (url.includes('turnstile')) {
+      requests.push({ url, body: null });
+      return createTurnstileSuccess('checkout_whatsapp');
+    }
+
+    const bodyText = typeof init?.body === 'string' ? init.body : '';
+    requests.push({
+      url,
+      body: bodyText ? JSON.parse(bodyText) : null
+    });
+
+    if (url.includes('/rest/v1/products')) {
       return new Response(
         JSON.stringify([
           {
@@ -124,17 +176,12 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
         phone: '0712345678',
         location: 'Westlands',
         consent: true,
-        source_page: 'cart'
+        source_page: 'cart',
+        session_id: 'session-12345',
+        turnstile_token: 'token-123'
       })
     }),
-    locals: {
-      runtime: {
-        env: {
-          PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
-          SUPABASE_SERVICE_ROLE_KEY: 'service-role'
-        }
-      }
-    }
+    locals: createCheckoutLocals()
   } as any);
 
   assert.equal(response.status, 200);
@@ -143,6 +190,11 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
   assert.equal(body.order_id, 'order-uuid-123');
   assert.equal(body.order_number, 'SES-20260319-00001');
   assert.match(body.whatsapp_url, /wa\.me/);
+  assert.equal(requests.length, 4);
+  assert.equal(requests[3]?.url, 'https://project.supabase.co/rest/v1/events');
+  assert.equal(requests[3]?.body?.event_type, 'whatsapp_checkout_redirect');
+  assert.equal(requests[3]?.body?.session_id, 'session-12345');
+  assert.equal(JSON.stringify(requests[3]?.body).includes('jane@example.com'), false);
 });
 
 test('checkout forwards the signed-in user to order creation', async (t) => {
@@ -150,6 +202,11 @@ test('checkout forwards the signed-in user to order creation', async (t) => {
 
   globalThis.fetch = (async (input, init) => {
     const url = String(input);
+    if (url.includes('turnstile')) {
+      requests.push({ url, body: null });
+      return createTurnstileSuccess('checkout_whatsapp');
+    }
+
     const bodyText = typeof init?.body === 'string' ? init.body : '';
     const body = bodyText ? JSON.parse(bodyText) : null;
     requests.push({ url, body });
@@ -190,7 +247,8 @@ test('checkout forwards the signed-in user to order creation', async (t) => {
         phone: '0712345678',
         location: 'Westlands',
         consent: true,
-        source_page: 'cart'
+        source_page: 'cart',
+        turnstile_token: 'token-123'
       })
     }),
     locals: {
@@ -198,24 +256,23 @@ test('checkout forwards the signed-in user to order creation', async (t) => {
         id: 'user-123',
         email: 'jane@example.com'
       },
-      runtime: {
-        env: {
-          PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
-          SUPABASE_SERVICE_ROLE_KEY: 'service-role'
-        }
-      }
+      ...createCheckoutLocals()
     }
   } as any);
 
   assert.equal(response.status, 200);
-  assert.equal(requests.length, 2);
-  assert.equal(requests[1]?.body?.p_user_id, 'user-123');
-  assert.equal(requests[1]?.body?.p_customer_email, 'jane@example.com');
+  assert.equal(requests[2]?.body?.p_user_id, 'user-123');
+  assert.equal(requests[2]?.body?.p_customer_email, 'jane@example.com');
 });
 
 test('checkout rejects out-of-stock items', async (t) => {
-  globalThis.fetch = (async () =>
-    new Response(
+  globalThis.fetch = (async (input) => {
+    const url = String(input);
+    if (url.includes('turnstile')) {
+      return createTurnstileSuccess('checkout_whatsapp');
+    }
+
+    return new Response(
       JSON.stringify([
         {
           id: 'prod-1',
@@ -226,7 +283,8 @@ test('checkout rejects out-of-stock items', async (t) => {
         }
       ]),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )) as typeof fetch;
+    );
+  }) as typeof fetch;
 
   t.after(() => {
     globalThis.fetch = originalFetch;
@@ -243,20 +301,54 @@ test('checkout rejects out-of-stock items', async (t) => {
         phone: '0712345678',
         location: 'Westlands',
         consent: true,
-        source_page: 'cart'
+        source_page: 'cart',
+        turnstile_token: 'token-123'
       })
     }),
-    locals: {
-      runtime: {
-        env: {
-          PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
-          SUPABASE_SERVICE_ROLE_KEY: 'service-role'
-        }
-      }
-    }
+    locals: createCheckoutLocals()
   } as any);
 
   assert.equal(response.status, 409);
   const body = await response.json();
   assert.equal(body.error.code, 'OUT_OF_STOCK');
+});
+
+test('checkout returns 502 when product lookup fails', async (t) => {
+  globalThis.fetch = (async (input) => {
+    const url = String(input);
+    if (url.includes('turnstile')) {
+      return createTurnstileSuccess('checkout_whatsapp');
+    }
+
+    return new Response(JSON.stringify({ error: 'db unavailable' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }) as typeof fetch;
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const response = await POST({
+    request: new Request('https://example.com/api/checkout/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cart: validCart,
+        total_kes: 42000,
+        customer_name: 'Jane Doe',
+        phone: '0712345678',
+        location: 'Westlands',
+        consent: true,
+        source_page: 'cart',
+        turnstile_token: 'token-123'
+      })
+    }),
+    locals: createCheckoutLocals()
+  } as any);
+
+  assert.equal(response.status, 502);
+  const body = await response.json();
+  assert.equal(body.error.code, 'PRODUCT_LOOKUP_FAILED');
 });

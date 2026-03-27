@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Best Practices"
+  short_description: "Review auth, admin, and API hardening"
+  default_prompt: "Review and improve auth, admin, API, and Supabase access patterns in this Astro storefront with practical security fixes."

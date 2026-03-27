@@ -1,21 +1,5 @@
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
-function getPublicEnvAliases(key: string) {
-  if (key === 'PUBLIC_SUPABASE_URL') {
-    return ['PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'];
-  }
-
-  if (key === 'PUBLIC_SUPABASE_ANON_KEY') {
-    return [
-      'PUBLIC_SUPABASE_ANON_KEY',
-      'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY'
-    ];
-  }
-
-  return [key];
-}
-
 export type ApiErrorPayload = {
   ok: false;
   error: {
@@ -63,20 +47,13 @@ export function getRuntimeEnv(locals: unknown) {
 export function getPublicEnvValue(locals: unknown, key: string) {
   const runtimeEnv = getRuntimeEnv(locals);
   const buildEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
-
-  for (const candidate of getPublicEnvAliases(key)) {
-    const runtimeValue = runtimeEnv[candidate]?.trim();
-    if (runtimeValue) {
-      return runtimeValue;
-    }
-
-    const buildValue = (buildEnv[candidate] ?? '').trim();
-    if (buildValue) {
-      return buildValue;
-    }
+  const runtimeValue = runtimeEnv[key]?.trim();
+  if (runtimeValue) {
+    return runtimeValue;
   }
 
-  return undefined;
+  const buildValue = (buildEnv[key] ?? '').trim();
+  return buildValue || undefined;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,4 +65,16 @@ export function asTrimmedString(value: unknown, maxLength: number) {
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > maxLength) return null;
   return trimmed;
+}
+
+export function getClientIp(request: Request) {
+  const cfIp = request.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp.trim();
+
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return (forwarded.split(',')[0] ?? '').trim() || null;
+  }
+
+  return null;
 }

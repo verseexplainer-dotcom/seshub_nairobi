@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sentry"
+  short_description: "Add release-time error visibility and triage"
+  default_prompt: "Add or improve Sentry monitoring for this Astro plus Cloudflare storefront and define a practical release-triage workflow."

@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getProductPresentation } from '../src/lib/productPresentation';
+import {
+  getProductBadge,
+  getProductBrand,
+  getProductPresentation,
+  getStoreCategoryBySlug,
+  getStoreCategoryByValue
+} from '../src/lib/productPresentation';
 
 function createProduct(overrides: Record<string, unknown> = {}) {
   return {
@@ -92,4 +98,21 @@ test('image overrides win over the base image array', () => {
     presentation.primaryImageUrl,
     'https://project.supabase.co/storage/v1/object/public/product-images/override-image.jpg'
   );
+});
+
+test('expanded storefront categories resolve by slug and database value', () => {
+  assert.equal(getStoreCategoryBySlug('desktops')?.label, 'Desktops');
+  assert.equal(getStoreCategoryBySlug('accessories')?.label, 'Accessories');
+  assert.equal(getStoreCategoryByValue('Desktops')?.slug, 'desktops');
+  assert.equal(getStoreCategoryByValue('Accessories')?.slug, 'accessories');
+});
+
+test('homepage brand labels only use explicit schema brands', () => {
+  assert.equal(getProductBrand(createProduct({ brand: '' })), '');
+  assert.equal(getProductBrand(createProduct({ brand: null, title: 'Dell Latitude 7420 Laptop' })), '');
+});
+
+test('homepage badges only expose real sale pricing', () => {
+  assert.equal(getProductBadge(createProduct({ compare_at_kes: null }), 'arrival', 0), null);
+  assert.equal(getProductBadge(createProduct({ compare_at_kes: 52000 }), 'seller', 3), 'SALE');
 });

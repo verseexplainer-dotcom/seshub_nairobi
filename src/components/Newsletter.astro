@@ -1,4 +1,5 @@
 ---
+import TurnstileWidget from './TurnstileWidget.astro';
 ---
 
 <section class="newsletter section" aria-labelledby="newsletter-title">
@@ -32,6 +33,7 @@
           <span>I agree to receive promotions, restock alerts, and useful tech-buying updates.</span>
         </label>
 
+        <TurnstileWidget widgetId="newsletter-turnstile" action="newsletter_signup" />
         <div id="newsletter-message" class="newsletter-message" aria-live="polite" hidden></div>
       </form>
     </div>
@@ -106,6 +108,12 @@
     font-weight: 700;
   }
 
+  .turnstile-unavailable {
+    color: var(--color-danger);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
   .newsletter-message.success {
     color: var(--color-success);
   }
@@ -130,12 +138,14 @@
 <script>
   const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
   const messageEl = document.getElementById('newsletter-message');
+  const resetTurnstile = () => window.turnstile?.reset?.('newsletter-turnstile');
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
     const email = formData.get('email');
     const consent = formData.get('consent') === 'on';
+    const turnstileToken = formData.get('cf-turnstile-response');
 
     if (messageEl) {
       messageEl.hidden = false;
@@ -150,23 +160,16 @@
         body: JSON.stringify({
           email,
           consent,
-          source_page: window.location.pathname
+          source_page: window.location.pathname,
+          session_id: localStorage.getItem('ses_session_id'),
+          turnstile_token: turnstileToken
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to subscribe');
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.ok) {
+        throw new Error(body?.error?.message || 'Failed to subscribe');
       }
-
-      await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: localStorage.getItem('ses_session_id'),
-          event_type: 'newsletter_signup_intent',
-          payload: { email, consent, source_page: window.location.pathname }
-        })
-      }).catch(() => null);
 
       if (messageEl) {
         messageEl.textContent = 'You are on the list. Watch for stock drops and limited offers.';
@@ -174,11 +177,13 @@
       }
 
       form.reset();
+      resetTurnstile();
     } catch {
       if (messageEl) {
         messageEl.textContent = 'We could not complete the signup right now. Please try again shortly.';
         messageEl.classList.add('error');
       }
+      resetTurnstile();
     }
   });
 </script>

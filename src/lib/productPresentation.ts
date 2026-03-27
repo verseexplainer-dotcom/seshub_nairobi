@@ -1,4 +1,4 @@
-export type StoreCategorySlug = 'laptops' | 'smartphones' | 'printers';
+export type StoreCategorySlug = 'laptops' | 'smartphones' | 'printers' | 'desktops' | 'accessories';
 export type CatalogCategorySlug = StoreCategorySlug | 'all';
 
 export interface StoreCategoryMeta {
@@ -14,11 +14,6 @@ export interface StoreCategoryMeta {
 const SCREEN_MIN_INCHES = 3.5;
 const SCREEN_MAX_INCHES = 20;
 const LOW_STOCK_THRESHOLD = 3;
-const KNOWN_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Asus', 'Acer', 'Canon', 'Epson', 'Microsoft', 'Huawei', 'Xiaomi', 'Transcend'];
-
-function stableHash(input: string) {
-  return Array.from(input).reduce((total, char, index) => total + char.charCodeAt(0) * (index + 1), 0);
-}
 
 export const SHOP_PATH = '/shop';
 
@@ -32,6 +27,16 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
     heroDescription:
       "Compare laptops by CPU, RAM, storage, warranty, and price. If you need help choosing, message us on WhatsApp.",
     highlights: ['CPU and RAM filters', 'Warranty shown when available', 'Reach out on WhatsApp if you need help']
+  },
+  {
+    slug: 'desktops',
+    label: 'Desktops',
+    dbValue: 'Desktops',
+    intro: 'Desktops for office setups, business counters, school labs, and dependable everyday work.',
+    heroEyebrow: 'Desk-ready performance',
+    heroDescription:
+      "Compare desktops by brand, CPU, RAM, storage, and price, then message us on WhatsApp if you want help choosing.",
+    highlights: ['CPU and RAM filters', 'Brand and price filters', 'Ask us about office setup needs']
   },
   {
     slug: 'smartphones',
@@ -52,6 +57,16 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
     heroDescription:
       "Check brand, price, and stock, then message us on WhatsApp if you want help choosing the right one.",
     highlights: ['Brand filter', 'Price sorting', 'Ask us about delivery']
+  },
+  {
+    slug: 'accessories',
+    label: 'Accessories',
+    dbValue: 'Accessories',
+    intro: 'Accessories and storage add-ons with clear pricing and straightforward stock updates.',
+    heroEyebrow: 'Useful add-ons',
+    heroDescription:
+      "Browse accessories by brand and price, then message us on WhatsApp if you need help checking compatibility.",
+    highlights: ['Good for storage and peripherals', 'Brand and price filters', 'Ask us about compatibility']
   }
 ];
 
@@ -157,35 +172,7 @@ export function normalizeCondition(value: unknown) {
 }
 
 export function getProductBrand(product: Record<string, any>) {
-  const explicitBrand = normalizeText(product?.brand);
-  if (explicitBrand) {
-    return explicitBrand;
-  }
-
-  const title = normalizeText(product?.title);
-  const titleLower = title.toLowerCase();
-  const knownBrand = KNOWN_BRANDS.find((brand) => titleLower.includes(brand.toLowerCase()));
-  if (knownBrand) {
-    return knownBrand;
-  }
-
-  const firstWord = title.split(/\s+/).filter(Boolean)[0] || 'SES';
-  return /^[A-Z0-9-]+$/.test(firstWord)
-    ? firstWord
-    : firstWord.replace(/^\w/, (char) => char.toUpperCase());
-}
-
-export function getProductRating(product: Record<string, any>) {
-  const seed = stableHash(`${product?.slug || product?.title || product?.id || 'product'}-${getProductBrand(product)}`);
-  const baseRating = 4.1 + (seed % 8) * 0.1;
-  const saleBonus = Number(product?.compare_at_kes || 0) > Number(product?.price_kes || 0) ? 0.1 : 0;
-  const featureBonus = product?.featured_home ? 0.2 : 0;
-  return Number(Math.min(5, baseRating + saleBonus + featureBonus).toFixed(1));
-}
-
-export function getReviewCount(product: Record<string, any>) {
-  const seed = stableHash(`${product?.slug || product?.title || product?.id || 'product'}-reviews`);
-  return 18 + (seed % 187);
+  return normalizeText(product?.brand);
 }
 
 export function getAvailabilityLabel(product: Record<string, any>) {
@@ -198,31 +185,18 @@ export function getAvailabilityLabel(product: Record<string, any>) {
 }
 
 export function getProductBadge(product: Record<string, any>, context: 'arrival' | 'seller' | 'default' = 'default', index = 0) {
+  void context;
+  void index;
+
   if (Number(product?.compare_at_kes || 0) > Number(product?.price_kes || 0)) {
     return 'SALE';
   }
 
-  if (context === 'arrival' || index <= 1) {
-    return 'NEW';
-  }
-
-  if (product?.featured_home || Number(product?.stock_qty || 0) <= LOW_STOCK_THRESHOLD) {
-    return 'HOT';
-  }
-
-  return context === 'seller' ? 'HOT' : 'NEW';
+  return null;
 }
 
-export function getProductBadgeTone(badge: string) {
-  if (badge === 'SALE') {
-    return 'sale';
-  }
-
-  if (badge === 'HOT') {
-    return 'hot';
-  }
-
-  return 'new';
+export function getProductBadgeTone(badge: string | null) {
+  return badge === 'SALE' ? 'sale' : '';
 }
 
 export function getInitials(name: string) {

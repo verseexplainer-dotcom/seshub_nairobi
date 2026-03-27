@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import { redirectResponse } from '../../lib/auth-utils';
-import { createServerSupabaseClient } from '../../lib/supabase-server';
+import { redirectResponse } from '../../../lib/auth-utils';
+import { createServerSupabaseClient } from '../../../lib/supabase-server';
 
 export const prerender = false;
 

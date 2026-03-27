@@ -24,7 +24,7 @@ export const POST: APIRoute = async (context) => {
     );
   }
 
-  const callbackUrl = new URL('/auth/callback', context.request.url);
+  const callbackUrl = new URL('/api/auth/callback', context.request.url);
   callbackUrl.searchParams.set('next', next);
 
   const supabase = createServerSupabaseClient(context);

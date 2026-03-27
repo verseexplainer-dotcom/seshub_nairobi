@@ -5,6 +5,9 @@ DO $$
 DECLARE
   missing_items text[] := ARRAY[]::text[];
   permissive_insert_policies int := 0;
+  create_checkout_order_signature text := 'public.create_checkout_order(jsonb,integer,text,text,text,boolean,text,uuid,text)';
+  record_order_update_signature text := 'public.record_order_update(uuid,uuid,text,text,text)';
+  backfill_orders_signature text := 'public.backfill_orders_from_order_intents()';
 BEGIN
   IF NOT EXISTS (
     SELECT 1
@@ -101,6 +104,45 @@ BEGIN
       AND policyname = 'newsletter_public_no_insert'
   ) THEN
     missing_items := array_append(missing_items, 'policy newsletter_public_no_insert');
+  END IF;
+
+  IF to_regprocedure(create_checkout_order_signature) IS NULL THEN
+    missing_items := array_append(missing_items, create_checkout_order_signature);
+  ELSE
+    IF NOT has_function_privilege('service_role', create_checkout_order_signature, 'EXECUTE') THEN
+      missing_items := array_append(missing_items, 'service_role execute on ' || create_checkout_order_signature);
+    END IF;
+
+    IF has_function_privilege('anon', create_checkout_order_signature, 'EXECUTE')
+       OR has_function_privilege('authenticated', create_checkout_order_signature, 'EXECUTE') THEN
+      missing_items := array_append(missing_items, 'public execute revoked on ' || create_checkout_order_signature);
+    END IF;
+  END IF;
+
+  IF to_regprocedure(record_order_update_signature) IS NULL THEN
+    missing_items := array_append(missing_items, record_order_update_signature);
+  ELSE
+    IF NOT has_function_privilege('service_role', record_order_update_signature, 'EXECUTE') THEN
+      missing_items := array_append(missing_items, 'service_role execute on ' || record_order_update_signature);
+    END IF;
+
+    IF has_function_privilege('anon', record_order_update_signature, 'EXECUTE')
+       OR has_function_privilege('authenticated', record_order_update_signature, 'EXECUTE') THEN
+      missing_items := array_append(missing_items, 'public execute revoked on ' || record_order_update_signature);
+    END IF;
+  END IF;
+
+  IF to_regprocedure(backfill_orders_signature) IS NULL THEN
+    missing_items := array_append(missing_items, backfill_orders_signature);
+  ELSE
+    IF NOT has_function_privilege('service_role', backfill_orders_signature, 'EXECUTE') THEN
+      missing_items := array_append(missing_items, 'service_role execute on ' || backfill_orders_signature);
+    END IF;
+
+    IF has_function_privilege('anon', backfill_orders_signature, 'EXECUTE')
+       OR has_function_privilege('authenticated', backfill_orders_signature, 'EXECUTE') THEN
+      missing_items := array_append(missing_items, 'public execute revoked on ' || backfill_orders_signature);
+    END IF;
   END IF;
 
   SELECT COUNT(*)

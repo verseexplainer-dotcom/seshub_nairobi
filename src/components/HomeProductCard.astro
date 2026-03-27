@@ -6,9 +6,7 @@ import {
   getAvailabilityLabel,
   getProductBadge,
   getProductBadgeTone,
-  getProductBrand,
-  getProductRating,
-  getReviewCount
+  getProductBrand
 } from '../lib/productPresentation';
 
 interface Props {
@@ -26,9 +24,7 @@ const imageSource = getProductImageSources(primaryImage, import.meta.env.PUBLIC_
 const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const imageOnError = buildImageOnError(imageSource.fallback, finalFallbackImage);
 const badge = getProductBadge(product, context, index);
-const badgeTone = getProductBadgeTone(badge);
-const ratingValue = getProductRating(product);
-const reviewCount = getReviewCount(product);
+const badgeTone = badge ? getProductBadgeTone(badge) : '';
 const brandLabel = getProductBrand(product);
 const availabilityLabel = getAvailabilityLabel(product);
 const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I'm interested in: ${product.title} — https://sesicthub.co.ke/product/${product.slug}`);
@@ -37,22 +33,13 @@ const productHref = `/product/${product.slug}`;
 
 <article class={`home-product-card ${tone === 'contrast' ? 'contrast' : ''}`}>
   <a href={productHref} class="home-product-media" aria-label={`View ${product.title}`}>
-    <span class={`product-badge-chip ${badgeTone}`}>{badge}</span>
+    {badge && <span class={`product-badge-chip ${badgeTone}`}>{badge}</span>}
     <img src={imageSource.src} alt={product.title} loading="lazy" decoding="async" onerror={imageOnError} />
   </a>
 
   <div class="home-product-body">
-    <div class="home-product-rating" aria-label={`${ratingValue} out of 5 stars`}>
-      <div class="home-product-stars" aria-hidden="true">
-        {Array.from({ length: 5 }).map((_, starIndex) => (
-          <span class={starIndex < Math.round(ratingValue) ? 'filled' : ''}>★</span>
-        ))}
-      </div>
-      <span>{ratingValue.toFixed(1)} · {reviewCount} reviews</span>
-    </div>
-
     <div class="home-product-copy">
-      <p class="home-product-brand">{brandLabel}</p>
+      {brandLabel && <p class="home-product-brand">{brandLabel}</p>}
       <h3><a href={productHref}>{product.title}</a></h3>
       <p class="home-product-specs">{availabilityLabel}</p>
     </div>
@@ -185,30 +172,6 @@ const productHref = `/product/${product.slug}`;
     display: grid;
     gap: 0.9rem;
     align-content: start;
-  }
-
-  .home-product-rating {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.55rem;
-    color: var(--color-text-muted);
-    font-size: 0.84rem;
-    font-weight: 700;
-  }
-
-  .home-product-card.contrast .home-product-rating {
-    color: rgba(226, 232, 240, 0.78);
-  }
-
-  .home-product-stars {
-    display: inline-flex;
-    gap: 0.18rem;
-    color: rgba(148, 163, 184, 0.55);
-  }
-
-  .home-product-stars .filled {
-    color: #f59e0b;
   }
 
   .home-product-copy {

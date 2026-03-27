@@ -11,11 +11,11 @@ const user = locals.user;
 const isStaff = locals.isStaff;
 
 const authLinks = user
-  ? [
-      { label: 'Account', href: '/account' },
-      ...(isStaff ? [{ label: 'Admin', href: '/admin' }] : []),
-      { label: 'Logout', href: '/auth/logout' }
-    ]
+      ? [
+          { label: 'Account', href: '/account' },
+          ...(isStaff ? [{ label: 'Admin', href: '/admin' }] : []),
+          { label: 'Logout', href: '/api/auth/logout' }
+        ]
   : [{ label: 'Sign In', href: '/auth/login' }];
 
 const desktopLinks = [...mainShopLinks, { label: 'FAQ', href: '/faq' }];

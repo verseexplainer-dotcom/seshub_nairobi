@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../lib/auth-utils';
-import { getSessionContext } from '../../lib/server-auth';
+import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../../lib/auth-utils';
+import { getSessionContext } from '../../../lib/server-auth';
 
 export const prerender = false;
 

@@ -1,3 +1,5 @@
+import { STOREFRONT_CATEGORIES, getCategoryPath } from './productPresentation';
+
 export const storefrontDetails = {
   brandName: 'SES ICT HUB',
   whatsappNumber: '254720480475',
@@ -20,11 +22,10 @@ export const footerContactLinks = [
 
 export const paymentMethods = ['M-PESA', 'Visa', 'Bank Transfer', 'Pay on Delivery'];
 
-export const mainShopLinks = [
-  { label: 'Laptops', href: '/category/laptops' },
-  { label: 'Smartphones', href: '/category/smartphones' },
-  { label: 'Printers', href: '/category/printers' }
-];
+export const mainShopLinks = STOREFRONT_CATEGORIES.map((category) => ({
+  label: category.label,
+  href: getCategoryPath(category.slug)
+}));
 
 export const supportLinks = [
   { label: 'FAQ', href: '/faq' },

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Skill"
+  short_description: "Polish Astro storefront pages and mobile UX"
+  default_prompt: "Improve the Astro storefront UI with stronger hierarchy, responsive polish, and conversion-focused layout changes using the existing catalog data model."

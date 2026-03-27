@@ -8,8 +8,8 @@ const ADMIN_PREFIX = '/admin';
 const LOGIN_PATH = '/auth/login';
 const SIGNUP_PATH = '/auth/sign-up';
 const RESET_PASSWORD_PATH = '/auth/reset-password';
-const CALLBACK_PATH = '/auth/callback';
-const LOGOUT_PATH = '/auth/logout';
+const CALLBACK_PATH = '/api/auth/callback';
+const LOGOUT_PATH = '/api/auth/logout';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const session = await getSessionContext(context);

@@ -1012,6 +1012,15 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.create_checkout_order(jsonb, int, text, text, text, boolean, text, uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_checkout_order(jsonb, int, text, text, text, boolean, text, uuid, text) TO service_role;
+
+REVOKE ALL ON FUNCTION public.record_order_update(uuid, uuid, text, text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_order_update(uuid, uuid, text, text, text) TO service_role;
+
+REVOKE ALL ON FUNCTION public.backfill_orders_from_order_intents() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.backfill_orders_from_order_intents() TO service_role;
+
 -- ─────────────────────────────────────────────────────────────
 -- DONE
 -- ─────────────────────────────────────────────────────────────

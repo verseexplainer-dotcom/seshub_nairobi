@@ -23,10 +23,10 @@ export type OrderEventType =
 export interface RuntimeEnv {
   PUBLIC_SUPABASE_URL: string | undefined;
   PUBLIC_SUPABASE_ANON_KEY: string | undefined;
-  NEXT_PUBLIC_SUPABASE_URL?: string | undefined;
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?: string | undefined;
-  NEXT_PUBLIC_SUPABASE_ANON_KEY?: string | undefined;
+  PUBLIC_FALLBACK_IMAGE_URL?: string | undefined;
+  PUBLIC_TURNSTILE_SITE_KEY?: string | undefined;
   SUPABASE_SERVICE_ROLE_KEY: string | undefined;
+  TURNSTILE_SECRET_KEY?: string | undefined;
 }
 
 export interface SessionLocals {

@@ -1,8 +1,8 @@
 ---
 import { getInitials, toTitleCase } from '../lib/productPresentation';
-import { homeTestimonials, type HomeTestimonial } from '../lib/homepageContent';
+import type { HomeTestimonial } from '../lib/homepageContent';
 
-const { items = homeTestimonials } = Astro.props as {
+const { items = [] } = Astro.props as {
   items?: HomeTestimonial[];
 };
 
@@ -12,37 +12,39 @@ function formatPersonaLabel(value: string) {
 }
 ---
 
-<section class="testimonials section" aria-labelledby="testimonials-title">
-  <div class="container">
-    <div class="section-intro">
-      <p class="section-kicker">Testimonials</p>
-      <h2 id="testimonials-title" class="section-title">Proof from customers who wanted clarity before they paid</h2>
-      <p class="section-copy">
-        Social proof stays local, realistic, and conversion-friendly, with enough detail to reinforce trust instead of sounding generic.
-      </p>
-    </div>
+{items.length > 0 && (
+  <section class="testimonials section" aria-labelledby="testimonials-title">
+    <div class="container">
+      <div class="section-intro">
+        <p class="section-kicker">Testimonials</p>
+        <h2 id="testimonials-title" class="section-title">Proof from customers who wanted clarity before they paid</h2>
+        <p class="section-copy">
+          Social proof stays local, realistic, and conversion-friendly, with enough detail to reinforce trust instead of sounding generic.
+        </p>
+      </div>
 
-    <div class="testimonial-grid">
-      {items.map((item) => (
-        <article class="testimonial-card surface-card">
-          <div class="testimonial-stars" aria-label={`${item.rating} out of 5 stars`}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <span class={index < item.rating ? 'filled' : ''}>★</span>
-            ))}
-          </div>
-          <p class="testimonial-quote">{item.quote}</p>
-          <div class="testimonial-meta">
-            <span class="testimonial-avatar">{getInitials(item.name)}</span>
-            <div>
-              <strong>{item.name}</strong>
-              <span>{formatPersonaLabel(item.persona)}</span>
+      <div class="testimonial-grid">
+        {items.map((item) => (
+          <article class="testimonial-card surface-card">
+            <div class="testimonial-stars" aria-label={`${item.rating} out of 5 stars`}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <span class={index < item.rating ? 'filled' : ''}>★</span>
+              ))}
             </div>
-          </div>
-        </article>
-      ))}
+            <p class="testimonial-quote">{item.quote}</p>
+            <div class="testimonial-meta">
+              <span class="testimonial-avatar">{getInitials(item.name)}</span>
+              <div>
+                <strong>{item.name}</strong>
+                <span>{formatPersonaLabel(item.persona)}</span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+)}
 
 <style>
   .testimonials {

@@ -11,9 +11,13 @@ const categories = STOREFRONT_CATEGORIES.map((category) => ({
   image:
     category.slug === 'laptops'
       ? siteAssets.categoryCards.laptops.src
+      : category.slug === 'desktops'
+        ? siteAssets.categoryCards.desktops.src
       : category.slug === 'printers'
         ? siteAssets.categoryCards.printers.src
-        : siteAssets.categoryCards.smartphones.src,
+        : category.slug === 'accessories'
+          ? siteAssets.categoryCards.accessories.src
+          : siteAssets.categoryCards.smartphones.src,
   alt: `${category.label} collection`,
   onerror: category.slug === 'printers' ? printersCardOnError : undefined
 }));
@@ -73,7 +77,7 @@ const categories = STOREFRONT_CATEGORIES.map((category) => ({
 
   @media (min-width: 768px) {
     .category-grid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(5, 1fr);
     }
   }
 
