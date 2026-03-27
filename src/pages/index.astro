@@ -1,166 +1,60 @@
 ---
+import '../styles/home.css';
 import Layout from '../layouts/Layout.astro';
-import Hero from '../components/Hero.astro';
-import BrandCarousel from '../components/BrandCarousel.astro';
-import CategoryGrid from '../components/CategoryGrid.astro';
-import ProductShowcaseSection from '../components/ProductShowcaseSection.astro';
-import DealOfDay from '../components/DealOfDay.astro';
-import WhyChooseUs from '../components/WhyChooseUs.astro';
-import Testimonials from '../components/Testimonials.astro';
-import BlogPreview from '../components/BlogPreview.astro';
-import Newsletter from '../components/Newsletter.astro';
-import { buildHomepageTestimonials, countExplicitBrands } from '../lib/homepage';
-import { supabase } from '../lib/supabase';
-import { STOREFRONT_CATEGORIES, getCategoryPath } from '../lib/productPresentation';
+import AnnouncementStrip from '../components/home/AnnouncementStrip.astro';
+import CategoryQuickLinks from '../components/home/CategoryQuickLinks.astro';
+import CustomerActionBanner from '../components/home/CustomerActionBanner.astro';
+import DealsBand from '../components/home/DealsBand.astro';
+import FeaturedProductsGrid from '../components/home/FeaturedProductsGrid.astro';
+import HeroShowcase from '../components/home/HeroShowcase.astro';
+import LatestGuidesPreview from '../components/home/LatestGuidesPreview.astro';
+import RefurbishedVsBrandNew from '../components/home/RefurbishedVsBrandNew.astro';
+import ShopByBrand from '../components/home/ShopByBrand.astro';
+import TrustHighlights from '../components/home/TrustHighlights.astro';
+import UseCaseCollections from '../components/home/UseCaseCollections.astro';
+import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
+import { getBrandCounts, getCategoryCounts, getDealsProducts, getHomepageFeaturedProducts, getHomepageProducts } from '../lib/catalog';
+import { blogPosts } from '../lib/homepageContent';
+import { buildUseCaseCollections, getInventorySummary, selectBestValueProducts, selectNewInProducts, selectPremiumProducts } from '../lib/homepage';
 
-const { data: catalogData } = await supabase
-  .from('products')
-  .select('id,title,slug,category,price_kes,compare_at_kes,images,short_specs,description,in_stock,stock_qty,condition,refurb_grade,warranty_months,featured_home,featured_rank,brand,updated_at')
-  .order('updated_at', { ascending: false });
-
-const { data: testimonialData } = await supabase
-  .from('testimonials')
-  .select('id,name,persona,rating,quote,created_at')
-  .eq('approved', true)
-  .order('created_at', { ascending: false })
-  .order('name', { ascending: true })
-  .limit(12);
-
-const catalog = catalogData ?? [];
-const testimonials = buildHomepageTestimonials(testimonialData);
-const inStockProducts = catalog.filter((product) => product.in_stock);
-const discountedProducts = inStockProducts.filter((product) => Number(product.compare_at_kes || 0) > Number(product.price_kes || 0));
-
-const newArrivals = inStockProducts.slice(0, 4);
-const bestSellerCandidates = [...inStockProducts].sort((left, right) => {
-  const featuredDelta = Number(right.featured_home) - Number(left.featured_home);
-  if (featuredDelta !== 0) return featuredDelta;
-
-  const featuredRankDelta = Number(left.featured_rank || 999) - Number(right.featured_rank || 999);
-  if (featuredRankDelta !== 0) return featuredRankDelta;
-
-  return Number(right.stock_qty || 0) - Number(left.stock_qty || 0);
-});
-
-const bestSellers = bestSellerCandidates
-  .filter((product) => !newArrivals.some((entry) => entry.id === product.id))
-  .slice(0, 4);
-
-const fallbackBestSellers = bestSellers.length >= 4 ? bestSellers : bestSellerCandidates.slice(0, 4);
-const spotlightProduct = newArrivals[0] || fallbackBestSellers[0] || discountedProducts[0] || null;
-const dealProduct = discountedProducts[0] || spotlightProduct;
-const brandCount = countExplicitBrands(inStockProducts);
-const dealCount = discountedProducts.length;
-
-const categoryCounts = Object.fromEntries(
-  STOREFRONT_CATEGORIES.map((category) => [
-    category.slug,
-    inStockProducts.filter((product) => String(product.category || '').trim().toLowerCase() === category.dbValue.toLowerCase()).length
-  ])
-);
-
-const CATEGORY_CARD_COPY = {
-  laptops: {
-    description: 'Good picks for work, school, and everyday use.',
-    accent: '#2563eb'
-  },
-  smartphones: {
-    description: 'Everyday phones, upgrades, and dependable options.',
-    accent: '#0f766e'
-  },
-  desktops: {
-    description: 'Desktop setups for office work, counters, and everyday use.',
-    accent: '#7c3aed'
-  },
-  printers: {
-    description: 'Home and office printers, plus help choosing the right one.',
-    accent: '#ea580c'
-  },
-  accessories: {
-    description: 'Storage and useful add-ons to complete your setup.',
-    accent: '#d97706'
-  }
-} as const;
-
-const categoryCards = [
-  ...STOREFRONT_CATEGORIES.map((category) => ({
-    title: category.label,
-    count: Number(categoryCounts[category.slug] || 0),
-    href: getCategoryPath(category.slug),
-    description: CATEGORY_CARD_COPY[category.slug].description,
-    accent: CATEGORY_CARD_COPY[category.slug].accent
-  })),
-  {
-    title: 'Shop All',
-    count: inStockProducts.length,
-    href: '/shop',
-    description: 'See everything we have in stock right now.',
-    accent: '#2563eb'
-  },
-  {
-    title: 'In Stock',
-    count: inStockProducts.length,
-    href: '/shop?in_stock=1',
-    description: 'Start with items available right now.',
-    accent: '#2563eb'
-  },
-  {
-    title: 'Newest',
-    count: newArrivals.length,
-    href: '/shop?sort=newest',
-    description: 'See the latest items we have added.',
-    accent: '#16a34a'
-  },
-  {
-    title: 'Featured',
-    count: fallbackBestSellers.length,
-    href: '/shop?sort=featured',
-    description: 'Picks we recommend when you want a good place to start.',
-    accent: '#1d4ed8'
-  },
-  {
-    title: 'Budget Picks',
-    count: inStockProducts.length,
-    href: '/shop?sort=price_asc',
-    description: 'Start with lower prices, then narrow it down.',
-    accent: '#0f766e'
-  }
-];
-
-const dealDeadline = new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString();
+const products = await getHomepageProducts();
+const featuredProducts = await getHomepageFeaturedProducts(products);
+const categoryCounts = await getCategoryCounts(products);
+const brandCounts = (await getBrandCounts(products)).slice(0, 6);
+const dealsProducts = await getDealsProducts(products);
+const newInProducts = selectNewInProducts(products);
+const bestValueProducts = selectBestValueProducts(products);
+const premiumProducts = selectPremiumProducts(products);
+const useCaseCollections = buildUseCaseCollections(products);
+const inventorySummary = getInventorySummary(products);
 ---
 
 <Layout
-  title="Premium electronics for Nairobi buyers"
-  description="Shop laptops, smartphones, printers, desktops, and accessories from SES ICT HUB with clear prices, current deals, and help on WhatsApp from our team."
+  title="Affordable laptops, printers, phones, and desktops in Kenya"
+  description="Browse live laptops, smartphones, printers, desktops, and accessories from SES ICT HUB with clear pricing, warranty-backed listings, and easy WhatsApp support."
+  canonical="/"
+  hideAnnouncementStrip
 >
-  <Hero spotlightProduct={spotlightProduct} totalProducts={inStockProducts.length} brandCount={brandCount} dealCount={dealCount} />
-  <BrandCarousel />
-  <CategoryGrid items={categoryCards} />
-  <ProductShowcaseSection
-    id="new-arrivals-title"
-    kicker="New arrivals"
-    title="Fresh picks in the shop"
-    description="These are the latest items we have added. Message us on WhatsApp and we'll help you compare."
-    products={newArrivals}
-    context="arrival"
-    ctaHref="/shop?sort=newest"
-    ctaLabel="See new arrivals"
-  />
-  <DealOfDay product={dealProduct} deadlineISO={dealDeadline} />
-  <WhyChooseUs />
-  <ProductShowcaseSection
-    id="best-sellers-title"
-    kicker="Best sellers"
-    title="Popular picks our customers keep asking for"
-    description="A mix of products customers ask about often and stock we are happy to recommend."
-    products={fallbackBestSellers}
-    context="seller"
-    variant="contrast"
-    ctaHref="/shop?sort=featured"
-    ctaLabel="See featured picks"
-  />
-  {testimonials.length > 0 && <Testimonials items={testimonials} />}
-  <BlogPreview />
-  <Newsletter />
+  <div class="homepage-shell">
+    <AnnouncementStrip />
+    <HeroShowcase products={featuredProducts.slice(0, 4)} liveCount={inventorySummary.liveCount} brandCount={inventorySummary.brandCount} />
+    <CategoryQuickLinks items={categoryCounts} />
+    <TrustHighlights />
+    <FeaturedProductsGrid
+      featured={featuredProducts}
+      newIn={newInProducts}
+      bestValue={bestValueProducts}
+      premium={premiumProducts}
+    />
+    <RefurbishedVsBrandNew
+      brandNewCount={inventorySummary.brandNewCount}
+      refurbishedCount={inventorySummary.refurbishedCount}
+    />
+    <DealsBand products={dealsProducts} />
+    <ShopByBrand brands={brandCounts} />
+    <UseCaseCollections collections={useCaseCollections} />
+    <WhyBuyFromSES />
+    <LatestGuidesPreview posts={blogPosts} />
+    <CustomerActionBanner />
+  </div>
 </Layout>

@@ -1,0 +1,107 @@
+---
+interface Props {
+  href?: string;
+  variant?: 'primary' | 'secondary' | 'ghost' | 'whatsapp';
+  size?: 'sm' | 'md';
+  class?: string;
+  fullWidth?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+  target?: string;
+  rel?: string;
+  ariaLabel?: string;
+}
+
+const {
+  href,
+  variant = 'primary',
+  size = 'md',
+  class: className = '',
+  fullWidth = false,
+  type = 'button',
+  target,
+  rel,
+  ariaLabel,
+  ...rest
+} = Astro.props as Props & Record<string, unknown>;
+
+const classes = ['ui-button', variant, size, fullWidth ? 'full-width' : '', className].filter(Boolean).join(' ');
+const resolvedRel = target === '_blank' ? rel || 'noreferrer' : rel;
+---
+
+{href ? (
+  <a href={href} class={classes} target={target} rel={resolvedRel} aria-label={ariaLabel} {...rest}>
+    <slot />
+  </a>
+) : (
+  <button type={type} class={classes} aria-label={ariaLabel} {...rest}>
+    <slot />
+  </button>
+)}
+
+<style>
+  .ui-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 3rem;
+    padding: 0.8rem 1.2rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast),
+      background-color var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
+  }
+
+  .ui-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .ui-button.primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ui-button.primary:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .ui-button.secondary {
+    background: rgba(8, 145, 178, 0.12);
+    color: var(--color-primary-strong);
+  }
+
+  .ui-button.ghost {
+    border-color: rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--color-text);
+  }
+
+  .ui-button.ghost:hover {
+    border-color: rgba(21, 93, 252, 0.25);
+    color: var(--color-primary);
+  }
+
+  .ui-button.whatsapp {
+    background: linear-gradient(135deg, #25d366, #15803d);
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ui-button.sm {
+    min-height: 2.6rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.88rem;
+  }
+
+  .ui-button.full-width {
+    width: 100%;
+  }
+</style>

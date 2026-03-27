@@ -9,6 +9,8 @@ import {
   formatStorageSize,
   formatNumberLabel,
   getStoreCategoryBySlug,
+  getStoreCategoryQueryValues,
+  matchesStoreCategoryValue,
   normalizeText,
   parsePositiveNumber
 } from '../lib/productPresentation';
@@ -30,6 +32,9 @@ const selectedSort = new Set(['featured', 'newest', 'price_asc', 'price_desc']).
   ? (searchParams.get('sort') as 'featured' | 'newest' | 'price_asc' | 'price_desc')
   : 'featured';
 const selectedBrand = normalizeText(searchParams.get('brand'));
+const selectedCondition = new Set(['brand_new', 'refurbished']).has(searchParams.get('condition') || '')
+  ? normalizeText(searchParams.get('condition'))
+  : '';
 const selectedCpu = normalizeText(searchParams.get('cpu'));
 const selectedRam = normalizeText(searchParams.get('ram_gb'));
 const selectedStorage = normalizeText(searchParams.get('storage_gb'));
@@ -42,6 +47,7 @@ const selectedStorageValue = parsePositiveNumber(selectedStorage);
 const selectedScreenValue = parsePositiveNumber(selectedScreen);
 const hasFilters =
   Boolean(selectedBrand) ||
+  Boolean(selectedCondition) ||
   Boolean(selectedCpu) ||
   Boolean(selectedRam) ||
   Boolean(selectedStorage) ||
@@ -53,7 +59,7 @@ const hasFilters =
   selectedSort !== 'featured';
 
 const productSelectColumns = '*';
-const facetSelectColumns = ['category', 'brand', 'cpu', 'ram_gb', 'storage_gb', 'screen_in', 'price_kes', 'in_stock'].join(',');
+const facetSelectColumns = ['category', 'brand', 'condition', 'cpu', 'ram_gb', 'storage_gb', 'screen_in', 'price_kes', 'in_stock'].join(',');
 const from = (currentPage - 1) * pageSize;
 const to = from + pageSize - 1;
 
@@ -62,12 +68,16 @@ const applyCategoryScope = (query: any) => {
     return query;
   }
 
-  return query.eq('category', activeCategory.dbValue);
+  return query.in('category', getStoreCategoryQueryValues(activeCategory));
 };
 
 const applyFilters = (query: any) => {
   if (selectedBrand) {
     query = query.eq('brand', selectedBrand);
+  }
+
+  if (selectedCondition) {
+    query = query.eq('condition', selectedCondition);
   }
 
   if (!isShopMode && selectedCpu) {
@@ -258,6 +268,12 @@ const clearFiltersHref = basePath;
 const buildPageHref = (page: number) => buildHref({ page: page <= 1 ? null : page });
 const activeFilterChips = [
   selectedBrand ? { label: `Brand: ${selectedBrand}`, href: buildHref({ brand: null, page: null }) } : null,
+  selectedCondition
+    ? {
+        label: `Condition: ${selectedCondition === 'brand_new' ? 'Brand New' : 'Refurbished'}`,
+        href: buildHref({ condition: null, page: null })
+      }
+    : null,
   !isShopMode && selectedCpu ? { label: `CPU: ${selectedCpu}`, href: buildHref({ cpu: null, page: null }) } : null,
   !isShopMode && selectedRam ? { label: `RAM: ${selectedRam}GB`, href: buildHref({ ram_gb: null, page: null }) } : null,
   !isShopMode && selectedStorage ? { label: `Storage: ${formatStorageSize(selectedStorage)}`, href: buildHref({ storage_gb: null, page: null }) } : null,
@@ -279,7 +295,7 @@ const paginationNumbers = Array.from({ length: Math.min(totalPages, 5) }, (_, in
 
 const categoryCounts = STOREFRONT_CATEGORIES.map((category) => ({
   ...category,
-  count: facetRows.filter((row) => normalizeText(row.category) === category.dbValue).length
+  count: facetRows.filter((row) => matchesStoreCategoryValue(row.category, category)).length
 }));
 
 const priceBand = minFacetPrice && maxFacetPrice
@@ -435,7 +451,7 @@ const breadcrumbData = isShopMode
     </div>
   </section>
 
-  {isShopMode && featuredProducts.length > 0 && (
+  {isShopMode && !hasFilters && featuredProducts.length > 0 && (
     <section class="featured-row">
       <div class="container">
         <div class="section-head">
@@ -461,6 +477,14 @@ const breadcrumbData = isShopMode
             <select id="shop-brand" name="brand">
               <option value="">All brands</option>
               {availableBrands.map((brand) => <option value={brand} selected={selectedBrand === brand}>{brand}</option>)}
+            </select>
+          </div>
+          <div class="filter-block">
+            <label for="shop-condition">Condition</label>
+            <select id="shop-condition" name="condition">
+              <option value="">All conditions</option>
+              <option value="brand_new" selected={selectedCondition === 'brand_new'}>Brand New</option>
+              <option value="refurbished" selected={selectedCondition === 'refurbished'}>Refurbished</option>
             </select>
           </div>
           <div class="filter-block">
@@ -504,6 +528,15 @@ const breadcrumbData = isShopMode
                 <select id="brand-filter" name="brand">
                   <option value="">All brands</option>
                   {availableBrands.map((brand) => <option value={brand} selected={selectedBrand === brand}>{brand}</option>)}
+                </select>
+              </div>
+
+              <div class="filter-block">
+                <label for="condition-filter">Condition</label>
+                <select id="condition-filter" name="condition">
+                  <option value="">All conditions</option>
+                  <option value="brand_new" selected={selectedCondition === 'brand_new'}>Brand New</option>
+                  <option value="refurbished" selected={selectedCondition === 'refurbished'}>Refurbished</option>
                 </select>
               </div>
 
@@ -615,6 +648,7 @@ const breadcrumbData = isShopMode
 
               <form class="catalog-sort-form" method="get">
                 {selectedBrand && <input type="hidden" name="brand" value={selectedBrand} />}
+                {selectedCondition && <input type="hidden" name="condition" value={selectedCondition} />}
                 {selectedCpu && <input type="hidden" name="cpu" value={selectedCpu} />}
                 {selectedRam && <input type="hidden" name="ram_gb" value={selectedRam} />}
                 {selectedStorage && <input type="hidden" name="storage_gb" value={selectedStorage} />}

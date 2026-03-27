@@ -1,0 +1,82 @@
+---
+import Button from '../ui/Button.astro';
+import { buildWhatsAppLink, storefrontDetails } from '../../lib/storefront';
+
+const highlights = ['Tested Devices', 'Warranty Included', 'Nairobi Pickup', 'Countrywide Delivery'];
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing a laptop, printer, phone, or desktop.');
+---
+
+<section class="home-strip" aria-label="Store trust highlights">
+  <div class="container strip-inner">
+    <div class="strip-list" role="list">
+      {highlights.map((item) => (
+        <span class="strip-item" role="listitem">{item}</span>
+      ))}
+    </div>
+
+    <div class="strip-actions">
+      <Button href={whatsappHref} variant="ghost" size="sm" target="_blank" rel="noreferrer">
+        WhatsApp Us
+      </Button>
+      <a href={`tel:${storefrontDetails.phone.replace(/\s+/g, '')}`} class="phone-link">
+        {storefrontDetails.phone}
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .home-strip {
+    border-bottom: 1px solid rgba(203, 213, 225, 0.82);
+    background: linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.92));
+  }
+
+  .strip-inner {
+    display: grid;
+    gap: 0.75rem;
+    padding-block: 0.7rem;
+  }
+
+  .strip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.7rem;
+  }
+
+  .strip-item {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.74);
+    color: #0f172a;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .strip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .phone-link {
+    color: var(--color-primary-strong);
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+
+  @media (min-width: 900px) {
+    .strip-inner {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .strip-actions {
+      justify-content: flex-end;
+    }
+  }
+</style>

@@ -5,7 +5,9 @@ import {
   getProductBrand,
   getProductPresentation,
   getStoreCategoryBySlug,
-  getStoreCategoryByValue
+  getStoreCategoryByValue,
+  getStoreCategoryQueryValues,
+  matchesStoreCategoryValue
 } from '../src/lib/productPresentation';
 
 function createProduct(overrides: Record<string, unknown> = {}) {
@@ -105,6 +107,14 @@ test('expanded storefront categories resolve by slug and database value', () => 
   assert.equal(getStoreCategoryBySlug('accessories')?.label, 'Accessories');
   assert.equal(getStoreCategoryByValue('Desktops')?.slug, 'desktops');
   assert.equal(getStoreCategoryByValue('Accessories')?.slug, 'accessories');
+  assert.equal(getStoreCategoryByValue('laptops')?.slug, 'laptops');
+});
+
+test('store category query values include canonical and imported lowercase forms', () => {
+  assert.deepEqual(getStoreCategoryQueryValues('laptops'), ['Laptops', 'laptops']);
+  assert.equal(matchesStoreCategoryValue('Laptops', 'laptops'), true);
+  assert.equal(matchesStoreCategoryValue('laptops', 'laptops'), true);
+  assert.equal(matchesStoreCategoryValue('desktops', 'laptops'), false);
 });
 
 test('homepage brand labels only use explicit schema brands', () => {

@@ -1,0 +1,158 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import ProductCard from '../ui/ProductCard.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+interface Props {
+  featured: CatalogProduct[];
+  newIn: CatalogProduct[];
+  bestValue: CatalogProduct[];
+  premium: CatalogProduct[];
+}
+
+const { featured, newIn, bestValue, premium } = Astro.props as Props;
+
+const tabs = [
+  { id: 'featured', label: 'Featured', products: featured.slice(0, 6) },
+  { id: 'new-in', label: 'New In', products: newIn.slice(0, 6) },
+  { id: 'best-value', label: 'Best Value', products: bestValue.slice(0, 6) },
+  { id: 'premium', label: 'Premium Picks', products: premium.slice(0, 6) }
+].filter((tab) => tab.products.length > 0);
+---
+
+<section class="featured-products section" data-featured-grid>
+  <div class="container">
+    <SectionHeading
+      eyebrow="Live Inventory"
+      title="Start with strong picks from the current catalog."
+      description="Each group is selected deterministically from live products with usable specs, valid pricing, and better merchandising signals."
+    />
+
+    {tabs.length > 0 ? (
+      <>
+        <div class="tab-row" role="tablist" aria-label="Homepage product groups">
+          {tabs.map((tab, index) => (
+            <button
+              type="button"
+              class={`tab-button ${index === 0 ? 'is-active' : ''}`}
+              data-tab-trigger={tab.id}
+              role="tab"
+              aria-selected={index === 0 ? 'true' : 'false'}
+              aria-controls={`panel-${tab.id}`}
+              id={`tab-${tab.id}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {tabs.map((tab, index) => (
+          <div
+            class={`tab-panel ${index === 0 ? 'is-active' : ''}`}
+            id={`panel-${tab.id}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${tab.id}`}
+            hidden={index !== 0}
+            data-tab-panel={tab.id}
+          >
+            <div class="products-grid">
+              {tab.products.map((product) => (
+                <ProductCard product={product} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </>
+    ) : (
+      <div class="empty-state">
+        <h3>Live products will appear here once catalog data is available.</h3>
+      </div>
+    )}
+  </div>
+
+  <script>
+    const root = document.currentScript?.closest('[data-featured-grid]');
+    if (root) {
+      const triggers = Array.from(root.querySelectorAll('[data-tab-trigger]'));
+      const panels = Array.from(root.querySelectorAll('[data-tab-panel]'));
+
+      const activate = (tabId: string | null) => {
+        if (!tabId) {
+          return;
+        }
+
+        triggers.forEach((trigger) => {
+          const isActive = trigger.getAttribute('data-tab-trigger') === tabId;
+          trigger.classList.toggle('is-active', isActive);
+          trigger.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        panels.forEach((panel) => {
+          const isActive = panel.getAttribute('data-tab-panel') === tabId;
+          panel.classList.toggle('is-active', isActive);
+          panel.toggleAttribute('hidden', !isActive);
+        });
+      };
+
+      triggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => activate(trigger.getAttribute('data-tab-trigger')));
+      });
+    }
+  </script>
+</section>
+
+<style>
+  .tab-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .tab-button {
+    min-height: 2.85rem;
+    padding: 0.7rem 1rem;
+    border: 1px solid rgba(203, 213, 225, 0.74);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--color-text-soft);
+    font-size: 0.92rem;
+    font-weight: 800;
+    transition:
+      color var(--transition-fast),
+      background-color var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .tab-button.is-active {
+    border-color: rgba(21, 93, 252, 0.18);
+    background: linear-gradient(135deg, rgba(21, 93, 252, 0.12), rgba(8, 145, 178, 0.08));
+    color: var(--color-primary-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .products-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .empty-state {
+    padding: 1.2rem;
+    border-radius: var(--radius-card);
+    border: 1px solid rgba(203, 213, 225, 0.7);
+    background: rgba(248, 250, 252, 0.82);
+  }
+
+  @media (min-width: 740px) {
+    .products-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1120px) {
+    .products-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

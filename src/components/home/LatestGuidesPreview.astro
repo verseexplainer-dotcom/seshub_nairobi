@@ -1,0 +1,100 @@
+---
+import SectionHeading from '../ui/SectionHeading.astro';
+import Button from '../ui/Button.astro';
+
+interface GuideCard {
+  id: string;
+  category: string;
+  date: string;
+  title: string;
+  excerpt: string;
+  href: string;
+}
+
+interface Props {
+  posts?: GuideCard[];
+}
+
+const { posts = [] } = Astro.props as Props;
+---
+
+<section class="guides-preview section">
+  <div class="container">
+    <SectionHeading
+      eyebrow="Guides"
+      title="Helpful reading for buyers who want context before ordering."
+      description="If a shopper is not ready to buy immediately, these guide cards keep them moving without leaving the SES ICT HUB flow."
+    >
+      <Fragment slot="actions">
+        <Button href="/blog" variant="ghost">View All Guides</Button>
+      </Fragment>
+    </SectionHeading>
+
+    {posts.length > 0 ? (
+      <div class="guides-grid">
+        {posts.slice(0, 3).map((post) => (
+          <article class="guide-card" id={post.id}>
+            <div class="guide-meta">
+              <span>{post.category}</span>
+              <span>{post.date}</span>
+            </div>
+            <h3><a href={post.href}>{post.title}</a></h3>
+            <p>{post.excerpt}</p>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <>
+        <!-- TODO: wire this component to a real guide or blog source once one exists beyond the current static fallback. -->
+        <div class="guide-empty">
+          <p>Guide previews will appear here once article data is available.</p>
+        </div>
+      </>
+    )}
+  </div>
+</section>
+
+<style>
+  .guides-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .guide-card,
+  .guide-empty {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1.2rem;
+    border: 1px solid rgba(203, 213, 225, 0.72);
+    border-radius: calc(var(--radius-card) + 0.1rem);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .guide-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    color: var(--color-text-muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .guide-card h3 {
+    font-size: 1.15rem;
+    letter-spacing: -0.04em;
+  }
+
+  .guide-card p,
+  .guide-empty p {
+    color: var(--color-text-muted);
+  }
+
+  @media (min-width: 960px) {
+    .guides-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

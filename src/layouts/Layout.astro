@@ -10,6 +10,7 @@ interface Props {
   description?: string;
   image?: string;
   canonical?: string;
+  hideAnnouncementStrip?: boolean;
 }
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
@@ -18,7 +19,8 @@ const {
   title,
   description = "SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, desktops, printers, smartphones, and accessories with clear pricing and stock status.",
   image = siteAssets.hero.src,
-  canonical
+  canonical,
+  hideAnnouncementStrip = false
 } = Astro.props;
 
 const canonicalURL = new URL(canonical || Astro.url.pathname, Astro.site || 'https://sesicthub.co.ke');
@@ -74,7 +76,7 @@ const faviconVersion = '20260322';
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
-    <AnnouncementStrip />
+    {!hideAnnouncementStrip && <AnnouncementStrip />}
     <Header />
     <main>
       <slot />

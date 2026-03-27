@@ -1,0 +1,85 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  titleId?: string;
+  align?: 'left' | 'center';
+  level?: 1 | 2 | 3;
+}
+
+const {
+  eyebrow,
+  title,
+  description,
+  titleId,
+  align = 'left',
+  level = 2
+} = Astro.props as Props;
+
+const HeadingTag = level === 1 ? 'h1' : level === 3 ? 'h3' : 'h2';
+---
+
+<header class={`section-heading ${align}`}>
+  <div class="copy">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <HeadingTag id={titleId} class="title">{title}</HeadingTag>
+    {description && <p class="description">{description}</p>}
+  </div>
+  {Astro.slots.has('actions') && (
+    <div class="actions">
+      <slot name="actions" />
+    </div>
+  )}
+</header>
+
+<style>
+  .section-heading {
+    display: grid;
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: clamp(1.5rem, 4vw, 2.25rem);
+  }
+
+  .section-heading.center {
+    text-align: center;
+    justify-items: center;
+  }
+
+  .copy {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .eyebrow {
+    color: var(--color-primary);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .title {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+
+  .description {
+    max-width: 62ch;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 860px) {
+    .section-heading:not(.center) {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+  }
+</style>

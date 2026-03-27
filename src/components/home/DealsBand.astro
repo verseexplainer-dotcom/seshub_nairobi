@@ -1,0 +1,149 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import Button from '../ui/Button.astro';
+import PriceBlock from '../ui/PriceBlock.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import { getPrimaryImage } from '../../lib/images';
+import { formatKES, getSavingsAmount } from '../../lib/pricing';
+import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
+
+interface Props {
+  products: CatalogProduct[];
+}
+
+const { products } = Astro.props as Props;
+const [leadDeal, ...moreDeals] = products;
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const imageOnError = buildImageOnError(fallbackImage, '/product-placeholder.svg');
+---
+
+{leadDeal && (
+  <section class="deals-band section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Deals"
+        title="Current savings worth checking before they move."
+        description="These deal cards only appear when the catalog has a valid compare-at price above the live selling price."
+      />
+
+      <div class="deals-grid">
+        <article class="lead-deal">
+          <a href={`/product/${leadDeal.slug}`} class="deal-media">
+            <img
+              src={getPrimaryImage(leadDeal, { publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, fallbackImage })}
+              alt={leadDeal.title}
+              loading="lazy"
+              decoding="async"
+              onerror={imageOnError}
+            />
+          </a>
+          <div class="deal-copy">
+            <span class="deal-kicker">Save {formatKES(getSavingsAmount(leadDeal))}</span>
+            <h3><a href={`/product/${leadDeal.slug}`}>{leadDeal.title}</a></h3>
+            <PriceBlock product={leadDeal} />
+            <Button href={`/product/${leadDeal.slug}`}>View Deal</Button>
+          </div>
+        </article>
+
+        {moreDeals.length > 0 && (
+          <div class="compact-deals">
+            {moreDeals.map((product) => (
+              <article class="compact-deal">
+                <div class="compact-copy">
+                  <span>Save {formatKES(getSavingsAmount(product))}</span>
+                  <h4><a href={`/product/${product.slug}`}>{product.title}</a></h4>
+                  <PriceBlock product={product} compact />
+                </div>
+                <Button href={`/product/${product.slug}`} variant="ghost" size="sm">Open</Button>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .deals-band {
+    background: linear-gradient(180deg, rgba(255, 247, 237, 0.74), rgba(255, 255, 255, 1));
+  }
+
+  .deals-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .lead-deal,
+  .compact-deal {
+    overflow: hidden;
+    border: 1px solid rgba(253, 186, 116, 0.35);
+    border-radius: calc(var(--radius-card) + 0.2rem);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .lead-deal {
+    display: grid;
+  }
+
+  .deal-media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(180deg, rgba(255, 247, 237, 0.9), rgba(248, 250, 252, 0.94));
+  }
+
+  .deal-media img {
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    object-fit: contain;
+  }
+
+  .deal-copy {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1.2rem;
+  }
+
+  .deal-kicker,
+  .compact-copy span {
+    color: #c2410c;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .deal-copy h3,
+  .compact-copy h4 {
+    font-size: 1.18rem;
+    line-height: 1.2;
+    letter-spacing: -0.04em;
+  }
+
+  .compact-deals {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .compact-deal {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .compact-copy {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  @media (min-width: 980px) {
+    .deals-grid {
+      grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
+    }
+  }
+</style>

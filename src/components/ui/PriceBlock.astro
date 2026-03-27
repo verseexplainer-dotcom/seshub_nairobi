@@ -1,0 +1,61 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import { formatKES, getCompareAtPrice, getSavingsAmount, hasDiscount } from '../../lib/pricing';
+
+interface Props {
+  product: CatalogProduct;
+  showSavings?: boolean;
+  compact?: boolean;
+}
+
+const { product, showSavings = true, compact = false } = Astro.props as Props;
+const compareAtPrice = getCompareAtPrice(product);
+const discounted = hasDiscount(product);
+const savingsAmount = getSavingsAmount(product);
+---
+
+<div class={`price-block ${compact ? 'compact' : ''}`}>
+  <div class="price-row">
+    <strong>{formatKES(product.price_kes)}</strong>
+    {discounted && compareAtPrice !== null && <span>{formatKES(compareAtPrice)}</span>}
+  </div>
+  {showSavings && discounted && savingsAmount > 0 && (
+    <p class="price-note">Save {formatKES(savingsAmount)}</p>
+  )}
+</div>
+
+<style>
+  .price-block {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .price-row strong {
+    font-size: clamp(1.3rem, 4vw, 1.6rem);
+    letter-spacing: -0.05em;
+  }
+
+  .price-row span {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: line-through;
+  }
+
+  .price-note {
+    color: #c2410c;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .price-block.compact .price-row strong {
+    font-size: 1.15rem;
+  }
+</style>

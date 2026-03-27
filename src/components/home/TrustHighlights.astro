@@ -1,0 +1,76 @@
+---
+import SectionHeading from '../ui/SectionHeading.astro';
+import TrustCard from '../ui/TrustCard.astro';
+
+const items = [
+  {
+    icon: 'shield' as const,
+    title: 'Warranty on listed products',
+    description: 'We only show warranty where it actually exists in the catalog.'
+  },
+  {
+    icon: 'check' as const,
+    title: 'Tested and ready to use',
+    description: 'Listings focus on devices we can confidently present with verified specs.'
+  },
+  {
+    icon: 'price' as const,
+    title: 'Clear pricing',
+    description: 'Current KES pricing, visible discounts, and no fake countdown tactics.'
+  },
+  {
+    icon: 'map' as const,
+    title: 'Nairobi physical location',
+    description: 'You can coordinate pickup and support from the Moi Avenue shop.'
+  },
+  {
+    icon: 'chat' as const,
+    title: 'WhatsApp support',
+    description: 'Ask before paying and get help narrowing down the right device.'
+  },
+  {
+    icon: 'truck' as const,
+    title: 'Delivery options',
+    description: 'Pickup and delivery options stay visible throughout the buying flow.'
+  }
+];
+---
+
+<section class="trust-highlights section">
+  <div class="container">
+    <SectionHeading
+      eyebrow="Why Shoppers Trust Us"
+      title="Built for fast decisions, clear stock checks, and real support."
+      description="The homepage stays grounded in practical signals that help buyers move with confidence."
+    />
+
+    <div class="grid">
+      {items.map((item) => (
+        <TrustCard {...item} />
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .trust-highlights {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.86), rgba(255, 255, 255, 1));
+  }
+
+  .grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 760px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1120px) {
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

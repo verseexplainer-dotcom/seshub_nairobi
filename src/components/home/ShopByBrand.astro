@@ -1,0 +1,48 @@
+---
+import type { HomepageBrandCount } from '../../types/catalog';
+import BrandCard from '../ui/BrandCard.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+interface Props {
+  brands: HomepageBrandCount[];
+}
+
+const { brands } = Astro.props as Props;
+---
+
+{brands.length > 0 && (
+  <section class="shop-by-brand section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Brands"
+        title="Browse by brands already strong in the catalog."
+        description="These links point into live listing views, so shoppers can jump directly into the brands they already trust."
+      />
+
+      <div class="grid">
+        {brands.map((brand) => (
+          <BrandCard {...brand} />
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 680px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1040px) {
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

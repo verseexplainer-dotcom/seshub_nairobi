@@ -1,0 +1,343 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import Badge from '../ui/Badge.astro';
+import Button from '../ui/Button.astro';
+import PriceBlock from '../ui/PriceBlock.astro';
+import SpecChips from '../ui/SpecChips.astro';
+import { getConditionLabel } from '../../lib/catalog';
+import { getPrimaryImage } from '../../lib/images';
+import { buildWhatsAppLink } from '../../lib/storefront';
+import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
+
+interface Props {
+  products: CatalogProduct[];
+  liveCount: number;
+  brandCount: number;
+}
+
+const { products, liveCount, brandCount } = Astro.props as Props;
+const spotlight = products[0] || null;
+const highlights = products.slice(1, 4);
+const trustChips = ['Warranty Included', 'Tested & Ready to Use', 'Delivery Available', 'Nairobi Pickup'];
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const imageOnError = buildImageOnError(fallbackImage, '/product-placeholder.svg');
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing the right laptop, printer, desktop, or phone.');
+---
+
+<section class="hero-showcase">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="hero-kicker">Affordable tech, ready to order</p>
+      <h1>Affordable laptops, printers, phones, and desktops in Kenya.</h1>
+      <p class="hero-text">
+        Shop verified specs, fair pricing, warranty-backed listings, and ready-to-order stock from SES ICT HUB.
+      </p>
+
+      <div class="hero-actions">
+        <Button href="/category/laptops">Shop Laptops</Button>
+        <Button href={whatsappHref} variant="ghost" target="_blank" rel="noreferrer">Chat on WhatsApp</Button>
+      </div>
+
+      <div class="hero-trust" aria-label="Trust highlights">
+        {trustChips.map((item) => (
+          <Badge tone="neutral">{item}</Badge>
+        ))}
+      </div>
+
+      <div class="hero-stats">
+        <div>
+          <strong>{liveCount}</strong>
+          <span>Live listings</span>
+        </div>
+        <div>
+          <strong>{brandCount}</strong>
+          <span>Active brands</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-label="Live catalog highlights">
+      {spotlight ? (
+        <article class="spotlight-card">
+          <a href={`/product/${spotlight.slug}`} class="spotlight-media">
+            <img
+              src={getPrimaryImage(spotlight, { publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, fallbackImage })}
+              alt={spotlight.title}
+              loading="eager"
+              decoding="async"
+              onerror={imageOnError}
+            />
+          </a>
+
+          <div class="spotlight-copy">
+            <div class="spotlight-badges">
+              {getConditionLabel(spotlight) && (
+                <Badge tone={getConditionLabel(spotlight) === 'Brand New' ? 'primary' : 'warning'}>
+                  {getConditionLabel(spotlight)}
+                </Badge>
+              )}
+              <Badge tone="success">Live Stock</Badge>
+            </div>
+            <h2><a href={`/product/${spotlight.slug}`}>{spotlight.title}</a></h2>
+            <SpecChips product={spotlight} />
+            <PriceBlock product={spotlight} />
+          </div>
+        </article>
+      ) : (
+        <div class="spotlight-card empty">
+          <h2>Live inventory is loading.</h2>
+          <p>Browse laptops first, then contact us on WhatsApp and we will help you confirm stock.</p>
+        </div>
+      )}
+
+      {highlights.length > 0 && (
+        <div class="mini-grid">
+          {highlights.map((product, index) => (
+            <a href={`/product/${product.slug}`} class={`mini-card mini-${index + 1}`}>
+              <img
+                src={getPrimaryImage(product, { publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, fallbackImage })}
+                alt={product.title}
+                loading="lazy"
+                decoding="async"
+                onerror={imageOnError}
+              />
+              <div class="mini-copy">
+                <span>{product.category}</span>
+                <strong>{product.title}</strong>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-showcase {
+    position: relative;
+    padding-block: clamp(2.2rem, 6vw, 5.2rem);
+    overflow: clip;
+  }
+
+  .hero-showcase::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top left, rgba(21, 93, 252, 0.12), transparent 34%),
+      radial-gradient(circle at 85% 20%, rgba(8, 145, 178, 0.1), transparent 24%);
+    pointer-events: none;
+  }
+
+  .hero-grid {
+    position: relative;
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .hero-copy,
+  .spotlight-card,
+  .mini-card {
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-copy {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+
+  .hero-kicker {
+    color: var(--color-primary);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .hero-copy h1 {
+    max-width: 12ch;
+    font-size: clamp(2.4rem, 9vw, 5rem);
+    line-height: 0.96;
+    letter-spacing: -0.07em;
+  }
+
+  .hero-text {
+    max-width: 58ch;
+    color: var(--color-text-muted);
+    font-size: clamp(1rem, 2.6vw, 1.12rem);
+  }
+
+  .hero-actions,
+  .hero-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+  }
+
+  .hero-stats div {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 7rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid rgba(203, 213, 225, 0.7);
+    border-radius: var(--radius-card);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(16px);
+  }
+
+  .hero-stats strong {
+    font-size: 1.5rem;
+    letter-spacing: -0.05em;
+  }
+
+  .hero-stats span {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .hero-visual {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .spotlight-card,
+  .mini-card {
+    overflow: hidden;
+    border: 1px solid rgba(191, 219, 254, 0.7);
+    border-radius: calc(var(--radius-card) + 0.2rem);
+    background:
+      radial-gradient(circle at top right, rgba(191, 219, 254, 0.7), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94));
+    box-shadow: var(--shadow-lg);
+  }
+
+  .spotlight-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    animation: heroFloat 9s ease-in-out infinite;
+  }
+
+  .spotlight-card.empty {
+    padding: 1.6rem;
+  }
+
+  .spotlight-media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4 / 3;
+    border-radius: calc(var(--radius-card) - 0.25rem);
+    background:
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.75), transparent 35%),
+      linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(241, 245, 249, 0.94));
+  }
+
+  .spotlight-media img,
+  .mini-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .spotlight-media img {
+    padding: 1rem;
+  }
+
+  .spotlight-copy {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .spotlight-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .spotlight-copy h2 {
+    font-size: clamp(1.25rem, 4vw, 1.8rem);
+    line-height: 1.15;
+    letter-spacing: -0.05em;
+  }
+
+  .mini-grid {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .mini-card {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: 0.85rem;
+    align-items: center;
+    padding: 0.75rem;
+    animation: heroFloat 8s ease-in-out infinite;
+  }
+
+  .mini-2 {
+    animation-delay: 0.8s;
+  }
+
+  .mini-3 {
+    animation-delay: 1.6s;
+  }
+
+  .mini-card img {
+    aspect-ratio: 1 / 1;
+    padding: 0.45rem;
+    border-radius: 1rem;
+    background: rgba(248, 250, 252, 0.88);
+  }
+
+  .mini-copy {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .mini-copy span {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .mini-copy strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  @keyframes heroFloat {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @media (min-width: 980px) {
+    .hero-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(25rem, 33rem);
+      align-items: center;
+    }
+  }
+</style>

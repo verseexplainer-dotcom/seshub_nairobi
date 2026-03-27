@@ -1,0 +1,41 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import { getProductSpecChips } from '../../lib/catalog';
+
+interface Props {
+  product: CatalogProduct;
+  limit?: number;
+}
+
+const { product, limit = 3 } = Astro.props as Props;
+const chips = getProductSpecChips(product, limit);
+---
+
+{chips.length > 0 && (
+  <ul class="spec-chips" role="list" aria-label="Key specs">
+    {chips.map((chip) => <li>{chip}</li>)}
+  </ul>
+)}
+
+<style>
+  .spec-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .spec-chips li {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.36rem 0.68rem;
+    border-radius: 999px;
+    background: rgba(226, 232, 240, 0.55);
+    color: #334155;
+    font-size: 0.79rem;
+    font-weight: 700;
+  }
+</style>

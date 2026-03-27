@@ -1,0 +1,72 @@
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f8fbff;
+  --color-surface-strong: #eef4ff;
+  --color-surface-deep: #dceafe;
+  --color-text: #0f172a;
+  --color-text-soft: #334155;
+  --color-text-muted: #64748b;
+  --color-border: #dbe5f3;
+  --color-primary: #155dfc;
+  --color-primary-strong: #0b4ee8;
+  --color-primary-hover: #0b4ee8;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-hover: #15803d;
+  --color-dark: #0b1220;
+  --color-success: #166534;
+  --color-success-soft: #ecfdf3;
+  --color-warning: #c2410c;
+  --color-warning-soft: #fff7ed;
+  --color-danger: #991b1b;
+  --color-danger-soft: #fef2f2;
+  --color-info: #1d4ed8;
+  --color-info-soft: #eff6ff;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.3rem;
+  --radius-card: 1.4rem;
+  --radius-pill: 999px;
+  --radius-full: 999px;
+
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+  --space-5: 2.5rem;
+  --space-6: 3rem;
+  --space-7: 4rem;
+  --space-8: 5rem;
+
+  --shadow-sm: 0 12px 28px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 20px 44px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 28px 62px rgba(15, 23, 42, 0.14);
+
+  --section-width: 1200px;
+  --container: var(--section-width);
+  --focus-ring: 0 0 0 3px rgba(21, 93, 252, 0.18);
+  --transition-fast: 0.22s ease;
+  --transition-slow: 0.36s ease;
+
+  /* Legacy aliases used across the app */
+  --color-accent: var(--color-primary);
+  --color-accent-strong: var(--color-primary-strong);
+  --color-success-strong: var(--color-whatsapp-hover);
+  --color-muted: var(--color-text-muted);
+  --color-bg-soft: var(--color-surface);
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-hover);
+  --accent: var(--color-primary);
+  --accent-hover: var(--color-primary-strong);
+  --background: var(--color-surface);
+  --white: var(--color-bg);
+  --text-main: var(--color-text);
+  --text-muted: var(--color-text-muted);
+  --border: var(--color-border);
+  --space-xs: var(--space-1);
+  --space-sm: var(--space-2);
+  --space-md: var(--space-3);
+  --space-lg: var(--space-4);
+  --space-xl: var(--space-6);
+  --radius: var(--radius-md);
+}

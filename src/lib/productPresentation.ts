@@ -146,6 +146,35 @@ export function getStoreCategoryByValue(value: unknown) {
   return CATEGORY_BY_VALUE.get(normalized) || null;
 }
 
+export function getStoreCategoryQueryValues(value: unknown) {
+  const category = typeof value === 'object' && value !== null && 'slug' in value
+    ? (value as StoreCategoryMeta)
+    : getStoreCategoryBySlug(value) || getStoreCategoryByValue(value);
+
+  if (!category) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      [category.dbValue, category.dbValue.toLowerCase(), category.slug]
+        .map((entry) => normalizeText(entry))
+        .filter(Boolean)
+    )
+  );
+}
+
+export function matchesStoreCategoryValue(value: unknown, category: unknown) {
+  const normalizedValue = normalizeText(value).toLowerCase();
+  if (!normalizedValue) {
+    return false;
+  }
+
+  return getStoreCategoryQueryValues(category)
+    .map((entry) => entry.toLowerCase())
+    .includes(normalizedValue);
+}
+
 export function getCategorySlug(value: unknown) {
   return getStoreCategoryBySlug(value)?.slug || getStoreCategoryByValue(value)?.slug || null;
 }

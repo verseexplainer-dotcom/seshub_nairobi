@@ -1,0 +1,118 @@
+---
+import Badge from '../ui/Badge.astro';
+import Button from '../ui/Button.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import { buildConditionFilterHref } from '../../lib/filters';
+
+interface Props {
+  brandNewCount: number;
+  refurbishedCount: number;
+}
+
+const { brandNewCount, refurbishedCount } = Astro.props as Props;
+---
+
+<section class="condition-split section">
+  <div class="container">
+    <SectionHeading
+      eyebrow="Shop By Condition"
+      title="Pick the buying path that matches your budget and expectations."
+      description="This section helps shoppers decide faster without reading a long explainer or guessing what each condition means."
+    />
+
+    <div class="split-grid">
+      <article class="condition-panel brand-new">
+        <div class="panel-head">
+          <Badge tone="primary">Brand New</Badge>
+          <strong>{brandNewCount}</strong>
+        </div>
+        <p>Best when you want fresh stock, a cleaner presentation, and less compromise.</p>
+        <ul role="list">
+          <li>Great for buyers prioritizing new condition</li>
+          <li>Useful for gifting, office onboarding, or latest stock</li>
+          <li>Warranty-backed where listed in the catalog</li>
+        </ul>
+        <Button href={buildConditionFilterHref('brand_new', { sort: 'featured', in_stock: 1 })} variant="ghost">
+          Browse Brand New
+        </Button>
+      </article>
+
+      <article class="condition-panel refurbished">
+        <div class="panel-head">
+          <Badge tone="warning">Refurbished</Badge>
+          <strong>{refurbishedCount}</strong>
+        </div>
+        <p>Best when you want stronger value, tested stock, and practical performance for less.</p>
+        <ul role="list">
+          <li>Better price efficiency for work and school buyers</li>
+          <li>Easy to compare using visible specs and warranty details</li>
+          <li>Great fit for budget-led shoppers and office setups</li>
+        </ul>
+        <Button href={buildConditionFilterHref('refurbished', { sort: 'price_asc', in_stock: 1 })}>
+          Browse Refurbished
+        </Button>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .split-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .condition-panel {
+    display: grid;
+    gap: 1rem;
+    padding: 1.35rem;
+    border: 1px solid rgba(203, 213, 225, 0.76);
+    border-radius: calc(var(--radius-card) + 0.2rem);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)),
+      radial-gradient(circle at top right, rgba(191, 219, 254, 0.4), transparent 30%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .condition-panel.refurbished {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 237, 0.88)),
+      radial-gradient(circle at top right, rgba(253, 186, 116, 0.22), transparent 30%);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .panel-head strong {
+    font-size: 1.55rem;
+    letter-spacing: -0.05em;
+  }
+
+  .condition-panel p,
+  .condition-panel li {
+    color: var(--color-text-muted);
+  }
+
+  .condition-panel ul {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .condition-panel li::before {
+    content: '•';
+    margin-right: 0.55rem;
+    color: var(--color-primary);
+  }
+
+  @media (min-width: 920px) {
+    .split-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

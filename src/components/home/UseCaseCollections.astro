@@ -1,0 +1,119 @@
+---
+import type { HomepageUseCaseCollection } from '../../types/catalog';
+import Button from '../ui/Button.astro';
+import PriceBlock from '../ui/PriceBlock.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+interface Props {
+  collections: HomepageUseCaseCollection[];
+}
+
+const { collections } = Astro.props as Props;
+---
+
+{collections.length > 0 && (
+  <section class="use-cases section">
+    <div class="container">
+      <SectionHeading
+        eyebrow="Shop By Need"
+        title="Intent-led shortcuts for common buying situations."
+        description="These collections are derived from real products and current listing data instead of handcrafted marketing pages."
+      />
+
+      <div class="grid">
+        {collections.map((collection) => (
+          <article class="collection-card">
+            <div class="collection-head">
+              <div>
+                <h3>{collection.title}</h3>
+                <p>{collection.description}</p>
+              </div>
+              <Button href={collection.href} variant="ghost" size="sm">Open</Button>
+            </div>
+
+            <div class="collection-products">
+              {collection.products.map((product) => (
+                <a href={`/product/${product.slug}`} class="collection-product">
+                  <div class="collection-product-copy">
+                    <strong>{product.title}</strong>
+                    <span>{product.category}</span>
+                  </div>
+                  <PriceBlock product={product} compact showSavings={false} />
+                </a>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .use-cases {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 1));
+  }
+
+  .grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .collection-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1.2rem;
+    border: 1px solid rgba(203, 213, 225, 0.74);
+    border-radius: calc(var(--radius-card) + 0.15rem);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .collection-head {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .collection-head h3 {
+    font-size: 1.15rem;
+    letter-spacing: -0.04em;
+  }
+
+  .collection-head p,
+  .collection-product-copy span {
+    color: var(--color-text-muted);
+  }
+
+  .collection-products {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .collection-product {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.9rem;
+    border-radius: calc(var(--radius-card) - 0.1rem);
+    background: rgba(248, 250, 252, 0.9);
+  }
+
+  .collection-product-copy {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .collection-product-copy strong {
+    line-height: 1.35;
+  }
+
+  .collection-product-copy span {
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  @media (min-width: 980px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
