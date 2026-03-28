@@ -1,9 +1,12 @@
+import { filterVisibleCatalogProducts, normalizeCatalogProducts } from '../lib/catalog';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 export async function GET() {
     const products = isSupabaseConfigured
-      ? (await supabase.from('products').select('slug, updated_at')).data || []
+      ? filterVisibleCatalogProducts(
+          normalizeCatalogProducts((((await supabase.from('products').select('*')).data || []) as Array<Record<string, unknown>>))
+        )
       : [];
 
     const categories = [...STOREFRONT_CATEGORIES.map((category) => category.slug), 'all'];

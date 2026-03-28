@@ -2,6 +2,10 @@
 import ProductCard from './ProductCard.astro';
 import SearchBar from './SearchBar.astro';
 import {
+  filterVisibleCatalogProducts,
+  normalizeCatalogProducts
+} from '../lib/catalog';
+import {
   SHOP_PATH,
   STOREFRONT_CATEGORIES,
   formatCurrencyKes,
@@ -9,11 +13,11 @@ import {
   formatStorageSize,
   formatNumberLabel,
   getStoreCategoryBySlug,
-  getStoreCategoryQueryValues,
   matchesStoreCategoryValue,
   normalizeText,
   parsePositiveNumber
 } from '../lib/productPresentation';
+import type { CatalogProduct } from '../types/catalog';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface Props {
@@ -26,8 +30,7 @@ const isShopMode = mode === 'shop';
 const activeCategory = categorySlug !== 'all' ? getStoreCategoryBySlug(categorySlug) : null;
 const searchParams = Astro.url.searchParams;
 const pageSize = 24;
-const currentPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
-const FACET_BATCH_SIZE = 1000;
+const requestedPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
 const selectedSort = new Set(['featured', 'newest', 'price_asc', 'price_desc']).has(searchParams.get('sort') || '')
   ? (searchParams.get('sort') as 'featured' | 'newest' | 'price_asc' | 'price_desc')
   : 'featured';
@@ -59,126 +62,115 @@ const hasFilters =
   selectedSort !== 'featured';
 
 const productSelectColumns = '*';
-const facetSelectColumns = ['category', 'brand', 'condition', 'cpu', 'ram_gb', 'storage_gb', 'screen_in', 'price_kes', 'in_stock'].join(',');
-const from = (currentPage - 1) * pageSize;
-const to = from + pageSize - 1;
+let products: CatalogProduct[] = [];
+let totalCount = 0;
+let facetRows: CatalogProduct[] = [];
+let featuredProducts: CatalogProduct[] = [];
+let currentPage = requestedPage;
 
-const applyCategoryScope = (query: any) => {
-  if (!activeCategory) {
-    return query;
-  }
-
-  return query.in('category', getStoreCategoryQueryValues(activeCategory));
-};
-
-const applyFilters = (query: any) => {
-  if (selectedBrand) {
-    query = query.eq('brand', selectedBrand);
-  }
-
-  if (selectedCondition) {
-    query = query.eq('condition', selectedCondition);
-  }
-
-  if (!isShopMode && selectedCpu) {
-    query = query.eq('cpu', selectedCpu);
-  }
-
-  if (!isShopMode && selectedRamValue !== null) {
-    query = query.eq('ram_gb', selectedRamValue);
-  }
-
-  if (!isShopMode && selectedStorageValue !== null) {
-    query = query.eq('storage_gb', selectedStorageValue);
-  }
-
-  if (!isShopMode && selectedScreenValue !== null) {
-    query = query.eq('screen_in', selectedScreenValue);
-  }
-
-  if (stockFilter === '1') {
-    query = query.eq('in_stock', true);
-  } else if (stockFilter === '0') {
-    query = query.eq('in_stock', false);
-  }
-
-  if (minPrice !== null) {
-    query = query.gte('price_kes', minPrice);
-  }
-
-  if (maxPrice !== null) {
-    query = query.lte('price_kes', maxPrice);
-  }
-
-  return query;
-};
-
-async function fetchFacetRows() {
-  const firstBatchResponse = await applyCategoryScope(
-    supabase.from('products').select(facetSelectColumns, { count: 'exact' })
-  ).range(0, FACET_BATCH_SIZE - 1);
-
-  if (firstBatchResponse.error) {
-    console.error('Catalog facet query failed', {
-      code: firstBatchResponse.error.code,
-      details: firstBatchResponse.error.details,
-      hint: firstBatchResponse.error.hint,
-      message: firstBatchResponse.error.message,
-      path: Astro.url.pathname
-    });
-    return [];
-  }
-
-  const firstBatch = firstBatchResponse.data || [];
-  const totalRows = typeof firstBatchResponse.count === 'number' ? firstBatchResponse.count : firstBatch.length;
-  if (totalRows <= firstBatch.length) {
-    return firstBatch;
-  }
-
-  // Supabase responses are capped per request, so fetch the remaining rows in batches for complete facets.
-  const remainingRequests: Array<Promise<{ data: Array<Record<string, any>> | null }>> = [];
-  for (let start = FACET_BATCH_SIZE; start < totalRows; start += FACET_BATCH_SIZE) {
-    remainingRequests.push(
-      applyCategoryScope(supabase.from('products').select(facetSelectColumns)).range(start, start + FACET_BATCH_SIZE - 1)
-    );
-  }
-
-  const remainingResponses = await Promise.all(remainingRequests);
-  return firstBatch.concat(remainingResponses.flatMap((response) => response.data || []));
+function getDateValue(value: string | null | undefined) {
+  const parsed = Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-let products: Array<Record<string, any>> = [];
-let totalCount = 0;
-let facetRows: Array<Record<string, any>> = [];
-let featuredProducts: Array<Record<string, any>> = [];
-
-if (isSupabaseConfigured) {
-  let productsQuery = applyFilters(
-    applyCategoryScope(supabase.from('products').select(productSelectColumns, { count: 'exact' }))
-  );
-
-  switch (selectedSort) {
-    case 'price_asc':
-      productsQuery = productsQuery.order('price_kes', { ascending: true }).order('updated_at', { ascending: false });
-      break;
-    case 'price_desc':
-      productsQuery = productsQuery.order('price_kes', { ascending: false }).order('updated_at', { ascending: false });
-      break;
-    case 'newest':
-      productsQuery = productsQuery.order('created_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false });
-      break;
-    default:
-      productsQuery = productsQuery
-        .order('in_stock', { ascending: false })
-        .order('featured_rank', { ascending: true, nullsFirst: false })
-        .order('updated_at', { ascending: false });
-      break;
+function applyCategoryScope(products: CatalogProduct[]) {
+  if (!activeCategory) {
+    return products;
   }
 
-  const [{ data, count, error: productsError }, facetData] = await Promise.all([
-    productsQuery.range(from, to),
-    fetchFacetRows()
-  ]);
+  return products.filter((product) => matchesStoreCategoryValue(product.category, activeCategory));
+}
+
+function matchesFilters(product: CatalogProduct) {
+  if (selectedBrand && normalizeText(product.brand) !== selectedBrand) {
+    return false;
+  }
+
+  if (selectedCondition && normalizeText(product.condition) !== selectedCondition) {
+    return false;
+  }
+
+  if (!isShopMode && selectedCpu && normalizeText(product.cpu) !== selectedCpu) {
+    return false;
+  }
+
+  if (!isShopMode && selectedRamValue !== null && product.ram_gb !== selectedRamValue) {
+    return false;
+  }
+
+  if (!isShopMode && selectedStorageValue !== null && product.storage_gb !== selectedStorageValue) {
+    return false;
+  }
+
+  if (!isShopMode && selectedScreenValue !== null && product.screen_in !== selectedScreenValue) {
+    return false;
+  }
+
+  if (stockFilter === '1' && product.in_stock !== true) {
+    return false;
+  }
+
+  if (stockFilter === '0' && product.in_stock !== false) {
+    return false;
+  }
+
+  if (minPrice !== null && product.price_kes < minPrice) {
+    return false;
+  }
+
+  if (maxPrice !== null && product.price_kes > maxPrice) {
+    return false;
+  }
+
+  return true;
+}
+
+function sortProducts(items: CatalogProduct[]) {
+  const sorted = [...items];
+
+  sorted.sort((left, right) => {
+    switch (selectedSort) {
+      case 'price_asc': {
+        const priceDelta = left.price_kes - right.price_kes;
+        if (priceDelta !== 0) return priceDelta;
+        break;
+      }
+      case 'price_desc': {
+        const priceDelta = right.price_kes - left.price_kes;
+        if (priceDelta !== 0) return priceDelta;
+        break;
+      }
+      case 'newest': {
+        const createdDelta = getDateValue(right.created_at) - getDateValue(left.created_at);
+        if (createdDelta !== 0) return createdDelta;
+        break;
+      }
+      default: {
+        const stockDelta = Number(right.in_stock === true) - Number(left.in_stock === true);
+        if (stockDelta !== 0) return stockDelta;
+
+        const featuredRankDelta = Number(left.featured_rank ?? Number.MAX_SAFE_INTEGER) - Number(right.featured_rank ?? Number.MAX_SAFE_INTEGER);
+        if (featuredRankDelta !== 0) return featuredRankDelta;
+        break;
+      }
+    }
+
+    const updatedDelta = getDateValue(right.updated_at) - getDateValue(left.updated_at);
+    if (updatedDelta !== 0) {
+      return updatedDelta;
+    }
+
+    return left.title.localeCompare(right.title);
+  });
+
+  return sorted;
+}
+
+if (isSupabaseConfigured) {
+  const { data, error: productsError } = await supabase
+    .from('products')
+    .select(productSelectColumns)
+    .order('updated_at', { ascending: false });
 
   if (productsError) {
     console.error('Catalog product query failed', {
@@ -188,29 +180,35 @@ if (isSupabaseConfigured) {
       message: productsError.message,
       path: Astro.url.pathname
     });
-  }
+  } else {
+    const allVisibleProducts = filterVisibleCatalogProducts(
+      normalizeCatalogProducts(((data || []) as Array<Record<string, unknown>>))
+    );
+    const scopedProducts = applyCategoryScope(allVisibleProducts);
+    const filteredProducts = scopedProducts.filter(matchesFilters);
+    const sortedProducts = sortProducts(filteredProducts);
+    const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize));
 
-  products = data || [];
-  totalCount = typeof count === 'number' ? count : products.length;
-  facetRows = facetData || [];
+    facetRows = scopedProducts;
+    totalCount = sortedProducts.length;
+    currentPage = Math.min(requestedPage, totalPages);
 
-  if (isShopMode) {
-    const { data: featuredData } = await supabase
-      .from('products')
-      .select(productSelectColumns)
-      .eq('featured_home', true)
-      .eq('in_stock', true)
-      .order('featured_rank', { ascending: true, nullsFirst: false })
-      .order('updated_at', { ascending: false })
-      .limit(4);
+    const from = (currentPage - 1) * pageSize;
+    products = sortedProducts.slice(from, from + pageSize);
 
-    featuredProducts = (featuredData || []).length > 0
-      ? (featuredData || [])
-      : (products || []).filter((product) => product.in_stock === true).slice(0, 4);
+    if (isShopMode) {
+      featuredProducts = sortProducts(
+        allVisibleProducts.filter((product) => product.in_stock === true && product.featured_home === true)
+      ).slice(0, 4);
+
+      if (featuredProducts.length === 0) {
+        featuredProducts = sortProducts(allVisibleProducts.filter((product) => product.in_stock === true)).slice(0, 4);
+      }
+    }
   }
 }
 
-const collectStringFacet = (key: string) =>
+const collectStringFacet = (key: keyof CatalogProduct) =>
   Array.from(
     new Set(
       facetRows
@@ -219,7 +217,7 @@ const collectStringFacet = (key: string) =>
     )
   ).sort((a, b) => a.localeCompare(b));
 
-const collectNumericFacet = (key: string) =>
+const collectNumericFacet = (key: keyof CatalogProduct) =>
   Array.from(
     new Set(
       facetRows
@@ -285,6 +283,7 @@ const activeFilterChips = [
   selectedSort !== 'featured' ? { label: `Sort: ${sortLabels[selectedSort]}`, href: buildHref({ sort: null, page: null }) } : null
 ].filter(Boolean) as Array<{ label: string; href: string }>;
 
+const from = (currentPage - 1) * pageSize;
 const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 const resultStart = totalCount > 0 ? from + 1 : 0;
 const resultEnd = totalCount > 0 ? from + products.length : 0;

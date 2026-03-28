@@ -220,6 +220,10 @@ export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogPr
   };
 }
 
+export function normalizeCatalogProducts(rows: Array<Record<string, unknown>>) {
+  return rows.map((row) => normalizeCatalogProduct(row));
+}
+
 export function isProductInStock(product: CatalogProduct) {
   return product.in_stock === true;
 }
@@ -253,6 +257,10 @@ export function hasCatalogImage(product: CatalogProduct) {
   const gallery = getProductGallery(product);
   const primaryImage = gallery[0];
   return typeof primaryImage === 'string' && !primaryImage.includes('product-placeholder');
+}
+
+export function filterVisibleCatalogProducts(products: CatalogProduct[]) {
+  return products.filter((product) => product.slug && product.title && product.price_kes > 0 && hasCatalogImage(product));
 }
 
 export function getCatalogCategoryKey(product: CatalogProduct) {
@@ -375,9 +383,7 @@ export async function getHomepageProducts(source?: CatalogRuntimeSource) {
 
   const rows = (data || []) as unknown as Array<Record<string, unknown>>;
 
-  return rows
-    .map((row) => normalizeCatalogProduct(row))
-    .filter((product) => product.slug && product.title && product.price_kes > 0);
+  return filterVisibleCatalogProducts(normalizeCatalogProducts(rows));
 }
 
 export async function getCategoryCounts(products?: CatalogProduct[]) {

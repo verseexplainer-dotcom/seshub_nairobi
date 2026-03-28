@@ -2,6 +2,7 @@ import type { CatalogProduct, HomepageUseCaseCollection } from '../types/catalog
 import type { HomeTestimonial } from './homepageContent';
 import {
   countMerchandisingBrands,
+  filterVisibleCatalogProducts,
   getCatalogCategoryKey,
   getConditionLabel,
   getProductSpecChips,
@@ -200,7 +201,7 @@ function pickBalancedProducts(products: CatalogProduct[], limit: number, perCate
 }
 
 function getHomepageCandidates(products: CatalogProduct[]) {
-  return products.filter((product) => product.slug && product.title && product.price_kes > 0);
+  return filterVisibleCatalogProducts(products);
 }
 
 export function selectFeaturedProducts(products: CatalogProduct[], limit = 6) {

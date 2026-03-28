@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import StickyATC from '../../components/StickyATC.astro';
+import { hasCatalogImage, normalizeCatalogProduct } from '../../lib/catalog';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { getSiteAssets } from '../../lib/siteAssets';
 import { sanitizeProductDescription } from '../../lib/sanitize';
@@ -62,10 +63,11 @@ const RELATED_PRODUCT_SELECT = [
 
 let product: Record<string, any> | null = null;
 let related: Array<Record<string, any>> = [];
+const canShowProduct = (item: Record<string, any> | null | undefined) => Boolean(item) && hasCatalogImage(normalizeCatalogProduct(item || {}));
 
 if (isSupabaseConfigured) {
   const { data: productData } = await supabase.from('products').select(PRODUCT_PAGE_SELECT).eq('slug', slug).single();
-  product = productData || null;
+  product = canShowProduct(productData || null) ? (productData || null) : null;
 
   if (product) {
     const relatedIds = new Set<string | number>([product.id]);
@@ -81,7 +83,7 @@ if (isSupabaseConfigured) {
       const sameBrand = (sameBrandData || []) as Array<Record<string, any>>;
 
       for (const item of sameBrand) {
-        if (!relatedIds.has(item.id)) {
+        if (canShowProduct(item) && !relatedIds.has(item.id)) {
           related.push(item);
           relatedIds.add(item.id);
         }
@@ -102,7 +104,7 @@ if (isSupabaseConfigured) {
           break;
         }
 
-        if (!relatedIds.has(item.id)) {
+        if (canShowProduct(item) && !relatedIds.has(item.id)) {
           related.push(item);
           relatedIds.add(item.id);
         }
@@ -123,7 +125,7 @@ if (isSupabaseConfigured) {
           break;
         }
 
-        if (!relatedIds.has(item.id)) {
+        if (canShowProduct(item) && !relatedIds.has(item.id)) {
           related.push(item);
           relatedIds.add(item.id);
         }

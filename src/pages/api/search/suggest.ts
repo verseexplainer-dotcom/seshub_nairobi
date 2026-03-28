@@ -1,3 +1,4 @@
+import { filterVisibleCatalogProducts, normalizeCatalogProducts } from '../../../lib/catalog';
 import { STOREFRONT_CATEGORIES } from '../../../lib/productPresentation';
 import type { APIRoute } from 'astro';
 import { errorResponse, getPublicEnvValue, jsonResponse } from '../../../lib/server/http';
@@ -20,7 +21,7 @@ function escapeLikeTerm(raw: string) {
 
 function buildSearchUrl(supabaseUrl: string, key: SearchKey, term: string) {
   const params = new URLSearchParams({
-    select: 'title,slug,price_kes,in_stock',
+    select: '*',
     limit: String(MAX_RESULTS)
   });
   params.set(key, `ilike.*${term}*`);
@@ -52,7 +53,9 @@ async function fetchProducts(
   }
 
   return {
-    data: data.filter((item) => typeof item?.slug === 'string'),
+    data: filterVisibleCatalogProducts(
+      normalizeCatalogProducts(data.filter((item) => item && typeof item === 'object') as Array<Record<string, unknown>>)
+    ),
     ok: true
   };
 }
