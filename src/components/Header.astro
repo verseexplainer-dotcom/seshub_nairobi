@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { mainShopLinks, supportLinks } from '../lib/storefront';
 import type { SessionLocals } from '../lib/app-types';
@@ -6,6 +7,8 @@ import type { SessionLocals } from '../lib/app-types';
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const logoImage = siteAssets.logo;
 const logoOnError = buildImageOnError(logoImage.fallback);
+const logoWidth = 96;
+const logoHeight = 96;
 const locals = Astro.locals as SessionLocals;
 const user = locals.user;
 const isStaff = locals.isStaff;
@@ -26,7 +29,16 @@ const mobileLinks = [...mainShopLinks, ...supportLinks];
   <div class="container header-shell">
     <a href="/" class="brand" aria-label="SES ICT HUB home">
       <span class="brand-mark">
-        <img src={logoImage.src} alt="SES ICT HUB logo" class="brand-logo" loading="eager" decoding="async" onerror={logoOnError} />
+        <Image
+          src={logoImage.src}
+          alt="SES ICT HUB logo"
+          width={logoWidth}
+          height={logoHeight}
+          class="brand-logo"
+          loading="eager"
+          decoding="async"
+          onerror={logoOnError}
+        />
       </span>
     </a>
 

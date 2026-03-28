@@ -1,6 +1,7 @@
 ---
 import { getSiteAssets } from '../lib/siteAssets';
 import { getProductPresentation } from '../lib/productPresentation';
+import { buildWhatsAppLink } from '../lib/storefront';
 
 interface Props {
   product: Record<string, any>;
@@ -15,9 +16,9 @@ const presentation = getProductPresentation(product, {
   publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
   fallbackImage
 });
-const whatsAppUrl = `https://wa.me/254720480475?text=${encodeURIComponent(
+const whatsAppUrl = buildWhatsAppLink(
   `Hi SES ICT HUB, I'm interested in: ${presentation.rawTitle} — https://sesicthub.co.ke/product/${product.slug}`
-)}`;
+);
 const escapeHtml = (value: unknown) =>
   String(value ?? '')
     .replace(/&/g, '&amp;')

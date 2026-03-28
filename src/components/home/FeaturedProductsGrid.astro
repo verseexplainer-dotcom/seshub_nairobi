@@ -31,7 +31,13 @@ const tabs = [
 
     {tabs.length > 0 ? (
       <>
-        <div class="tab-row" role="tablist" aria-label="Homepage product groups">
+        <div class="tab-shell">
+          <div class="tab-copy">
+            <p class="eyebrow">Browse by intent</p>
+            <p>Check the current highlights here on the page.</p>
+          </div>
+
+          <div class="tab-row" role="tablist" aria-label="Homepage product groups">
           {tabs.map((tab, index) => (
             <button
               type="button"
@@ -42,9 +48,10 @@ const tabs = [
               aria-controls={`panel-${tab.id}`}
               id={`tab-${tab.id}`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           ))}
+          </div>
         </div>
 
         {tabs.map((tab, index) => (
@@ -103,19 +110,52 @@ const tabs = [
 </section>
 
 <style>
-  .tab-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
+  .tab-shell {
+    display: grid;
+    gap: 0.8rem;
     margin-bottom: 1.25rem;
   }
 
+  .tab-copy {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .tab-copy .eyebrow {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .tab-copy p:last-child {
+    margin: 0;
+    color: var(--color-text-muted);
+    max-width: 42rem;
+  }
+
+  .tab-row {
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+    scrollbar-width: none;
+  }
+
+  .tab-row::-webkit-scrollbar {
+    display: none;
+  }
+
   .tab-button {
+    flex: 0 0 auto;
     min-height: 2.85rem;
-    padding: 0.7rem 1rem;
-    border: 1px solid rgba(203, 213, 225, 0.74);
+    min-width: clamp(7rem, 22vw, 9.25rem);
+    padding: 0.72rem 1rem;
+    border: 1px solid rgba(203, 213, 225, 0.82);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.9);
     color: var(--color-text-soft);
     font-size: 0.92rem;
     font-weight: 800;
@@ -127,10 +167,10 @@ const tabs = [
   }
 
   .tab-button.is-active {
-    border-color: rgba(21, 93, 252, 0.18);
-    background: linear-gradient(135deg, rgba(21, 93, 252, 0.12), rgba(8, 145, 178, 0.08));
+    border-color: rgba(21, 93, 252, 0.24);
+    background: linear-gradient(135deg, rgba(21, 93, 252, 0.16), rgba(8, 145, 178, 0.08));
     color: var(--color-primary-strong);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 10px 24px rgba(21, 93, 252, 0.14);
   }
 
   .products-grid {
@@ -146,6 +186,15 @@ const tabs = [
   }
 
   @media (min-width: 740px) {
+    .tab-shell {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .tab-row {
+      justify-content: flex-end;
+    }
+
     .products-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

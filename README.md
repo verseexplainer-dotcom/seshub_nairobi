@@ -16,6 +16,24 @@ Astro + Supabase storefront for SES ICT HUB, deployed only as a **Cloudflare Wor
 - `wrangler.jsonc` Worker runtime config
 - `scripts/deploy-worker.sh` locked deploy script
 
+Guardrail and copy-control structure:
+
+```text
+/
+├── AGENTS.md
+├── PROJECT_GUARDRAILS.md
+├── tools/
+│   ├── copy-lint.js
+│   ├── copy-lint-rules.md
+├── .codex/
+│   ├── rules/
+│   │   ├── frontend.md
+│   │   ├── api.md
+│   │   ├── database.md
+│   ├── hooks/
+│   │   ├── pre-commit.sh
+```
+
 ## Requirements
 - Node.js 20+
 - npm 10+

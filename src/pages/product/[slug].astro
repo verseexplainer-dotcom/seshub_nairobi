@@ -7,30 +7,80 @@ import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { getSiteAssets } from '../../lib/siteAssets';
 import { sanitizeProductDescription } from '../../lib/sanitize';
 import { getProductPresentation, getWarrantyLabel, normalizeText } from '../../lib/productPresentation';
+import { buildWhatsAppLink } from '../../lib/storefront';
 
 export const prerender = false;
 const { slug } = Astro.params;
+const PRODUCT_PAGE_SELECT = [
+  'id',
+  'slug',
+  'title',
+  'category',
+  'brand',
+  'price_kes',
+  'compare_at_kes',
+  'in_stock',
+  'stock_qty',
+  'condition',
+  'refurb_grade',
+  'short_specs',
+  'description',
+  'warranty_months',
+  'images',
+  'featured_home',
+  'featured_rank',
+  'sku',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'storage_type',
+  'screen_in',
+  'seo_title',
+  'meta_description'
+].join(', ');
+const RELATED_PRODUCT_SELECT = [
+  'id',
+  'slug',
+  'title',
+  'category',
+  'brand',
+  'price_kes',
+  'compare_at_kes',
+  'in_stock',
+  'stock_qty',
+  'condition',
+  'refurb_grade',
+  'short_specs',
+  'warranty_months',
+  'images',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'storage_type',
+  'screen_in'
+].join(', ');
 
 let product: Record<string, any> | null = null;
 let related: Array<Record<string, any>> = [];
 
 if (isSupabaseConfigured) {
-  const { data: productData } = await supabase.from('products').select('*').eq('slug', slug).single();
+  const { data: productData } = await supabase.from('products').select(PRODUCT_PAGE_SELECT).eq('slug', slug).single();
   product = productData || null;
 
   if (product) {
     const relatedIds = new Set<string | number>([product.id]);
 
     if (normalizeText(product.brand)) {
-      const { data: sameBrand } = await supabase
+      const { data: sameBrandData } = await supabase
         .from('products')
-        .select('*')
+        .select(RELATED_PRODUCT_SELECT)
         .eq('category', product.category)
         .eq('brand', product.brand)
         .neq('id', product.id)
         .limit(4);
+      const sameBrand = (sameBrandData || []) as Array<Record<string, any>>;
 
-      for (const item of sameBrand || []) {
+      for (const item of sameBrand) {
         if (!relatedIds.has(item.id)) {
           related.push(item);
           relatedIds.add(item.id);
@@ -39,14 +89,15 @@ if (isSupabaseConfigured) {
     }
 
     if (related.length < 4) {
-      const { data: sameCategory } = await supabase
+      const { data: sameCategoryData } = await supabase
         .from('products')
-        .select('*')
+        .select(RELATED_PRODUCT_SELECT)
         .eq('category', product.category)
         .neq('id', product.id)
         .limit(8);
+      const sameCategory = (sameCategoryData || []) as Array<Record<string, any>>;
 
-      for (const item of sameCategory || []) {
+      for (const item of sameCategory) {
         if (related.length >= 4) {
           break;
         }
@@ -59,14 +110,15 @@ if (isSupabaseConfigured) {
     }
 
     if (related.length < 4) {
-      const { data: featuredFallback } = await supabase
+      const { data: featuredFallbackData } = await supabase
         .from('products')
-        .select('*')
+        .select(RELATED_PRODUCT_SELECT)
         .eq('featured_home', true)
         .neq('id', product.id)
         .limit(8);
+      const featuredFallback = (featuredFallbackData || []) as Array<Record<string, any>>;
 
-      for (const item of featuredFallback || []) {
+      for (const item of featuredFallback) {
         if (related.length >= 4) {
           break;
         }
@@ -92,6 +144,9 @@ const presentation = getProductPresentation(product, {
   publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
   fallbackImage
 });
+const productWhatsappHref = buildWhatsAppLink(
+  `Hi SES ICT HUB, I'm interested in: ${presentation.rawTitle} — https://sesicthub.co.ke/product/${product.slug}`
+);
 const safeDescriptionHtml = sanitizeProductDescription(product.description || '');
 const productSeoTitle = normalizeText(product.seo_title) || normalizeText(product.title) || 'Product';
 const plainMetaDescription = String(product.meta_description || product.short_specs || product.description || '')
@@ -285,7 +340,7 @@ const productStructuredData = {
               </button>
             )}
             <a
-              href={`https://wa.me/254720480475?text=${encodeURIComponent(`Hi SES ICT HUB, I'm interested in: ${presentation.rawTitle} — https://sesicthub.co.ke/product/${product.slug}`)}`}
+              href={productWhatsappHref}
               class="pill-button whatsapp-button cta-button"
               target="_blank"
               rel="noreferrer"

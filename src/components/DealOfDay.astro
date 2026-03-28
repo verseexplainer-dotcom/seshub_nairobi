@@ -1,5 +1,6 @@
 ---
-import { buildImageOnError, getProductImageSources, getSiteAssets } from '../lib/siteAssets';
+import { getPrimaryImage } from '../lib/images';
+import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { buildWhatsAppLink } from '../lib/storefront';
 import { formatKES, getAvailabilityLabel } from '../lib/productPresentation';
 
@@ -11,9 +12,15 @@ interface Props {
 const { product, deadlineISO } = Astro.props as Props;
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const heroImage = siteAssets.hero;
-const imageSource = getProductImageSources(Array.isArray(product?.images) ? product.images[0] : undefined, import.meta.env.PUBLIC_SUPABASE_URL, siteAssets.productPlaceholder);
 const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
-const imageOnError = buildImageOnError(imageSource.fallback, finalFallbackImage);
+const localPlaceholder = '/product-placeholder.svg';
+const imageSource = product
+  ? getPrimaryImage(product, {
+    publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+    fallbackImage: finalFallbackImage
+  })
+  : heroImage.src;
+const imageOnError = buildImageOnError(finalFallbackImage, localPlaceholder);
 const hasDiscount = Number(product?.compare_at_kes || 0) > Number(product?.price_kes || 0);
 const discountAmount = Math.max(0, Number(product?.compare_at_kes || 0) - Number(product?.price_kes || 0));
 const dealLabel = product?.title || "today's offer";
@@ -59,7 +66,7 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of
 
       <div class="deal-card surface-card">
         <div class="deal-card-media">
-          <img src={product ? imageSource.src : heroImage.src} alt={product?.title || 'Deal of the day visual'} loading="lazy" decoding="async" onerror={product ? imageOnError : buildImageOnError(heroImage.fallback, finalFallbackImage)} />
+          <img src={product ? imageSource : heroImage.src} alt={product?.title || 'Deal of the day visual'} loading="lazy" decoding="async" onerror={product ? imageOnError : buildImageOnError(heroImage.fallback, finalFallbackImage)} />
         </div>
 
         <div class="deal-card-body">

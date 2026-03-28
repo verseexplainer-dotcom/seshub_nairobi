@@ -4,6 +4,7 @@ import PortalShell from '../../../components/PortalShell.astro';
 import StatusPill from '../../../components/StatusPill.astro';
 import { accountNavItems } from '../../../lib/navigation';
 import { describeOrderEvent, formatDateTime, formatKes, getFulfillmentStatusTone, getPaymentStatusTone, titleCaseStatus } from '../../../lib/order-utils';
+import { buildWhatsAppLink } from '../../../lib/storefront';
 import { createServerSupabaseClient } from '../../../lib/supabase-server';
 
 const supabase = createServerSupabaseClient({
@@ -28,7 +29,7 @@ if (!order) {
 const statusEvents = [...(order.order_status_events || [])].sort((a, b) =>
   a.created_at.localeCompare(b.created_at)
 );
-const whatsappText = encodeURIComponent(
+const whatsappHref = buildWhatsAppLink(
   `Hello SES ICT HUB, I need help with order ${order.order_number}.`
 );
 ---
@@ -127,7 +128,7 @@ const whatsappText = encodeURIComponent(
         </div>
         <a
           class="pill-button accent"
-          href={`https://wa.me/254720480475?text=${whatsappText}`}
+          href={whatsappHref}
           target="_blank"
         >
           Message us on WhatsApp

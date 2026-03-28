@@ -8,7 +8,7 @@ import { getCategorySlug, normalizeText, parsePositiveNumber } from './productPr
 import { getRuntimeEnv } from './runtime';
 
 const LOW_STOCK_THRESHOLD = 3;
-const HOMEPAGE_PRODUCT_COLUMNS = [
+const HOMEPAGE_PRODUCT_COLUMN_NAMES = [
   'id',
   'slug',
   'title',
@@ -40,7 +40,14 @@ const HOMEPAGE_PRODUCT_COLUMNS = [
   'meta_description',
   'created_at',
   'updated_at'
-].join(',');
+];
+
+type HomepageCatalogQueryError = {
+  code?: string | null;
+  details?: string | null;
+  hint?: string | null;
+  message?: string | null;
+};
 
 const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
   {
@@ -89,6 +96,7 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
 
 const PREFERRED_HOME_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Epson'];
 type CatalogRuntimeSource = { locals?: SessionLocals | null } | SessionLocals | null | undefined;
+let homepageImageOverridesAvailable: boolean | null = null;
 
 function toStringOrNull(value: unknown) {
   const normalized = normalizeText(value);
@@ -141,6 +149,24 @@ function toStringArray(value: unknown) {
     .split(',')
     .map((entry) => normalizeText(entry))
     .filter(Boolean);
+}
+
+export function getHomepageProductColumns(includeImageOverrides = true) {
+  return HOMEPAGE_PRODUCT_COLUMN_NAMES
+    .filter((column) => includeImageOverrides || column !== 'image_overrides')
+    .join(',');
+}
+
+export function isMissingImageOverridesError(error: HomepageCatalogQueryError | null | undefined) {
+  if (!error || error.code !== '42703') {
+    return false;
+  }
+
+  const errorText = [error.message, error.details, error.hint]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join(' ');
+
+  return /image_overrides/i.test(errorText);
 }
 
 export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogProduct {
@@ -315,13 +341,27 @@ export async function getHomepageProducts(source?: CatalogRuntimeSource) {
     }
   });
 
-  const { data, error } = await supabase
-    .from('products')
-    .select(HOMEPAGE_PRODUCT_COLUMNS)
-    .order('in_stock', { ascending: false })
-    .order('featured_home', { ascending: false })
-    .order('featured_rank', { ascending: true, nullsFirst: false })
-    .order('updated_at', { ascending: false });
+  const fetchHomepageRows = async (includeImageOverrides: boolean) =>
+    supabase
+      .from('products')
+      .select(getHomepageProductColumns(includeImageOverrides))
+      .order('in_stock', { ascending: false })
+      .order('featured_home', { ascending: false })
+      .order('featured_rank', { ascending: true, nullsFirst: false })
+      .order('updated_at', { ascending: false });
+
+  const initialIncludeImageOverrides = homepageImageOverridesAvailable !== false;
+  let { data, error } = await fetchHomepageRows(initialIncludeImageOverrides);
+
+  if (isMissingImageOverridesError(error)) {
+    homepageImageOverridesAvailable = false;
+    console.warn(
+      'Homepage catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+    );
+    ({ data, error } = await fetchHomepageRows(false));
+  } else if (!error && initialIncludeImageOverrides) {
+    homepageImageOverridesAvailable = true;
+  }
 
   if (error) {
     console.error('Homepage catalog query failed', {

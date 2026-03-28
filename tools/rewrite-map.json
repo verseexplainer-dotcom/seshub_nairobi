@@ -1,0 +1,68 @@
+{
+  "replacements": [
+    {
+      "search": "Browse on-site, shortlist quickly, then switch to WhatsApp only when you need human confirmation",
+      "replace": "Browse the site, and if you need help, message us on WhatsApp - one of our team will assist you"
+    },
+    {
+      "search": "Browse on-site, shortlist quickly, then switch to WhatsApp",
+      "replace": "Browse the site, and if you need help, message us on WhatsApp - one of our team will assist you"
+    },
+    {
+      "search": "switch to whatsapp",
+      "replace": "message us on WhatsApp"
+    },
+    {
+      "search": "shortlist quickly",
+      "replace": "pick what you like"
+    },
+    {
+      "search": "seamless experience",
+      "replace": "simple and straightforward"
+    },
+    {
+      "search": "optimize your purchase journey",
+      "replace": "get the help you need before you buy"
+    },
+    {
+      "search": "faster decision-making flow",
+      "replace": "help before you buy"
+    },
+    {
+      "search": "decision-making flow",
+      "replace": "help before you buy"
+    },
+    {
+      "search": "Built for fast decisions, clear stock checks, and real support.",
+      "replace": "Clear stock checks, fair pricing, and help from our team."
+    },
+    {
+      "search": "The homepage stays grounded in practical signals that help buyers move with confidence.",
+      "replace": "The details here stay practical so you can check what matters before you order."
+    },
+    {
+      "search": "throughout the buying flow",
+      "replace": "before you buy"
+    },
+    {
+      "search": "without leaving the SES ICT HUB flow",
+      "replace": "before ordering"
+    },
+    {
+      "search": "If a shopper is not ready to buy immediately, these guide cards keep them moving without leaving the SES ICT HUB flow.",
+      "replace": "If you want a bit more detail before you order, these guides are here to help."
+    },
+    {
+      "search": "jump into a detailed admin workflow for each one",
+      "replace": "open each one and follow it up"
+    },
+    {
+      "search": "Ask first",
+      "replace": "Check availability"
+    },
+    {
+      "search": "Switch between current highlights without leaving the homepage grid.",
+      "replace": "Check the current highlights here on the page."
+    }
+  ]
+}

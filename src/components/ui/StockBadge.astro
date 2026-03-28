@@ -5,14 +5,16 @@ import { getStockMeta } from '../../lib/productPresentation';
 interface Props {
   product: CatalogProduct;
   showDetail?: boolean;
+  badgeLabel?: string;
 }
 
-const { product, showDetail = false } = Astro.props as Props;
+const { product, showDetail = false, badgeLabel = '' } = Astro.props as Props;
 const stock = getStockMeta(product);
+const visibleLabel = badgeLabel.trim() || stock.badge;
 ---
 
 <div class="stock-shell">
-  <span class={`stock-badge ${stock.tone}`}>{stock.badge}</span>
+  <span class={`stock-badge ${stock.tone}`}>{visibleLabel}</span>
   {showDetail && <span class={`stock-detail ${stock.tone}`}>{stock.detail}</span>}
 </div>
 

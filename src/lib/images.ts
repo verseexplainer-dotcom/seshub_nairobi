@@ -47,6 +47,10 @@ export function resolveProductImage(image: unknown, publicSupabaseUrl?: string |
     return source;
   }
 
+  if (source.startsWith('/storage/v1/object/public/product-images/')) {
+    return normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${source}` : source;
+  }
+
   if (source.startsWith('/')) {
     return source;
   }

@@ -34,7 +34,6 @@ except ImportError:  # pragma: no cover - optional local dependency
 
 
 FIXED_PREFIX_COLUMNS = 6
-REQUIRED_SUFFIX_COLUMNS = 9
 MIN_SCREEN_INCHES = 3.5
 MAX_SCREEN_INCHES = 40.0
 TB_IN_GB = 1024
@@ -57,6 +56,24 @@ SOURCE_FIELDNAMES = [
     "condition",
     "warranty",
     "stock_status",
+    "primary_image",
+    "images",
+]
+
+REQUIRED_SUFFIX_FIELDS = [
+    "short_description",
+    "description_html",
+    "meta_title",
+    "meta_description",
+    "focus_keyword",
+    "search_keywords",
+    "condition",
+    "warranty",
+    "stock_status",
+]
+OPTIONAL_SUFFIX_FIELDS = [
+    "primary_image",
+    "images",
 ]
 
 NORMALIZED_FIELDNAMES = [
@@ -73,6 +90,7 @@ NORMALIZED_FIELDNAMES = [
     "short_specs",
     "description",
     "warranty_months",
+    "images",
     "cpu",
     "ram_gb",
     "storage_gb",
@@ -149,9 +167,14 @@ def looks_like_images_cell(value: str) -> bool:
     return any(marker in text for marker in image_markers)
 
 
-def reconstruct_source_row(row: list[str], row_number: int) -> dict[str, str]:
+def infer_trailing_image_fields(header: list[str]) -> list[str]:
+    normalized_header = [as_text(value).lower() for value in header]
+    return [field for field in OPTIONAL_SUFFIX_FIELDS if field in normalized_header]
+
+
+def reconstruct_source_row(row: list[str], row_number: int, trailing_image_fields: list[str]) -> dict[str, str]:
     trimmed = trim_trailing_blanks(row)
-    minimum_length = FIXED_PREFIX_COLUMNS + 1 + REQUIRED_SUFFIX_COLUMNS
+    minimum_length = FIXED_PREFIX_COLUMNS + 1 + len(REQUIRED_SUFFIX_FIELDS)
     if len(trimmed) < minimum_length:
         raise RuntimeError(
             f"Row {row_number} is too short to reconstruct safely: expected at least "
@@ -159,11 +182,11 @@ def reconstruct_source_row(row: list[str], row_number: int) -> dict[str, str]:
         )
 
     working = list(trimmed)
+    reconstructed = {field: "" for field in SOURCE_FIELDNAMES}
 
-    # Some exports append a trailing `images` cell plus one or more blank helper
-    # columns before it. Those are not part of the source import shape.
-    if working and looks_like_images_cell(working[-1]):
-        working.pop()
+    for field in reversed(trailing_image_fields):
+        if working and looks_like_images_cell(working[-1]):
+            reconstructed[field] = working.pop().strip()
 
     while len(working) > minimum_length and not str(working[-1]).strip():
         working.pop()
@@ -176,10 +199,10 @@ def reconstruct_source_row(row: list[str], row_number: int) -> dict[str, str]:
 
     spec_parts = [
         part.strip()
-        for part in working[FIXED_PREFIX_COLUMNS : len(working) - REQUIRED_SUFFIX_COLUMNS]
+        for part in working[FIXED_PREFIX_COLUMNS : len(working) - len(REQUIRED_SUFFIX_FIELDS)]
         if part.strip()
     ]
-    reconstructed = {
+    reconstructed.update({
         "title": working[0].strip(),
         "slug": working[1].strip(),
         "source_category": working[2].strip(),
@@ -187,16 +210,12 @@ def reconstruct_source_row(row: list[str], row_number: int) -> dict[str, str]:
         "price_kes": working[4].strip(),
         "compare_at_price": working[5].strip(),
         "short_specs": ", ".join(spec_parts),
-        "short_description": working[-9].strip(),
-        "description_html": working[-8].strip(),
-        "meta_title": working[-7].strip(),
-        "meta_description": working[-6].strip(),
-        "focus_keyword": working[-5].strip(),
-        "search_keywords": working[-4].strip(),
-        "condition": working[-3].strip(),
-        "warranty": working[-2].strip(),
-        "stock_status": working[-1].strip(),
-    }
+    })
+
+    suffix_start = len(working) - len(REQUIRED_SUFFIX_FIELDS)
+    for index, field in enumerate(REQUIRED_SUFFIX_FIELDS, start=suffix_start):
+        reconstructed[field] = working[index].strip()
+
     return reconstructed
 
 
@@ -204,9 +223,10 @@ def read_source_rows(path: Path, limit: int = 0) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle)
-        next(reader, None)
+        header = next(reader, None) or []
+        trailing_image_fields = infer_trailing_image_fields(header)
         for index, row in enumerate(reader, start=2):
-            rows.append(reconstruct_source_row(row, index))
+            rows.append(reconstruct_source_row(row, index, trailing_image_fields))
             if limit and len(rows) >= limit:
                 break
     return rows
@@ -349,6 +369,28 @@ def infer_refurb_grade(category: str, condition: str, description_html: str) -> 
     return "grade_a"
 
 
+def parse_images(primary_image: str, images: str) -> list[str]:
+    values: list[str] = []
+
+    for raw in [primary_image, images]:
+        if not as_text(raw):
+            continue
+
+        parts = [part.strip() for part in str(raw).split(",") if part.strip()]
+        values.extend(parts)
+
+    unique_values: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = value.lower()
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        unique_values.append(value)
+
+    return unique_values
+
+
 def build_text_blob(source: dict[str, str]) -> str:
     return " ".join(
         part
@@ -411,6 +453,7 @@ def map_source_row(source: dict[str, str]) -> tuple[dict[str, Any] | None, list[
     storage_gb, storage_type = extract_storage(text_blob)
     screen_in = extract_screen_in(text_blob)
     refurb_grade = infer_refurb_grade(category or "", condition or "", source["description_html"])
+    images = parse_images(source.get("primary_image", ""), source.get("images", ""))
 
     payload: dict[str, Any] = {
         "slug": slug,
@@ -425,6 +468,7 @@ def map_source_row(source: dict[str, str]) -> tuple[dict[str, Any] | None, list[
         "meta_description": as_text(source["meta_description"]) or None,
         "condition": condition,
         "warranty_months": warranty_months,
+        "images": images or [],
         "in_stock": in_stock,
         "stock_qty": stock_qty,
         "refurb_grade": refurb_grade,
@@ -457,6 +501,8 @@ def payload_to_csv_row(payload: dict[str, Any]) -> dict[str, str]:
             row[field] = ""
         elif isinstance(value, (int, float)):
             row[field] = csv_number(value)
+        elif isinstance(value, (list, dict)):
+            row[field] = json.dumps(value, ensure_ascii=False)
         else:
             row[field] = str(value)
     return row
@@ -511,36 +557,72 @@ def load_supabase_env() -> tuple[str, str]:
     return supabase_url, service_role_key
 
 
-def fetch_existing_products(supabase_url: str, service_role_key: str) -> dict[str, str]:
-    url = f"{supabase_url}/rest/v1/products?select=id,slug&limit=5000"
+def fetch_existing_products(supabase_url: str, service_role_key: str) -> dict[str, dict[str, Any]]:
+    url = f"{supabase_url}/rest/v1/products?select=id,slug,images&limit=5000"
     headers = {
         "apikey": service_role_key,
         "Authorization": f"Bearer {service_role_key}",
     }
     response = http_json_request("GET", url, headers)
-    existing: dict[str, str] = {}
+    existing: dict[str, dict[str, Any]] = {}
     for row in response or []:
         slug = as_text(row.get("slug")).lower()
         product_id = as_text(row.get("id"))
         if slug and product_id:
-            existing[slug] = product_id
+            existing[slug] = {
+                "id": product_id,
+                "images": row.get("images"),
+            }
     return existing
 
 
 def delete_missing_products(
     endpoint: str,
     headers: dict[str, str],
-    existing: dict[str, str],
+    existing: dict[str, dict[str, Any]],
     keep_slugs: set[str],
 ) -> int:
     deleted = 0
-    for slug, product_id in existing.items():
+    for slug, product in existing.items():
         if slug in keep_slugs:
+            continue
+        product_id = as_text(product.get("id"))
+        if not product_id:
             continue
         query = urllib.parse.urlencode({"id": f"eq.{product_id}"})
         http_json_request("DELETE", f"{endpoint}?{query}", headers)
         deleted += 1
     return deleted
+
+
+def normalize_existing_images(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [as_text(entry) for entry in value if as_text(entry)]
+
+    if isinstance(value, str):
+        text = as_text(value)
+        if not text:
+            return []
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError:
+                return []
+            return [as_text(entry) for entry in parsed if as_text(entry)] if isinstance(parsed, list) else []
+        return [text]
+
+    return []
+
+
+def merge_existing_images(payload: dict[str, Any], existing_product: dict[str, Any] | None) -> dict[str, Any]:
+    next_payload = dict(payload)
+    incoming_images = payload.get("images")
+    if isinstance(incoming_images, list) and incoming_images:
+        return next_payload
+
+    preserved_images = normalize_existing_images((existing_product or {}).get("images"))
+    next_payload["images"] = preserved_images if preserved_images else []
+    return next_payload
 
 
 def apply_to_supabase(payloads: list[dict[str, Any]], delete_missing: bool = False) -> tuple[int, int, int]:
@@ -557,13 +639,15 @@ def apply_to_supabase(payloads: list[dict[str, Any]], delete_missing: bool = Fal
     inserted = 0
     updated = 0
     for payload in payloads:
-        existing_id = existing.get(as_text(payload.get("slug")).lower())
+        existing_product = existing.get(as_text(payload.get("slug")).lower())
+        next_payload = merge_existing_images(payload, existing_product)
+        existing_id = as_text((existing_product or {}).get("id"))
         if existing_id:
             query = urllib.parse.urlencode({"id": f"eq.{existing_id}"})
-            http_json_request("PATCH", f"{endpoint}?{query}", headers, payload)
+            http_json_request("PATCH", f"{endpoint}?{query}", headers, next_payload)
             updated += 1
         else:
-            http_json_request("POST", endpoint, headers, payload)
+            http_json_request("POST", endpoint, headers, next_payload)
             inserted += 1
 
     deleted = delete_missing_products(endpoint, headers, existing, keep_slugs) if delete_missing else 0

@@ -435,19 +435,35 @@ const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing the
   }
 
   @media (max-width: 979px) {
+    .hero-stage {
+      padding-block: clamp(1.5rem, 5vw, 2.4rem) clamp(2rem, 7vw, 3.1rem);
+    }
+
+    .hero-stage::before {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 32%, rgba(255, 255, 255, 0.82) 58%, rgba(255, 255, 255, 0.94) 100%),
+        linear-gradient(145deg, rgba(21, 93, 252, 0.16), rgba(8, 145, 178, 0.06) 38%, transparent 74%),
+        var(--hero-stage) center top / 132% auto no-repeat;
+    }
+
     .hero-stage::after {
-      width: 100%;
-      height: 16rem;
-      inset: auto 0 0 0;
-      opacity: 0.1;
+      width: min(17rem, 72vw);
+      height: min(11.5rem, 46vw);
+      inset: 1.15rem -2rem auto auto;
+      opacity: 0.18;
     }
 
     .hero-grid {
       min-height: auto;
+      gap: 1.15rem;
     }
 
     .hero-visual {
-      max-width: 32rem;
+      max-width: 100%;
+    }
+
+    .hero-copy {
+      max-width: 31rem;
     }
 
     .mini-grid {

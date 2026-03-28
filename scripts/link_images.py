@@ -34,6 +34,7 @@ BUCKET = "product-images"
 
 DRY_RUN = "--dry-run" in sys.argv
 ALLOW_LOW_CONFIDENCE = "--allow-low-confidence" in sys.argv
+ONLY_MISSING_IMAGES = "--only-missing-images" in sys.argv
 
 def parse_arg_value(flag: str, default: str) -> str:
     for i, arg in enumerate(sys.argv):
@@ -111,6 +112,28 @@ def normalize(text: str) -> str:
 
 def public_url(filename: str) -> str:
     return f"{URL}/storage/v1/object/public/{BUCKET}/{filename}"
+
+
+def fetch_products() -> list[dict]:
+    base_fields = "id, slug, title, images, category"
+    try:
+        return supabase.table("products").select(f"{base_fields}, image_overrides").execute().data or []
+    except Exception as exc:
+        if "image_overrides" not in str(exc):
+            raise
+        print("ℹ️  products.image_overrides not present; checking existing `images` only.")
+        return supabase.table("products").select(base_fields).execute().data or []
+
+
+def has_existing_images(product: dict) -> bool:
+    for field in ("image_overrides", "images"):
+        value = product.get(field)
+        if isinstance(value, list):
+            if any(isinstance(entry, str) and entry.strip() for entry in value):
+                return True
+        elif isinstance(value, str) and value.strip():
+            return True
+    return False
 
 
 def list_bucket_files() -> list[str]:
@@ -547,6 +570,8 @@ def link_images():
     print(f"🎚️  Minimum confidence: {MIN_CONFIDENCE:.2f}")
     if ALLOW_LOW_CONFIDENCE:
         print("⚠️  Low confidence updates enabled via --allow-low-confidence")
+    if ONLY_MISSING_IMAGES:
+        print("🧼  Only products without existing images/image_overrides will be updated")
     overrides = load_overrides(OVERRIDES_FILE)
     if overrides:
         print(f"🛠️  Loaded {len(overrides)} manual overrides from {OVERRIDES_FILE}")
@@ -582,8 +607,7 @@ def link_images():
 
     # 2. Fetch all products
     print("📦  Fetching products…")
-    response = supabase.table("products").select("id, slug, title, images, category").execute()
-    products = response.data
+    products = fetch_products()
 
     if not products:
         print("⚠️  No products found in the table.")
@@ -604,6 +628,7 @@ def link_images():
     # 3. Match & update
     updated = 0
     skipped = 0
+    skipped_existing_images = 0
     no_match = []
     low_confidence = []
     overridden = 0
@@ -612,6 +637,10 @@ def link_images():
         slug  = p["slug"]
         title = p.get("title", "")
         pid   = p["id"]
+
+        if ONLY_MISSING_IMAGES and has_existing_images(p):
+            skipped_existing_images += 1
+            continue
 
         override_files = overrides.get(slug) or overrides.get(str(slug).strip().lower())
         strategy = "manual_override" if override_files else "no_match"
@@ -663,6 +692,8 @@ def link_images():
     print("\n" + "─" * 50)
     print(f"✅  Matched & {'would update' if DRY_RUN else 'updated'}: {updated}")
     print(f"🛠️   Updated via manual overrides:   {overridden}")
+    if ONLY_MISSING_IMAGES:
+        print(f"🖼️   Skipped (already had image data): {skipped_existing_images}")
     print(f"⏭️   Skipped (no matching images):  {skipped}")
 
     if low_confidence:

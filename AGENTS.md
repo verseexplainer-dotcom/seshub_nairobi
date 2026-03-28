@@ -25,6 +25,31 @@ Product data is stored in Supabase and managed through CSV imports.
 
 ---
 
+# Platform Guardrails
+
+Project runtime details:
+
+- Astro storefront with `output: server`
+- `@astrojs/cloudflare`
+- Supabase Postgres + Storage with RLS enabled
+- Cloudflare Worker only deployment
+- TypeScript + vanilla CSS
+- Astro API routes under `src/pages/api/*` are the only API runtime path
+
+Agents must not:
+
+- Move deployment away from Cloudflare Worker
+- Introduce Supabase Edge Functions
+- Move APIs outside `src/pages/api/*`
+- Weaken RLS assumptions or shift writes to the client
+- Replace vanilla CSS with a framework unless explicitly requested
+
+Implementation preference:
+
+- Reuse existing components and structure where practical
+
+---
+
 # Current Product Catalog Scope
 
 The current dataset contains the following product categories:
@@ -326,6 +351,159 @@ Explain changes clearly
 Avoid unnecessary complexity  
 Provide testing instructions  
 Highlight potential mistakes
+
+---
+
+# Voice and Copy Rules
+
+This storefront is a real Nairobi electronics shop.
+
+All customer-facing text must sound like a real shop assistant, seller, or support team member.
+
+Desired tone:
+
+- Natural
+- Calm
+- Clear
+- Practical
+- Trustworthy
+- Local
+- Human
+
+Avoid:
+
+- Hype
+- Fake urgency
+- Corporate jargon
+- Over-explaining
+- Robotic phrasing
+- SaaS-style marketing language
+- Abstract UX or process language
+
+Golden test:
+
+- If it sounds like a UX designer wrote it, rewrite it.
+- If it sounds like a shop assistant said it, keep it.
+
+---
+
+# Human Support Language Rule
+
+Do not use process-style wording such as:
+
+- browse on-site
+- shortlist quickly
+- switch to WhatsApp
+- optimize your purchase journey
+- seamless experience
+- decision-making flow
+- streamline checkout
+- facilitate a smoother journey
+
+Rewrite into direct human language such as:
+
+- Message us on WhatsApp and one of our team will assist you
+- If you need help, just reach out on WhatsApp
+- We can help you confirm before you buy
+- One of our team will attend to you
+- You can talk to us directly before placing the order
+
+---
+
+# Frontend Content Rules
+
+CTA labels:
+
+Prefer:
+
+- Browse Shop
+- Confirm on WhatsApp
+- Check availability
+- Reserve now
+- View details
+- Create account
+- Sign in
+
+Avoid:
+
+- Ask first
+- Submit
+- Proceed
+- Start journey
+- Continue flow
+
+Trust language:
+
+Prefer:
+
+- In stock
+- Limited stock
+- Available on request
+- Same-day Nairobi delivery available
+- Pickup available at our Moi Avenue shop
+- We will confirm before dispatch
+- Tested and ready to use
+
+Avoid:
+
+- best-in-class
+- seamless
+- premium journey
+- frictionless
+- cutting-edge experience
+
+Accounts and checkout:
+
+- Always keep guest checkout clearly available where relevant.
+- Accounts must feel optional and helpful, not required.
+
+WhatsApp positioning:
+
+- Present WhatsApp as optional, helpful, fast, and human.
+- Prefer wording like "If you need help, message us on WhatsApp" or "One of our team will assist you."
+- Avoid wording like "Switch to WhatsApp for faster decision-making" or "Use conversational commerce flow."
+
+---
+
+# Content Audit Expectation
+
+Whenever editing user-facing pages or components, agents must:
+
+- Check for AI-sounding or process-heavy language
+- Simplify overly polished copy
+- Remove fake urgency
+- Tighten CTA wording
+- Remove duplicate content
+- Preserve the tone of a real local storefront
+
+Review text in:
+
+- `src/pages/**/*`
+- `src/components/**/*`
+- layouts
+- auth/account/cart/checkout/support screens
+- footer text
+- metadata and descriptions
+- API responses that users may see
+
+If content sounds too perfect, too abstract, too formal, or too marketing-heavy, rewrite it.
+
+---
+
+# Copy Rewrite Requirement
+
+When frontend copy sounds AI-generated, product-led, or process-heavy, rewrite it before finishing the task.
+
+Agents must:
+
+- Detect AI-sounding or UX-process wording
+- Rewrite common bad phrases into direct human support language
+- Keep the voice aligned with a real Nairobi electronics shop
+- Prefer plain wording that sounds like a shop assistant speaking to a customer
+
+Non-negotiable rule:
+
+- If it sounds like marketing, rewrite it.
 
 ---
 
