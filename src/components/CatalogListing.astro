@@ -3,7 +3,8 @@ import ProductCard from './ProductCard.astro';
 import SearchBar from './SearchBar.astro';
 import {
   filterVisibleCatalogProducts,
-  normalizeCatalogProducts
+  normalizeCatalogProducts,
+  runProductsQuery
 } from '../lib/catalog';
 import {
   SHOP_PATH,
@@ -13,6 +14,7 @@ import {
   formatStorageSize,
   formatNumberLabel,
   getStoreCategoryBySlug,
+  getStoreCategoryQueryValues,
   matchesStoreCategoryValue,
   normalizeText,
   parsePositiveNumber
@@ -61,116 +63,163 @@ const hasFilters =
   maxPrice !== null ||
   selectedSort !== 'featured';
 
-const productSelectColumns = '*';
+const productColumnNames = [
+  'id',
+  'slug',
+  'title',
+  'category',
+  'brand',
+  'price_kes',
+  'compare_at_kes',
+  'in_stock',
+  'stock_qty',
+  'condition',
+  'refurb_grade',
+  'short_specs',
+  'warranty_months',
+  'images',
+  'image_overrides',
+  'featured_home',
+  'featured_rank',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'storage_type',
+  'screen_in'
+];
+const facetColumnNames = [
+  'slug',
+  'title',
+  'category',
+  'brand',
+  'price_kes',
+  'in_stock',
+  'condition',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'screen_in',
+  'images',
+  'image_overrides'
+];
 let products: CatalogProduct[] = [];
 let totalCount = 0;
 let facetRows: CatalogProduct[] = [];
 let featuredProducts: CatalogProduct[] = [];
 let currentPage = requestedPage;
 
-function getDateValue(value: string | null | undefined) {
-  const parsed = Date.parse(String(value || ''));
-  return Number.isFinite(parsed) ? parsed : 0;
+function applyCatalogScope(query: any) {
+  if (activeCategory) {
+    query = query.in('category', getStoreCategoryQueryValues(activeCategory));
+  }
+
+  return query;
 }
 
-function applyCategoryScope(products: CatalogProduct[]) {
-  if (!activeCategory) {
-    return products;
+function applyCatalogFilters(query: any) {
+  query = applyCatalogScope(query);
+
+  if (selectedBrand) {
+    query = query.eq('brand', selectedBrand);
   }
 
-  return products.filter((product) => matchesStoreCategoryValue(product.category, activeCategory));
+  if (selectedCondition) {
+    query = query.eq('condition', selectedCondition);
+  }
+
+  if (!isShopMode && selectedCpu) {
+    query = query.eq('cpu', selectedCpu);
+  }
+
+  if (!isShopMode && selectedRamValue !== null) {
+    query = query.eq('ram_gb', selectedRamValue);
+  }
+
+  if (!isShopMode && selectedStorageValue !== null) {
+    query = query.eq('storage_gb', selectedStorageValue);
+  }
+
+  if (!isShopMode && selectedScreenValue !== null) {
+    query = query.eq('screen_in', selectedScreenValue);
+  }
+
+  if (stockFilter === '1') {
+    query = query.eq('in_stock', true);
+  } else if (stockFilter === '0') {
+    query = query.eq('in_stock', false);
+  }
+
+  if (minPrice !== null) {
+    query = query.gte('price_kes', minPrice);
+  }
+
+  if (maxPrice !== null) {
+    query = query.lte('price_kes', maxPrice);
+  }
+
+  return query;
 }
 
-function matchesFilters(product: CatalogProduct) {
-  if (selectedBrand && normalizeText(product.brand) !== selectedBrand) {
-    return false;
+function applyCatalogSort(query: any, sort = selectedSort) {
+  switch (sort) {
+    case 'price_asc':
+      return query
+        .order('price_kes', { ascending: true })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
+    case 'price_desc':
+      return query
+        .order('price_kes', { ascending: false })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
+    case 'newest':
+      return query
+        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
+    default:
+      return query
+        .order('in_stock', { ascending: false })
+        .order('featured_rank', { ascending: true, nullsFirst: false })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
   }
-
-  if (selectedCondition && normalizeText(product.condition) !== selectedCondition) {
-    return false;
-  }
-
-  if (!isShopMode && selectedCpu && normalizeText(product.cpu) !== selectedCpu) {
-    return false;
-  }
-
-  if (!isShopMode && selectedRamValue !== null && product.ram_gb !== selectedRamValue) {
-    return false;
-  }
-
-  if (!isShopMode && selectedStorageValue !== null && product.storage_gb !== selectedStorageValue) {
-    return false;
-  }
-
-  if (!isShopMode && selectedScreenValue !== null && product.screen_in !== selectedScreenValue) {
-    return false;
-  }
-
-  if (stockFilter === '1' && product.in_stock !== true) {
-    return false;
-  }
-
-  if (stockFilter === '0' && product.in_stock !== false) {
-    return false;
-  }
-
-  if (minPrice !== null && product.price_kes < minPrice) {
-    return false;
-  }
-
-  if (maxPrice !== null && product.price_kes > maxPrice) {
-    return false;
-  }
-
-  return true;
-}
-
-function sortProducts(items: CatalogProduct[]) {
-  const sorted = [...items];
-
-  sorted.sort((left, right) => {
-    switch (selectedSort) {
-      case 'price_asc': {
-        const priceDelta = left.price_kes - right.price_kes;
-        if (priceDelta !== 0) return priceDelta;
-        break;
-      }
-      case 'price_desc': {
-        const priceDelta = right.price_kes - left.price_kes;
-        if (priceDelta !== 0) return priceDelta;
-        break;
-      }
-      case 'newest': {
-        const createdDelta = getDateValue(right.created_at) - getDateValue(left.created_at);
-        if (createdDelta !== 0) return createdDelta;
-        break;
-      }
-      default: {
-        const stockDelta = Number(right.in_stock === true) - Number(left.in_stock === true);
-        if (stockDelta !== 0) return stockDelta;
-
-        const featuredRankDelta = Number(left.featured_rank ?? Number.MAX_SAFE_INTEGER) - Number(right.featured_rank ?? Number.MAX_SAFE_INTEGER);
-        if (featuredRankDelta !== 0) return featuredRankDelta;
-        break;
-      }
-    }
-
-    const updatedDelta = getDateValue(right.updated_at) - getDateValue(left.updated_at);
-    if (updatedDelta !== 0) {
-      return updatedDelta;
-    }
-
-    return left.title.localeCompare(right.title);
-  });
-
-  return sorted;
 }
 
 if (isSupabaseConfigured) {
-  const { data, error: productsError } = await supabase
-    .from('products')
-    .select(productSelectColumns)
-    .order('updated_at', { ascending: false });
+  const { count, error: countError } = await applyCatalogFilters(
+    supabase.from('products').select('id', { count: 'exact', head: true })
+  );
+
+  if (countError) {
+    console.error('Catalog product count query failed', {
+      code: countError.code,
+      details: countError.details,
+      hint: countError.hint,
+      message: countError.message,
+      path: Astro.url.pathname
+    });
+  } else {
+    totalCount = count || 0;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    currentPage = Math.min(requestedPage, totalPages);
+  }
+
+  const pageFrom = (currentPage - 1) * pageSize;
+  const pageTo = pageFrom + pageSize - 1;
+  const { data: pagedData, error: productsError } = await runProductsQuery(
+    (selectClause) =>
+      applyCatalogSort(
+        applyCatalogFilters(
+          supabase
+            .from('products')
+            .select(selectClause)
+        )
+      )
+        .range(pageFrom, pageTo),
+    productColumnNames,
+    'Catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+  );
 
   if (productsError) {
     console.error('Catalog product query failed', {
@@ -181,28 +230,93 @@ if (isSupabaseConfigured) {
       path: Astro.url.pathname
     });
   } else {
-    const allVisibleProducts = filterVisibleCatalogProducts(
-      normalizeCatalogProducts(((data || []) as Array<Record<string, unknown>>))
+    products = filterVisibleCatalogProducts(
+      normalizeCatalogProducts(((pagedData || []) as Array<Record<string, unknown>>))
     );
-    const scopedProducts = applyCategoryScope(allVisibleProducts);
-    const filteredProducts = scopedProducts.filter(matchesFilters);
-    const sortedProducts = sortProducts(filteredProducts);
-    const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize));
+  }
 
-    facetRows = scopedProducts;
-    totalCount = sortedProducts.length;
-    currentPage = Math.min(requestedPage, totalPages);
+  const { data: facetData, error: facetError } = await runProductsQuery(
+    (selectClause) =>
+      applyCatalogScope(
+        supabase
+          .from('products')
+          .select(selectClause)
+      ),
+    facetColumnNames,
+    'Catalog facet query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+  );
 
-    const from = (currentPage - 1) * pageSize;
-    products = sortedProducts.slice(from, from + pageSize);
+  if (facetError) {
+    console.error('Catalog facet query failed', {
+      code: facetError.code,
+      details: facetError.details,
+      hint: facetError.hint,
+      message: facetError.message,
+      path: Astro.url.pathname
+    });
+  } else {
+    facetRows = filterVisibleCatalogProducts(
+      normalizeCatalogProducts(((facetData || []) as Array<Record<string, unknown>>))
+    );
+  }
 
-    if (isShopMode) {
-      featuredProducts = sortProducts(
-        allVisibleProducts.filter((product) => product.in_stock === true && product.featured_home === true)
-      ).slice(0, 4);
+  if (isShopMode && !hasFilters) {
+    const { data: featuredData, error: featuredError } = await runProductsQuery(
+      (selectClause) =>
+        applyCatalogSort(
+          supabase
+            .from('products')
+            .select(selectClause)
+            .eq('in_stock', true)
+            .eq('featured_home', true),
+          'featured'
+        )
+          .limit(4),
+      productColumnNames,
+      'Featured products query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+    );
 
-      if (featuredProducts.length === 0) {
-        featuredProducts = sortProducts(allVisibleProducts.filter((product) => product.in_stock === true)).slice(0, 4);
+    if (featuredError) {
+      console.error('Featured products query failed', {
+        code: featuredError.code,
+        details: featuredError.details,
+        hint: featuredError.hint,
+        message: featuredError.message,
+        path: Astro.url.pathname
+      });
+    } else {
+      featuredProducts = filterVisibleCatalogProducts(
+        normalizeCatalogProducts(((featuredData || []) as Array<Record<string, unknown>>))
+      );
+    }
+
+    if (featuredProducts.length === 0) {
+      const { data: fallbackFeaturedData, error: fallbackFeaturedError } = await runProductsQuery(
+        (selectClause) =>
+          applyCatalogSort(
+            supabase
+              .from('products')
+              .select(selectClause)
+              .eq('in_stock', true),
+            'featured'
+          )
+            .limit(4),
+        productColumnNames,
+        'Featured fallback query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+      );
+
+      if (fallbackFeaturedError) {
+        console.error('Featured fallback query failed', {
+          code: fallbackFeaturedError.code,
+          details: fallbackFeaturedError.details,
+          hint: fallbackFeaturedError.hint,
+          message: fallbackFeaturedError.message,
+          path: Astro.url.pathname
+        });
+      } else {
+        featuredProducts = filterVisibleCatalogProducts(
+          normalizeCatalogProducts(((fallbackFeaturedData || []) as Array<Record<string, unknown>>))
+        );
       }
     }
   }

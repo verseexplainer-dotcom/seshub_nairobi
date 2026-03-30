@@ -4,6 +4,7 @@ import ProductCard from '../../components/ProductCard.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import StickyATC from '../../components/StickyATC.astro';
 import { hasCatalogImage, normalizeCatalogProduct } from '../../lib/catalog';
+import { setPublicCacheHeaders } from '../../lib/http-cache';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { getSiteAssets } from '../../lib/siteAssets';
 import { sanitizeProductDescription } from '../../lib/sanitize';
@@ -12,6 +13,7 @@ import { buildWhatsAppLink } from '../../lib/storefront';
 
 export const prerender = false;
 const { slug } = Astro.params;
+setPublicCacheHeaders(Astro.response.headers, Astro.request);
 const PRODUCT_PAGE_SELECT = [
   'id',
   'slug',

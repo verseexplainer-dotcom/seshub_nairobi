@@ -1,6 +1,9 @@
 ---
 import CatalogListing from '../components/CatalogListing.astro';
+import { setPublicCacheHeaders } from '../lib/http-cache';
 import Layout from '../layouts/Layout.astro';
+
+setPublicCacheHeaders(Astro.response.headers, Astro.request);
 ---
 
 <Layout

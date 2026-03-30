@@ -1,5 +1,6 @@
 ---
 import CatalogListing from '../../components/CatalogListing.astro';
+import { setPublicCacheHeaders } from '../../lib/http-cache';
 import Layout from '../../layouts/Layout.astro';
 import { getStoreCategoryBySlug } from '../../lib/productPresentation';
 
@@ -20,6 +21,8 @@ const title = slug === 'all' ? 'Shop Electronics' : category?.label || 'Shop';
 const description = slug === 'all'
   ? 'Browse the main shop page to see everything we have available right now.'
   : `${category?.label} at SES ICT HUB with current prices, useful filters, and honest stock updates.`;
+
+setPublicCacheHeaders(Astro.response.headers, Astro.request);
 ---
 
 <Layout title={title} description={description} canonical={canonical}>
