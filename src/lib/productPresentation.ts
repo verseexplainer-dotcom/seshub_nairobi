@@ -420,7 +420,7 @@ export function resolveProductImageUrl(image: unknown, publicSupabaseUrl: string
   }
 
   if (imagePath.startsWith('/product-images/')) {
-    return imagePath;
+    return normalizedUrl ? `${normalizedUrl}/storage/v1/object/public${imagePath}` : imagePath;
   }
 
   if (imagePath.startsWith('/storage/v1/object/public/product-images/')) {

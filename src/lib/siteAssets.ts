@@ -183,10 +183,12 @@ export function getProductImageSources(
   const normalizedImage = encodeAssetPath(image.replace(/^\/?(product-images\/)?/, ''));
   const normalizedSupabaseUrl = normalizeSupabaseUrl(publicSupabaseUrl);
   const base = normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${PRODUCT_IMAGES_BUCKET_PATH}` : null;
+  const localSrc = `${LOCAL_PRODUCT_IMAGES_PATH}/${normalizedImage}`;
+  const remoteSrc = base ? `${base}/${normalizedImage}` : null;
 
   return {
-    src: `${LOCAL_PRODUCT_IMAGES_PATH}/${normalizedImage}`,
-    fallback: base ? `${base}/${normalizedImage}` : fallbackPlaceholder.src
+    src: remoteSrc || localSrc,
+    fallback: localSrc
   };
 }
 

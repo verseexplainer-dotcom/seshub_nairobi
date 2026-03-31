@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 const CWD = process.cwd();
+const RENAMED_COPY_RE = /\s+\(\d+\)(\.[^./]+)$/;
 
 function parseEnvFile(content) {
   const env = {};
@@ -113,11 +114,20 @@ function parseArgs(argv) {
   const opts = {
     dryRun: false,
     includePublicRoot: false,
+    productImagesDir: '',
+    skipRenamedCopies: true,
   };
 
-  for (const arg of argv.slice(2)) {
+  const args = argv.slice(2);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
     if (arg === '--dry-run') opts.dryRun = true;
     if (arg === '--include-public-root') opts.includePublicRoot = true;
+    if (arg === '--include-renamed-copies') opts.skipRenamedCopies = false;
+    if (arg === '--product-images-dir' && args[index + 1]) {
+      opts.productImagesDir = args[index + 1];
+      index += 1;
+    }
   }
 
   return opts;
@@ -144,6 +154,34 @@ async function ensureDirExists(dirPath) {
   }
 }
 
+async function resolveProductImagesDir(options) {
+  const configured = (options.productImagesDir || process.env.PRODUCT_IMAGES_SOURCE_DIR || '').trim();
+  if (configured) {
+    const absolute = path.isAbsolute(configured) ? configured : path.join(CWD, configured);
+    return { dir: absolute, source: 'configured' };
+  }
+
+  const preferred = path.join(CWD, '.catalog-assets', 'product-images');
+  if (await ensureDirExists(preferred)) {
+    return { dir: preferred, source: 'catalog-assets' };
+  }
+
+  const legacy = path.join(CWD, 'public', 'product-images');
+  if (await ensureDirExists(legacy)) {
+    console.log(
+      'Using legacy product image source at public/product-images. Set PRODUCT_IMAGES_SOURCE_DIR or use --product-images-dir to upload from a gitignored staging folder instead.'
+    );
+    return { dir: legacy, source: 'legacy-public' };
+  }
+
+  return { dir: preferred, source: 'catalog-assets' };
+}
+
+function shouldSkipProductImage(relativePath, options) {
+  if (!options.skipRenamedCopies) return false;
+  return RENAMED_COPY_RE.test(path.basename(relativePath));
+}
+
 async function main() {
   const options = parseArgs(process.argv);
   await loadLocalEnvFiles();
@@ -164,6 +202,7 @@ async function main() {
     console.log(`Using derived Supabase URL from service-role key ref: ${url}`);
   }
 
+  const productImagesSource = await resolveProductImagesDir(options);
   const mappings = [
     {
       localDir: path.join(CWD, 'public', 'site-assets'),
@@ -171,7 +210,7 @@ async function main() {
       keyPrefix: '',
     },
     {
-      localDir: path.join(CWD, 'public', 'product-images'),
+      localDir: productImagesSource.dir,
       bucket: 'product-images',
       keyPrefix: '',
     },
@@ -205,6 +244,7 @@ async function main() {
   let totalUploaded = 0;
   let totalFailed = 0;
   let totalBytes = 0;
+  let totalSkippedRenamedCopies = 0;
 
   for (const mapping of mappings) {
     const hasDir = await ensureDirExists(mapping.localDir);
@@ -213,7 +253,20 @@ async function main() {
       continue;
     }
 
-    const files = await walkFiles(mapping.localDir);
+    const discoveredFiles = await walkFiles(mapping.localDir);
+    const files =
+      mapping.bucket === 'product-images'
+        ? discoveredFiles.filter((absolutePath) => {
+            const relativePath = path
+              .relative(mapping.localDir, absolutePath)
+              .split(path.sep)
+              .join('/');
+            const shouldSkip = shouldSkipProductImage(relativePath, options);
+            if (shouldSkip) totalSkippedRenamedCopies += 1;
+            return !shouldSkip;
+          })
+        : discoveredFiles;
+
     if (files.length === 0) {
       console.log(`No files found in ${mapping.localDir}`);
       continue;
@@ -221,7 +274,11 @@ async function main() {
 
     console.log(`\nBucket: ${mapping.bucket}`);
     console.log(`Source: ${mapping.localDir}`);
-    console.log(`Files discovered: ${files.length}`);
+    console.log(`Files discovered: ${discoveredFiles.length}`);
+    if (mapping.bucket === 'product-images' && discoveredFiles.length !== files.length) {
+      console.log(`Skipped renamed copies: ${discoveredFiles.length - files.length}`);
+    }
+    console.log(`Files selected: ${files.length}`);
 
     totalDiscovered += files.length;
 
@@ -257,6 +314,9 @@ async function main() {
 
   console.log('\nSummary');
   console.log(`Discovered: ${totalDiscovered}`);
+  if (totalSkippedRenamedCopies > 0) {
+    console.log(`Skipped renamed copies: ${totalSkippedRenamedCopies}`);
+  }
   if (options.dryRun) {
     console.log('Dry-run mode: no uploads performed.');
     return;
