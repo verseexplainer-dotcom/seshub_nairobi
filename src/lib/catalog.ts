@@ -70,20 +70,6 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
     description: 'Desk-ready machines for business and office work.',
     href: '/category/desktops',
     accent: '#4f46e5'
-  },
-  {
-    key: 'accessories',
-    label: 'Accessories',
-    description: 'Useful add-ons, peripherals, and finishing touches.',
-    href: '/category/accessories',
-    accent: '#ca8a04'
-  },
-  {
-    key: 'storage',
-    label: 'Storage',
-    description: 'SSDs, HDDs, flash storage, and portable backup options.',
-    href: '/category/accessories',
-    accent: '#0891b2'
   }
 ];
 
