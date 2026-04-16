@@ -113,11 +113,20 @@ function parseArgs(argv) {
   const opts = {
     dryRun: false,
     includePublicRoot: false,
+    bucket: null,
+    missingOnly: false,
   };
 
-  for (const arg of argv.slice(2)) {
+  const args = argv.slice(2);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
     if (arg === '--dry-run') opts.dryRun = true;
     if (arg === '--include-public-root') opts.includePublicRoot = true;
+    if (arg === '--missing-only') opts.missingOnly = true;
+    if (arg === '--bucket' && args[index + 1]) {
+      opts.bucket = args[index + 1].trim();
+      index += 1;
+    }
   }
 
   return opts;
@@ -142,6 +151,40 @@ async function ensureDirExists(dirPath) {
   } catch {
     return false;
   }
+}
+
+async function listBucketFiles(supabase, bucket, prefix = '') {
+  const files = [];
+  let offset = 0;
+  const limit = 1000;
+
+  while (true) {
+    const { data, error } = await supabase.storage.from(bucket).list(prefix, {
+      limit,
+      offset,
+      sortBy: { column: 'name', order: 'asc' },
+    });
+
+    if (error) {
+      throw new Error(`Unable to list ${bucket}/${prefix || ''}: ${error.message}`);
+    }
+
+    const entries = data || [];
+    for (const entry of entries) {
+      const nextPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const isFile = Boolean(entry.id) || Boolean(entry.metadata);
+      if (isFile) {
+        files.push(nextPath);
+      } else {
+        files.push(...await listBucketFiles(supabase, bucket, nextPath));
+      }
+    }
+
+    if (entries.length < limit) break;
+    offset += limit;
+  }
+
+  return files;
 }
 
 async function main() {
@@ -185,6 +228,18 @@ async function main() {
     });
   }
 
+  if (options.bucket) {
+    mappings.splice(
+      0,
+      mappings.length,
+      ...mappings.filter((mapping) => mapping.bucket === options.bucket)
+    );
+
+    if (mappings.length === 0) {
+      throw new Error(`Unsupported bucket filter '${options.bucket}'.`);
+    }
+  }
+
   const supabase = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -205,6 +260,7 @@ async function main() {
   let totalUploaded = 0;
   let totalFailed = 0;
   let totalBytes = 0;
+  let totalSkippedExisting = 0;
 
   for (const mapping of mappings) {
     const hasDir = await ensureDirExists(mapping.localDir);
@@ -224,10 +280,20 @@ async function main() {
     console.log(`Files discovered: ${files.length}`);
 
     totalDiscovered += files.length;
+    const existingFiles = options.missingOnly ? new Set(await listBucketFiles(supabase, mapping.bucket)) : null;
+    if (existingFiles) {
+      console.log(`Existing remote files: ${existingFiles.size}`);
+    }
 
     for (const absolutePath of files) {
       const relative = path.relative(mapping.localDir, absolutePath).split(path.sep).join('/');
       const objectPath = mapping.keyPrefix ? `${mapping.keyPrefix}/${relative}` : relative;
+
+      if (existingFiles?.has(objectPath)) {
+        totalSkippedExisting += 1;
+        console.log(`SKIP  ${mapping.bucket}/${objectPath} (already exists)`);
+        continue;
+      }
 
       if (options.dryRun) {
         console.log(`[dry-run] ${absolutePath} -> ${mapping.bucket}/${objectPath}`);
@@ -257,6 +323,7 @@ async function main() {
 
   console.log('\nSummary');
   console.log(`Discovered: ${totalDiscovered}`);
+  console.log(`Skipped existing: ${totalSkippedExisting}`);
   if (options.dryRun) {
     console.log('Dry-run mode: no uploads performed.');
     return;

@@ -106,6 +106,12 @@ python3 scripts/audit_catalog.py --source dist
 
 # Link product images with confidence threshold + optional manual overrides
 python3 scripts/link_images.py --dry-run --min-confidence 0.80 --overrides-file scripts/image_overrides.json
+
+# Sync product images directly from a CSV that already contains matched_images
+python3 scripts/sync_images_from_csv.py --input /path/to/products_with_matched_images.csv
+
+# Upload only missing local product images to the Supabase bucket
+node scripts/upload-supabase-assets.mjs --bucket product-images --missing-only --dry-run
 ```
 
 Use `scripts/image_overrides.example.json` as a template for manual image mapping overrides.

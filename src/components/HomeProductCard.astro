@@ -1,6 +1,7 @@
 ---
-import { buildImageOnError, getProductImageSources, getSiteAssets } from '../lib/siteAssets';
+import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { buildWhatsAppLink } from '../lib/storefront';
+import { getPrimaryImage } from '../lib/images';
 import {
   formatKES,
   getAvailabilityLabel,
@@ -19,10 +20,12 @@ interface Props {
 const { product, context = 'default', index = 0, tone = 'light' } = Astro.props as Props;
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const primaryImage = Array.isArray(product.images) ? product.images[0] : undefined;
-const imageSource = getProductImageSources(primaryImage, import.meta.env.PUBLIC_SUPABASE_URL, siteAssets.productPlaceholder);
 const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
-const imageOnError = buildImageOnError(imageSource.fallback, finalFallbackImage);
+const imageSource = getPrimaryImage(product, {
+  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+  fallbackImage: finalFallbackImage
+});
+const imageOnError = buildImageOnError(finalFallbackImage, finalFallbackImage);
 const badge = getProductBadge(product, context, index);
 const badgeTone = badge ? getProductBadgeTone(badge) : '';
 const brandLabel = getProductBrand(product);
@@ -34,7 +37,7 @@ const productHref = `/product/${product.slug}`;
 <article class={`home-product-card ${tone === 'contrast' ? 'contrast' : ''}`}>
   <a href={productHref} class="home-product-media" aria-label={`View ${product.title}`}>
     {badge && <span class={`product-badge-chip ${badgeTone}`}>{badge}</span>}
-    <img src={imageSource.src} alt={product.title} loading="lazy" decoding="async" onerror={imageOnError} />
+    <img src={imageSource} alt={product.title} loading="lazy" decoding="async" onerror={imageOnError} />
   </a>
 
   <div class="home-product-body">
@@ -60,8 +63,8 @@ const productHref = `/product/${product.slug}`;
       data-title={product.title}
       data-price={product.price_kes}
       data-slug={product.slug}
-      data-image={imageSource.src}
-      data-image-fallback={imageSource.fallback}
+      data-image={imageSource}
+      data-image-fallback={finalFallbackImage}
     >
       Add to cart
     </button>

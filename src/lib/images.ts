@@ -2,6 +2,14 @@ import { normalizeText } from './productPresentation';
 import { getSiteAssets } from './siteAssets';
 import type { CatalogProduct } from '../types/catalog';
 
+function encodeImagePath(path: string) {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
 function parseImageInput(value: unknown) {
   if (Array.isArray(value)) {
     return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
@@ -51,11 +59,13 @@ export function resolveProductImage(image: unknown, publicSupabaseUrl?: string |
     return source;
   }
 
+  const normalizedImagePath = encodeImagePath(source.replace(/^\/?(product-images\/)?/, ''));
+
   if (!normalizedSupabaseUrl) {
-    return `/product-images/${source.replace(/^product-images\//, '')}`;
+    return `/product-images/${normalizedImagePath}`;
   }
 
-  return `${normalizedSupabaseUrl}/storage/v1/object/public/product-images/${source.replace(/^\/?(product-images\/)?/, '')}`;
+  return `${normalizedSupabaseUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`;
 }
 
 export function getProductGallery(

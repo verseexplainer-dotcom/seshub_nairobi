@@ -82,6 +82,14 @@ export function normalizeText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function encodeImagePath(path: string) {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
 export function toTitleCase(value: string) {
   return value
     .split(/[_\s]+/)
@@ -402,7 +410,7 @@ export function resolveProductImageUrl(image: unknown, publicSupabaseUrl: string
     return normalizedFallback;
   }
 
-  return `${normalizedUrl}/storage/v1/object/public/product-images/${imagePath.replace(/^\//, '')}`;
+  return `${normalizedUrl}/storage/v1/object/public/product-images/${encodeImagePath(imagePath.replace(/^\//, ''))}`;
 }
 
 export function getProductImageUrls(product: Record<string, any>, publicSupabaseUrl: string, fallbackImage: string) {

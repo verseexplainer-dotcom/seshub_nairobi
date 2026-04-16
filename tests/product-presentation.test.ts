@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { getPrimaryImage } from '../src/lib/images';
 import {
   getProductBadge,
   getProductBrand,
@@ -88,7 +89,7 @@ test('image overrides win over the base image array', () => {
   const presentation = getProductPresentation(
     createProduct({
       images: ['base-image.jpg'],
-      image_overrides: ['override-image.jpg']
+      image_overrides: ['folder/override image (2).jpg']
     }),
     {
       publicSupabaseUrl: 'https://project.supabase.co',
@@ -98,7 +99,25 @@ test('image overrides win over the base image array', () => {
 
   assert.equal(
     presentation.primaryImageUrl,
-    'https://project.supabase.co/storage/v1/object/public/product-images/override-image.jpg'
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg'
+  );
+});
+
+test('shared image resolver prefers overrides and safely encodes filenames', () => {
+  const imageUrl = getPrimaryImage(
+    createProduct({
+      images: ['base-image.jpg'],
+      image_overrides: ['folder/override image (2).jpg']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  assert.equal(
+    imageUrl,
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg'
   );
 });
 

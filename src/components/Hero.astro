@@ -1,5 +1,6 @@
 ---
-import { buildImageOnError, getProductImageSources, getSiteAssets } from '../lib/siteAssets';
+import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
+import { getPrimaryImage } from '../lib/images';
 import { buildWhatsAppLink } from '../lib/storefront';
 import { formatKES, getAvailabilityLabel, getProductBrand } from '../lib/productPresentation';
 
@@ -16,8 +17,13 @@ const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const heroImage = siteAssets.hero;
 const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const heroOnError = buildImageOnError(heroImage.fallback, finalFallbackImage);
-const spotlightImage = getProductImageSources(Array.isArray(spotlightProduct?.images) ? spotlightProduct.images[0] : undefined, import.meta.env.PUBLIC_SUPABASE_URL, siteAssets.productPlaceholder);
-const spotlightImageOnError = buildImageOnError(spotlightImage.fallback, finalFallbackImage);
+const spotlightImage = spotlightProduct
+  ? getPrimaryImage(spotlightProduct, {
+      publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+      fallbackImage: finalFallbackImage
+    })
+  : heroImage.src;
+const spotlightImageOnError = buildImageOnError(finalFallbackImage, finalFallbackImage);
 const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I would like help choosing a laptop, smartphone, desktop, or printer from the homepage.');
 const spotlightBrand = spotlightProduct ? getProductBrand(spotlightProduct) : '';
 const stats = [
@@ -70,7 +76,7 @@ const stats = [
 
         <div class="hero-card-media">
           <img
-            src={spotlightProduct ? spotlightImage.src : heroImage.src}
+            src={spotlightImage}
             alt={spotlightProduct?.title || 'Premium electronics showcase'}
             loading="lazy"
             decoding="async"
