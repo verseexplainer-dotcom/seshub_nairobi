@@ -33,9 +33,16 @@ The current dataset contains the following product categories:
 - Smartphones
 - Printers
 - Desktops
-- Accessories
+- Accessories (available via search, not featured)
 
-If additional categories are added later, agents may extend the UI accordingly.
+**Featured Categories (Homepage):**
+Only 4 core categories are featured on the homepage to reduce decision fatigue and improve conversion:
+- Laptops
+- Smartphones  
+- Printers
+- Desktops
+
+Accessories are available through search and category pages but not in the featured section.
 
 Import note:
 - Source rows tagged as `storage` should be treated as `Accessories` in the storefront and import pipeline.
@@ -126,18 +133,25 @@ Product cards must show only data available in the schema.
 
 Each card should display:
 
-Product image  
-Title  
-Key specs (cpu, ram_gb, storage_gb, screen_in if available)  
-Price (price_kes)  
-Compare price (compare_at_kes if present)  
-Stock status  
-Warranty badge if warranty_months exists  
+- Product image (with fallback)
+- Title (truncated intelligently for mobile)  
+- Key specs (cpu, ram_gb, storage_gb, screen_in if available, comma-separated)
+- Price (price_kes with currency symbol)  
+- Savings badge (if compare_at_kes > price_kes)  
+- Condition badge (Brand New / Refurbished / Ex-UK)
+- Stock status (Live Stock / Out of Stock / Limited Stock)  
+- Warranty badge if warranty_months exists (shows months)
 
-Action buttons:
+Action buttons (context-sensitive):
 
-Add to Cart (only if in_stock=true)  
-WhatsApp inquiry if out of stock
+- "Add to Cart" button (only if in_stock=true)  
+- "Chat on WhatsApp" button (if out of stock or for inquiries)
+- Product link (click anywhere on card except action areas)
+
+Optional enhancements:
+- Quick view modal for specs
+- Animation on hover/focus
+- Brand name for recognition
 
 ---
 
@@ -145,31 +159,35 @@ WhatsApp inquiry if out of stock
 
 Category pages must use the existing category values from the database.
 
-Current categories:
+Featured categories (with dedicated pages):
+- Laptops  
+- Smartphones  
+- Printers  
+- Desktops
 
-Laptops  
-Smartphones  
-Printers  
-Desktops  
-Accessories  
+All categories (including Accessories) are accessible via search or direct URL routing.
 
 Category pages should include:
 
-Breadcrumb navigation  
-Product count  
-Product grid  
-Sorting options
+- Breadcrumb navigation  
+- Live product count  
+- Product grid with persistent filtering
+- Sorting options (Featured, Price, Newest, Most Reviewed)
+- Active filter badges with clear affordance
 
 Optional filters based on available data:
 
-brand  
-cpu  
-ram_gb  
-storage_gb  
-screen_in  
-price_kes  
+- brand  
+- cpu  
+- ram_gb  
+- storage_gb  
+- screen_in  
+- price_kes  
+- condition  
+- warranty_months  
 
 Filters must not reference fields that do not exist.
+All filters should apply via clean URL parameters for shareability and bookmarking.
 
 ---
 
@@ -215,14 +233,37 @@ Featured products use:
 featured_home  
 featured_rank
 
-Recommended homepage structure:
+**Homepage Structure (Optimized Layout):**
 
-Hero section  
-Featured products  
-Category navigation  
-Product grid  
+1. **Hero Section** with:
+   - Engaging headline and value proposition
+   - Compact search bar with category, price, condition filters
+   - Trust badges and live inventory stats
+   - Product showcase with floating animations
+   - Call-to-action buttons (Shop / WhatsApp)
+
+2. **Featured Category Cards** (4 items only):
+   - Laptops, Smartphones, Printers, Desktops
+   - Live product count per category
+   - Hover effects with accent color overlays
+   - 2×2 grid layout (desktop), responsive stacking (mobile)
+
+3. **Featured Products Grid**:
+   - Curated by featured_home flag and featured_rank
+   - Organized into tabs: Featured, New In, Best Value, Premium
+   - Dynamic product cards with specs, pricing, warranty info
+
+4. **Additional Sections**:
+   - Refurbished vs Brand New comparison
+   - Daily deals band
+   - Shop by brand carousel
+   - Use case collections
+   - Trust highlights
+   - Latest guides preview
+   - Newsletter signup
 
 Agents must not assume additional marketing data exists.
+All sections should gracefully handle empty states.
 
 ---
 
@@ -262,11 +303,28 @@ Avoid complex UI that requires unavailable data.
 
 Agents must preserve Astro performance advantages:
 
-Minimal JavaScript  
-Lazy loading images  
-Efficient Supabase queries  
+**Frontend Performance:**
+- Minimal JavaScript (Astro island hydration only where needed)
+- Lazy loading images with native `loading="lazy"`
+- Image optimization: WebP format, responsive sizes
+- CSS is scoped and statically generated
 
-Avoid adding heavy libraries unless necessary.
+**Data Performance:**
+- Efficient Supabase queries (limit, pagination, indexing on hot queries)
+- Server-side filtering on homepage to reduce client-side processing
+- Cache static pages where appropriate (ISR for Cloudflare)
+
+**Build Performance:**
+- Avoid heavy JavaScript libraries unless absolutely necessary
+- Prefer native browser APIs (Fetch, FormData, URLSearchParams)
+- Keep component bundle sizes small
+- Use dynamic imports for code-splitting
+
+**Target Metrics:**
+- Lighthouse scores: 90+ on Perf, Accessibility, Best Practices, SEO
+- First Contentful Paint (FCP): < 1.5s
+- Largest Contentful Paint (LCP): < 2.5s
+- Cumulative Layout Shift (CLS): < 0.1
 
 ---
 
@@ -313,6 +371,31 @@ Secondary skills:
 - `notion-spec-to-implementation` when changes need structured planning and task tracking
 
 Project-specific companion notes for these skills live in `tools/codex-skills/`.
+
+---
+
+# Hero Search Bar
+
+**Feature:** Compact search interface with quick filters in the hero section.
+
+**Component:** `HeroSearch.astro`
+
+**Functionality:**
+- Text search across: title, description, brand, short_specs
+- Category filter: Maptop 4 featured categories
+- Price filter: Preset ranges (Under 50K, 50K-100K, 100K-200K, 200K+)
+- Condition filter: Brand New, Refurbished
+
+**Search Results Page:** `/search.astro`
+- Applies all filters and sorts by featured then price
+- Shows result count and clear empty states
+- Preserves filter choices in URL for sharing
+
+**Design Principles:**
+- Mobile-first responsive (stacks on small screens)
+- High visual hierarchy with blue gradient button
+- Clear labeling on all filter selects
+- Smooth transitions and focus states
 
 ---
 
