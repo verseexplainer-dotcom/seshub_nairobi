@@ -4,6 +4,7 @@ import Badge from '../ui/Badge.astro';
 import Button from '../ui/Button.astro';
 import PriceBlock from '../ui/PriceBlock.astro';
 import SpecChips from '../ui/SpecChips.astro';
+import HeroSearch from './HeroSearch.astro';
 import { getConditionLabel } from '../../lib/catalog';
 import { getPrimaryImage } from '../../lib/images';
 import { buildWhatsAppLink } from '../../lib/storefront';
@@ -38,6 +39,8 @@ const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing the
         <p class="hero-text">
           Shop verified specs, fair pricing, warranty-backed listings, and ready-to-order stock from SES ICT HUB.
         </p>
+
+        <HeroSearch publicSupabaseUrl={publicSupabaseUrl} />
 
         <div class="hero-actions">
           <Button href="/category/laptops">Shop Laptops</Button>

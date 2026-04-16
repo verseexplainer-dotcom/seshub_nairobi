@@ -1,0 +1,282 @@
+---
+interface Props {
+  publicSupabaseUrl?: string | undefined;
+}
+
+const { publicSupabaseUrl = '' } = Astro.props;
+
+const categories = [
+  { label: 'Laptops', value: 'laptops' },
+  { label: 'Smartphones', value: 'smartphones' },
+  { label: 'Printers', value: 'printers' },
+  { label: 'Desktops', value: 'desktops' }
+];
+
+const conditions = [
+  { label: 'Brand New', value: 'brand_new' },
+  { label: 'Refurbished', value: 'refurbished' }
+];
+
+const priceRanges = [
+  { label: 'Under 50K', value: '0-50000' },
+  { label: '50K-100K', value: '50000-100000' },
+  { label: '100K-200K', value: '100000-200000' },
+  { label: 'Above 200K', value: '200000-999999' }
+];
+---
+
+<div class="hero-search-wrapper">
+  <form id="hero-search-form" class="hero-search-form">
+    <div class="search-input-group">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search laptops, phones, printers..."
+        aria-label="Search products"
+        autocomplete="off"
+        name="q"
+      />
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-select">
+        <label for="category-filter">Category</label>
+        <select id="category-filter" name="category">
+          <option value="">All</option>
+          {categories.map(cat => (
+            <option value={cat.value}>{cat.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div class="filter-select">
+        <label for="condition-filter">Condition</label>
+        <select id="condition-filter" name="condition">
+          <option value="">All</option>
+          {conditions.map(cond => (
+            <option value={cond.value}>{cond.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div class="filter-select">
+        <label for="price-filter">Price (KES)</label>
+        <select id="price-filter" name="price">
+          <option value="">All</option>
+          {priceRanges.map(range => (
+            <option value={range.value}>{range.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <button type="submit" class="search-submit" aria-label="Search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        Search
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('hero-search-form') as HTMLFormElement;
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const query = (form.querySelector('input[name="q"]') as HTMLInputElement)?.value || '';
+      const category = (form.querySelector('select[name="category"]') as HTMLSelectElement)?.value || '';
+      const condition = (form.querySelector('select[name="condition"]') as HTMLSelectElement)?.value || '';
+      const price = (form.querySelector('select[name="price"]') as HTMLSelectElement)?.value || '';
+
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (category) params.append('category', category);
+      if (condition) params.append('condition', condition);
+      if (price) params.append('price', price);
+
+      const queryString = params.toString();
+      const searchUrl = queryString ? `/search?${queryString}` : '/search';
+      window.location.href = searchUrl;
+    });
+  });
+</script>
+
+<style>
+  .hero-search-wrapper {
+    width: 100%;
+    margin: 1.25rem 0 0 0;
+  }
+
+  .hero-search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .search-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: #ffffff;
+    border: 1.5px solid rgba(191, 219, 254, 0.8);
+    border-radius: var(--radius-full);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(21, 93, 252, 0.08);
+  }
+
+  .search-input-group:focus-within {
+    border-color: #155dfc;
+    box-shadow: 0 4px 16px rgba(21, 93, 252, 0.16);
+  }
+
+  .search-icon {
+    color: #155dfc;
+    flex-shrink: 0;
+    opacity: 0.8;
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    font-size: 0.95rem;
+    color: var(--color-text-main);
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: flex-end;
+  }
+
+  .filter-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .filter-select label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .filter-select select {
+    padding: 0.55rem 0.75rem;
+    background: #ffffff;
+    border: 1px solid rgba(191, 219, 254, 0.6);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    color: var(--color-text-main);
+    cursor: pointer;
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .filter-select select:hover {
+    border-color: rgba(21, 93, 252, 0.8);
+  }
+
+  .filter-select select:focus {
+    outline: none;
+    border-color: #155dfc;
+    box-shadow: 0 0 0 2px rgba(21, 93, 252, 0.1);
+  }
+
+  .search-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.2rem;
+    background: linear-gradient(135deg, #155dfc, #0f3a99);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast),
+      background var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(21, 93, 252, 0.3);
+    white-space: nowrap;
+  }
+
+  .search-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(21, 93, 252, 0.4);
+  }
+
+  .search-submit:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    .hero-search-form {
+      gap: 0.6rem;
+    }
+
+    .filter-group {
+      gap: 0.5rem;
+    }
+
+    .filter-select {
+      min-width: 100px;
+      flex: 0 1 auto;
+    }
+
+    .search-submit {
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .search-input-group {
+      padding: 0.6rem 0.85rem;
+    }
+
+    .search-input {
+      font-size: 0.9rem;
+    }
+
+    .filter-group {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .filter-select {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .search-submit {
+      width: 100%;
+    }
+  }
+</style>
