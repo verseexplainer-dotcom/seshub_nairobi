@@ -2,6 +2,11 @@
 import ProductCard from './ProductCard.astro';
 import SearchBar from './SearchBar.astro';
 import {
+  filterVisibleCatalogProducts,
+  normalizeCatalogProducts,
+  runProductsQuery
+} from '../lib/catalog';
+import {
   SHOP_PATH,
   STOREFRONT_CATEGORIES,
   formatCurrencyKes,
@@ -14,6 +19,7 @@ import {
   normalizeText,
   parsePositiveNumber
 } from '../lib/productPresentation';
+import type { CatalogProduct } from '../types/catalog';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface Props {
@@ -26,8 +32,7 @@ const isShopMode = mode === 'shop';
 const activeCategory = categorySlug !== 'all' ? getStoreCategoryBySlug(categorySlug) : null;
 const searchParams = Astro.url.searchParams;
 const pageSize = 24;
-const currentPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
-const FACET_BATCH_SIZE = 1000;
+const requestedPage = Math.max(1, Number.parseInt(searchParams.get('page') || '1', 10) || 1);
 const selectedSort = new Set(['featured', 'newest', 'price_asc', 'price_desc']).has(searchParams.get('sort') || '')
   ? (searchParams.get('sort') as 'featured' | 'newest' | 'price_asc' | 'price_desc')
   : 'featured';
@@ -58,20 +63,62 @@ const hasFilters =
   maxPrice !== null ||
   selectedSort !== 'featured';
 
-const productSelectColumns = '*';
-const facetSelectColumns = ['category', 'brand', 'condition', 'cpu', 'ram_gb', 'storage_gb', 'screen_in', 'price_kes', 'in_stock'].join(',');
-const from = (currentPage - 1) * pageSize;
-const to = from + pageSize - 1;
+const productColumnNames = [
+  'id',
+  'slug',
+  'title',
+  'category',
+  'brand',
+  'price_kes',
+  'compare_at_kes',
+  'in_stock',
+  'stock_qty',
+  'condition',
+  'refurb_grade',
+  'short_specs',
+  'warranty_months',
+  'images',
+  'image_overrides',
+  'featured_home',
+  'featured_rank',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'storage_type',
+  'screen_in'
+];
+const facetColumnNames = [
+  'slug',
+  'title',
+  'category',
+  'brand',
+  'price_kes',
+  'in_stock',
+  'condition',
+  'cpu',
+  'ram_gb',
+  'storage_gb',
+  'screen_in',
+  'images',
+  'image_overrides'
+];
+let products: CatalogProduct[] = [];
+let totalCount = 0;
+let facetRows: CatalogProduct[] = [];
+let featuredProducts: CatalogProduct[] = [];
+let currentPage = requestedPage;
 
-const applyCategoryScope = (query: any) => {
-  if (!activeCategory) {
-    return query;
+function applyCatalogScope(query: any) {
+  if (activeCategory) {
+    query = query.in('category', getStoreCategoryQueryValues(activeCategory));
   }
 
-  return query.in('category', getStoreCategoryQueryValues(activeCategory));
-};
+  return query;
+}
 
-const applyFilters = (query: any) => {
+function applyCatalogFilters(query: any) {
+  query = applyCatalogScope(query);
+
   if (selectedBrand) {
     query = query.eq('brand', selectedBrand);
   }
@@ -111,74 +158,68 @@ const applyFilters = (query: any) => {
   }
 
   return query;
-};
-
-async function fetchFacetRows() {
-  const firstBatchResponse = await applyCategoryScope(
-    supabase.from('products').select(facetSelectColumns, { count: 'exact' })
-  ).range(0, FACET_BATCH_SIZE - 1);
-
-  if (firstBatchResponse.error) {
-    console.error('Catalog facet query failed', {
-      code: firstBatchResponse.error.code,
-      details: firstBatchResponse.error.details,
-      hint: firstBatchResponse.error.hint,
-      message: firstBatchResponse.error.message,
-      path: Astro.url.pathname
-    });
-    return [];
-  }
-
-  const firstBatch = firstBatchResponse.data || [];
-  const totalRows = typeof firstBatchResponse.count === 'number' ? firstBatchResponse.count : firstBatch.length;
-  if (totalRows <= firstBatch.length) {
-    return firstBatch;
-  }
-
-  // Supabase responses are capped per request, so fetch the remaining rows in batches for complete facets.
-  const remainingRequests: Array<Promise<{ data: Array<Record<string, any>> | null }>> = [];
-  for (let start = FACET_BATCH_SIZE; start < totalRows; start += FACET_BATCH_SIZE) {
-    remainingRequests.push(
-      applyCategoryScope(supabase.from('products').select(facetSelectColumns)).range(start, start + FACET_BATCH_SIZE - 1)
-    );
-  }
-
-  const remainingResponses = await Promise.all(remainingRequests);
-  return firstBatch.concat(remainingResponses.flatMap((response) => response.data || []));
 }
 
-let products: Array<Record<string, any>> = [];
-let totalCount = 0;
-let facetRows: Array<Record<string, any>> = [];
-let featuredProducts: Array<Record<string, any>> = [];
-
-if (isSupabaseConfigured) {
-  let productsQuery = applyFilters(
-    applyCategoryScope(supabase.from('products').select(productSelectColumns, { count: 'exact' }))
-  );
-
-  switch (selectedSort) {
+function applyCatalogSort(query: any, sort = selectedSort) {
+  switch (sort) {
     case 'price_asc':
-      productsQuery = productsQuery.order('price_kes', { ascending: true }).order('updated_at', { ascending: false });
-      break;
+      return query
+        .order('price_kes', { ascending: true })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
     case 'price_desc':
-      productsQuery = productsQuery.order('price_kes', { ascending: false }).order('updated_at', { ascending: false });
-      break;
+      return query
+        .order('price_kes', { ascending: false })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
     case 'newest':
-      productsQuery = productsQuery.order('created_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false });
-      break;
+      return query
+        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
     default:
-      productsQuery = productsQuery
+      return query
         .order('in_stock', { ascending: false })
         .order('featured_rank', { ascending: true, nullsFirst: false })
-        .order('updated_at', { ascending: false });
-      break;
+        .order('updated_at', { ascending: false })
+        .order('title', { ascending: true });
+  }
+}
+
+if (isSupabaseConfigured) {
+  const { count, error: countError } = await applyCatalogFilters(
+    supabase.from('products').select('id', { count: 'exact', head: true })
+  );
+
+  if (countError) {
+    console.error('Catalog product count query failed', {
+      code: countError.code,
+      details: countError.details,
+      hint: countError.hint,
+      message: countError.message,
+      path: Astro.url.pathname
+    });
+  } else {
+    totalCount = count || 0;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    currentPage = Math.min(requestedPage, totalPages);
   }
 
-  const [{ data, count, error: productsError }, facetData] = await Promise.all([
-    productsQuery.range(from, to),
-    fetchFacetRows()
-  ]);
+  const pageFrom = (currentPage - 1) * pageSize;
+  const pageTo = pageFrom + pageSize - 1;
+  const { data: pagedData, error: productsError } = await runProductsQuery(
+    (selectClause) =>
+      applyCatalogSort(
+        applyCatalogFilters(
+          supabase
+            .from('products')
+            .select(selectClause)
+        )
+      )
+        .range(pageFrom, pageTo),
+    productColumnNames,
+    'Catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+  );
 
   if (productsError) {
     console.error('Catalog product query failed', {
@@ -188,29 +229,100 @@ if (isSupabaseConfigured) {
       message: productsError.message,
       path: Astro.url.pathname
     });
+  } else {
+    products = filterVisibleCatalogProducts(
+      normalizeCatalogProducts(((pagedData || []) as Array<Record<string, unknown>>))
+    );
   }
 
-  products = data || [];
-  totalCount = typeof count === 'number' ? count : products.length;
-  facetRows = facetData || [];
+  const { data: facetData, error: facetError } = await runProductsQuery(
+    (selectClause) =>
+      applyCatalogScope(
+        supabase
+          .from('products')
+          .select(selectClause)
+      ),
+    facetColumnNames,
+    'Catalog facet query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+  );
 
-  if (isShopMode) {
-    const { data: featuredData } = await supabase
-      .from('products')
-      .select(productSelectColumns)
-      .eq('featured_home', true)
-      .eq('in_stock', true)
-      .order('featured_rank', { ascending: true, nullsFirst: false })
-      .order('updated_at', { ascending: false })
-      .limit(4);
+  if (facetError) {
+    console.error('Catalog facet query failed', {
+      code: facetError.code,
+      details: facetError.details,
+      hint: facetError.hint,
+      message: facetError.message,
+      path: Astro.url.pathname
+    });
+  } else {
+    facetRows = filterVisibleCatalogProducts(
+      normalizeCatalogProducts(((facetData || []) as Array<Record<string, unknown>>))
+    );
+  }
 
-    featuredProducts = (featuredData || []).length > 0
-      ? (featuredData || [])
-      : (products || []).filter((product) => product.in_stock === true).slice(0, 4);
+  if (isShopMode && !hasFilters) {
+    const { data: featuredData, error: featuredError } = await runProductsQuery(
+      (selectClause) =>
+        applyCatalogSort(
+          supabase
+            .from('products')
+            .select(selectClause)
+            .eq('in_stock', true)
+            .eq('featured_home', true),
+          'featured'
+        )
+          .limit(4),
+      productColumnNames,
+      'Featured products query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+    );
+
+    if (featuredError) {
+      console.error('Featured products query failed', {
+        code: featuredError.code,
+        details: featuredError.details,
+        hint: featuredError.hint,
+        message: featuredError.message,
+        path: Astro.url.pathname
+      });
+    } else {
+      featuredProducts = filterVisibleCatalogProducts(
+        normalizeCatalogProducts(((featuredData || []) as Array<Record<string, unknown>>))
+      );
+    }
+
+    if (featuredProducts.length === 0) {
+      const { data: fallbackFeaturedData, error: fallbackFeaturedError } = await runProductsQuery(
+        (selectClause) =>
+          applyCatalogSort(
+            supabase
+              .from('products')
+              .select(selectClause)
+              .eq('in_stock', true),
+            'featured'
+          )
+            .limit(4),
+        productColumnNames,
+        'Featured fallback query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+      );
+
+      if (fallbackFeaturedError) {
+        console.error('Featured fallback query failed', {
+          code: fallbackFeaturedError.code,
+          details: fallbackFeaturedError.details,
+          hint: fallbackFeaturedError.hint,
+          message: fallbackFeaturedError.message,
+          path: Astro.url.pathname
+        });
+      } else {
+        featuredProducts = filterVisibleCatalogProducts(
+          normalizeCatalogProducts(((fallbackFeaturedData || []) as Array<Record<string, unknown>>))
+        );
+      }
+    }
   }
 }
 
-const collectStringFacet = (key: string) =>
+const collectStringFacet = (key: keyof CatalogProduct) =>
   Array.from(
     new Set(
       facetRows
@@ -219,7 +331,7 @@ const collectStringFacet = (key: string) =>
     )
   ).sort((a, b) => a.localeCompare(b));
 
-const collectNumericFacet = (key: string) =>
+const collectNumericFacet = (key: keyof CatalogProduct) =>
   Array.from(
     new Set(
       facetRows
@@ -285,6 +397,7 @@ const activeFilterChips = [
   selectedSort !== 'featured' ? { label: `Sort: ${sortLabels[selectedSort]}`, href: buildHref({ sort: null, page: null }) } : null
 ].filter(Boolean) as Array<{ label: string; href: string }>;
 
+const from = (currentPage - 1) * pageSize;
 const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 const resultStart = totalCount > 0 ? from + 1 : 0;
 const resultEnd = totalCount > 0 ? from + products.length : 0;
@@ -1202,8 +1315,12 @@ const breadcrumbData = isShopMode
       align-self: end;
     }
 
-    .product-grid {
+    .shop-mode .product-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .category-mode .product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
@@ -1212,8 +1329,12 @@ const breadcrumbData = isShopMode
       grid-template-columns: minmax(17.5rem, 19.5rem) minmax(0, 1fr);
     }
 
-    .product-grid {
+    .shop-mode .product-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .category-mode .product-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 

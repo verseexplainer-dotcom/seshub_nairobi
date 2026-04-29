@@ -14,9 +14,12 @@ import TrustHighlights from '../components/home/TrustHighlights.astro';
 import UseCaseCollections from '../components/home/UseCaseCollections.astro';
 import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
 import { getBrandCounts, getCategoryCounts, getDealsProducts, getHomepageFeaturedProducts, getHomepageProducts } from '../lib/catalog';
+import { setPublicCacheHeaders } from '../lib/http-cache';
 import { blogPosts } from '../lib/homepageContent';
 import { buildUseCaseCollections, getInventorySummary, selectBestValueProducts, selectNewInProducts, selectPremiumProducts } from '../lib/homepage';
 import { getRuntimeEnv } from '../lib/runtime';
+
+setPublicCacheHeaders(Astro.response.headers, Astro.request);
 
 const runtimeEnv = getRuntimeEnv(Astro.locals);
 const products = await getHomepageProducts(Astro.locals);
@@ -38,13 +41,13 @@ const inventorySummary = getInventorySummary(products);
   hideAnnouncementStrip
 >
   <div class="homepage-shell">
-    <AnnouncementStrip />
     <HeroShowcase
       products={featuredProducts.slice(0, 4)}
       liveCount={inventorySummary.liveCount}
       brandCount={inventorySummary.brandCount}
       publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
     />
+    <AnnouncementStrip />
     <CategoryQuickLinks items={categoryCounts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
     <TrustHighlights />
     <FeaturedProductsGrid

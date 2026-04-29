@@ -2,6 +2,7 @@ import type { CatalogProduct, HomepageUseCaseCollection } from '../types/catalog
 import type { HomeTestimonial } from './homepageContent';
 import {
   countMerchandisingBrands,
+  filterVisibleCatalogProducts,
   getCatalogCategoryKey,
   getConditionLabel,
   getProductSpecChips,
@@ -151,14 +152,20 @@ function scorePremiumCandidate(product: CatalogProduct) {
 }
 
 function sortByScore(products: CatalogProduct[], scorer: (product: CatalogProduct) => number) {
-  return [...products].sort((left, right) => {
-    const scoreDelta = scorer(right) - scorer(left);
-    if (scoreDelta !== 0) {
-      return scoreDelta;
-    }
+  return products
+    .map((product) => ({
+      product,
+      score: scorer(product)
+    }))
+    .sort((left, right) => {
+      const scoreDelta = right.score - left.score;
+      if (scoreDelta !== 0) {
+        return scoreDelta;
+      }
 
-    return getTieBreaker(left, right);
-  });
+      return getTieBreaker(left.product, right.product);
+    })
+    .map((entry) => entry.product);
 }
 
 function pickBalancedProducts(products: CatalogProduct[], limit: number, perCategory = 3) {
@@ -194,7 +201,7 @@ function pickBalancedProducts(products: CatalogProduct[], limit: number, perCate
 }
 
 function getHomepageCandidates(products: CatalogProduct[]) {
-  return products.filter((product) => product.slug && product.title && product.price_kes > 0);
+  return filterVisibleCatalogProducts(products);
 }
 
 export function selectFeaturedProducts(products: CatalogProduct[], limit = 6) {

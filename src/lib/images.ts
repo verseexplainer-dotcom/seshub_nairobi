@@ -51,8 +51,20 @@ export function resolveProductImage(image: unknown, publicSupabaseUrl?: string |
     return fallback;
   }
 
-  if (source.startsWith('http://') || source.startsWith('https://') || source.startsWith('/product-images/')) {
+  if (source.startsWith('http://') || source.startsWith('https://')) {
     return source;
+  }
+
+  if (source.startsWith('/product-images/')) {
+    if (!normalizedSupabaseUrl) {
+      return source;
+    }
+
+    return `${normalizedSupabaseUrl}/storage/v1/object/public${source}`;
+  }
+
+  if (source.startsWith('/storage/v1/object/public/product-images/')) {
+    return normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${source}` : source;
   }
 
   if (source.startsWith('/')) {

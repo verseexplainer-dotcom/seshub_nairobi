@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { buildWhatsAppLink } from '../lib/storefront';
 
 const faqs = [
   {
@@ -23,6 +24,7 @@ const faqs = [
     a: "Yes, we have a 7-day return/exchange window for functional defects that were not disclosed at the time of purchase."
   }
 ];
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I still need help after reading the FAQ.');
 ---
 
 <Layout title="FAQ">
@@ -41,7 +43,7 @@ const faqs = [
 
       <div class="faq-cta">
         <p>Still need help?</p>
-        <a href="https://wa.me/254720480475" class="pill-button primary">Message us on WhatsApp</a>
+        <a href={whatsappHref} class="pill-button primary">Message us on WhatsApp</a>
       </div>
     </div>
   </section>

@@ -8,7 +8,8 @@ import { getCategorySlug, normalizeText, parsePositiveNumber } from './productPr
 import { getRuntimeEnv } from './runtime';
 
 const LOW_STOCK_THRESHOLD = 3;
-const HOMEPAGE_PRODUCT_COLUMNS = [
+const IMAGE_OVERRIDES_COLUMN = 'image_overrides';
+const HOMEPAGE_PRODUCT_COLUMN_NAMES = [
   'id',
   'slug',
   'title',
@@ -40,7 +41,14 @@ const HOMEPAGE_PRODUCT_COLUMNS = [
   'meta_description',
   'created_at',
   'updated_at'
-].join(',');
+];
+
+type HomepageCatalogQueryError = {
+  code?: string | null;
+  details?: string | null;
+  hint?: string | null;
+  message?: string | null;
+};
 
 const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
   {
@@ -75,6 +83,7 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
 
 const PREFERRED_HOME_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Epson'];
 type CatalogRuntimeSource = { locals?: SessionLocals | null } | SessionLocals | null | undefined;
+let homepageImageOverridesAvailable: boolean | null = null;
 
 function toStringOrNull(value: unknown) {
   const normalized = normalizeText(value);
@@ -129,6 +138,56 @@ function toStringArray(value: unknown) {
     .filter(Boolean);
 }
 
+export function getHomepageProductColumns(includeImageOverrides = true) {
+  return buildProductSelectColumns(HOMEPAGE_PRODUCT_COLUMN_NAMES, includeImageOverrides);
+}
+
+export function buildProductSelectColumns(columns: string[], includeImageOverrides = true) {
+  return Array.from(
+    new Set(
+      columns.filter((column) => includeImageOverrides || column !== IMAGE_OVERRIDES_COLUMN)
+    )
+  ).join(',');
+}
+
+export function isMissingImageOverridesError(error: HomepageCatalogQueryError | null | undefined) {
+  if (!error || error.code !== '42703') {
+    return false;
+  }
+
+  const errorText = [error.message, error.details, error.hint]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join(' ');
+
+  return /image_overrides/i.test(errorText);
+}
+
+type ProductQueryResult<T> = {
+  data: T;
+  error: HomepageCatalogQueryError | null;
+};
+
+export async function runProductsQuery<T>(
+  runQuery: (selectClause: string) => PromiseLike<ProductQueryResult<T>>,
+  columns: string[],
+  warningMessage = 'Products query missing products.image_overrides; retrying without that column.'
+) {
+  const baseColumns = Array.from(new Set(columns));
+  const initialIncludeImageOverrides =
+    baseColumns.includes(IMAGE_OVERRIDES_COLUMN) && homepageImageOverridesAvailable !== false;
+  let result = await runQuery(buildProductSelectColumns(baseColumns, initialIncludeImageOverrides));
+
+  if (initialIncludeImageOverrides && isMissingImageOverridesError(result.error)) {
+    homepageImageOverridesAvailable = false;
+    console.warn(warningMessage);
+    result = await runQuery(buildProductSelectColumns(baseColumns, false));
+  } else if (!result.error && initialIncludeImageOverrides) {
+    homepageImageOverridesAvailable = true;
+  }
+
+  return result;
+}
+
 export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogProduct {
   const warrantyMonths = toNumberOrNull(row.warranty_months);
   const compareAt = toNumberOrNull(row.compare_at_kes ?? row.compare_at_price);
@@ -180,6 +239,10 @@ export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogPr
   };
 }
 
+export function normalizeCatalogProducts(rows: Array<Record<string, unknown>>) {
+  return rows.map((row) => normalizeCatalogProduct(row));
+}
+
 export function isProductInStock(product: CatalogProduct) {
   return product.in_stock === true;
 }
@@ -213,6 +276,10 @@ export function hasCatalogImage(product: CatalogProduct) {
   const gallery = getProductGallery(product);
   const primaryImage = gallery[0];
   return typeof primaryImage === 'string' && !primaryImage.includes('product-placeholder');
+}
+
+export function filterVisibleCatalogProducts(products: CatalogProduct[]) {
+  return products.filter((product) => product.slug && product.title && product.price_kes > 0 && hasCatalogImage(product));
 }
 
 export function getCatalogCategoryKey(product: CatalogProduct) {
@@ -301,13 +368,20 @@ export async function getHomepageProducts(source?: CatalogRuntimeSource) {
     }
   });
 
-  const { data, error } = await supabase
-    .from('products')
-    .select(HOMEPAGE_PRODUCT_COLUMNS)
-    .order('in_stock', { ascending: false })
-    .order('featured_home', { ascending: false })
-    .order('featured_rank', { ascending: true, nullsFirst: false })
-    .order('updated_at', { ascending: false });
+  const fetchHomepageRows = async (selectClause: string) =>
+    supabase
+      .from('products')
+      .select(selectClause)
+      .order('in_stock', { ascending: false })
+      .order('featured_home', { ascending: false })
+      .order('featured_rank', { ascending: true, nullsFirst: false })
+      .order('updated_at', { ascending: false });
+
+  const { data, error } = await runProductsQuery(
+    fetchHomepageRows,
+    HOMEPAGE_PRODUCT_COLUMN_NAMES,
+    'Homepage catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+  );
 
   if (error) {
     console.error('Homepage catalog query failed', {
@@ -321,9 +395,7 @@ export async function getHomepageProducts(source?: CatalogRuntimeSource) {
 
   const rows = (data || []) as unknown as Array<Record<string, unknown>>;
 
-  return rows
-    .map((row) => normalizeCatalogProduct(row))
-    .filter((product) => product.slug && product.title && product.price_kes > 0);
+  return filterVisibleCatalogProducts(normalizeCatalogProducts(rows));
 }
 
 export async function getCategoryCounts(products?: CatalogProduct[]) {

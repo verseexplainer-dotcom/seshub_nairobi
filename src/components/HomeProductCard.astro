@@ -1,7 +1,7 @@
 ---
+import { getPrimaryImage } from '../lib/images';
 import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { buildWhatsAppLink } from '../lib/storefront';
-import { getPrimaryImage } from '../lib/images';
 import {
   formatKES,
   getAvailabilityLabel,
@@ -21,11 +21,12 @@ const { product, context = 'default', index = 0, tone = 'light' } = Astro.props 
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const localPlaceholder = '/product-placeholder.svg';
 const imageSource = getPrimaryImage(product, {
   publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
   fallbackImage: finalFallbackImage
 });
-const imageOnError = buildImageOnError(finalFallbackImage, finalFallbackImage);
+const imageOnError = buildImageOnError(finalFallbackImage, localPlaceholder);
 const badge = getProductBadge(product, context, index);
 const badgeTone = badge ? getProductBadgeTone(badge) : '';
 const brandLabel = getProductBrand(product);
@@ -52,7 +53,7 @@ const productHref = `/product/${product.slug}`;
         <strong>{formatKES(product.price_kes)}</strong>
         {Number(product.compare_at_kes || 0) > Number(product.price_kes || 0) && <span>{formatKES(product.compare_at_kes)}</span>}
       </div>
-      <a href={whatsappHref} class="home-product-link" target="_blank" rel="noopener noreferrer">Ask first</a>
+      <a href={whatsappHref} class="home-product-link" target="_blank" rel="noopener noreferrer">Check availability</a>
     </div>
 
     <button

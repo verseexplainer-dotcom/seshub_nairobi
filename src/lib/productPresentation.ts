@@ -77,6 +77,9 @@ const CATEGORY_BY_VALUE = new Map(
     [category.dbValue.toLowerCase(), category]
   ])
 );
+const CATEGORY_VALUE_ALIASES = new Map<string, StoreCategorySlug>([
+  ['storage', 'accessories']
+]);
 
 export function normalizeText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
@@ -151,7 +154,7 @@ export function getStoreCategoryBySlug(value: unknown) {
 
 export function getStoreCategoryByValue(value: unknown) {
   const normalized = normalizeText(value).toLowerCase();
-  return CATEGORY_BY_VALUE.get(normalized) || null;
+  return CATEGORY_BY_VALUE.get(normalized) || CATEGORY_BY_SLUG.get(CATEGORY_VALUE_ALIASES.get(normalized) as StoreCategorySlug) || null;
 }
 
 export function getStoreCategoryQueryValues(value: unknown) {
@@ -165,7 +168,12 @@ export function getStoreCategoryQueryValues(value: unknown) {
 
   return Array.from(
     new Set(
-      [category.dbValue, category.dbValue.toLowerCase(), category.slug]
+      [
+        category.dbValue,
+        category.dbValue.toLowerCase(),
+        category.slug,
+        ...(category.slug === 'accessories' ? ['storage'] : [])
+      ]
         .map((entry) => normalizeText(entry))
         .filter(Boolean)
     )
@@ -370,14 +378,27 @@ export function getStockMeta(product: Record<string, any>) {
 
 function parsePossibleImageArray(value: unknown) {
   if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    return value
+      .map((item) => normalizeText(item))
+      .filter((item): item is string => item.length > 0);
   }
 
   if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (!normalized) {
+      return [];
+    }
+
+    if (!normalized.startsWith('[')) {
+      return [normalized];
+    }
+
     try {
-      const parsed = JSON.parse(value);
+      const parsed = JSON.parse(normalized);
       return Array.isArray(parsed)
-        ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        ? parsed
+          .map((item) => normalizeText(item))
+          .filter((item): item is string => item.length > 0)
         : [];
     } catch {
       return [];
@@ -406,11 +427,33 @@ export function resolveProductImageUrl(image: unknown, publicSupabaseUrl: string
     return imagePath;
   }
 
-  if (!normalizedUrl) {
-    return normalizedFallback;
+  if (imagePath.startsWith('/product-images/')) {
+    const normalizedImagePath = encodeImagePath(imagePath.replace(/^\/product-images\//, ''));
+    return normalizedUrl
+      ? `${normalizedUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`
+      : `/product-images/${normalizedImagePath}`;
   }
 
-  return `${normalizedUrl}/storage/v1/object/public/product-images/${encodeImagePath(imagePath.replace(/^\//, ''))}`;
+  if (imagePath.startsWith('/storage/v1/object/public/product-images/')) {
+    const normalizedImagePath = encodeImagePath(
+      imagePath.replace(/^\/storage\/v1\/object\/public\/product-images\//, '')
+    );
+    return normalizedUrl
+      ? `${normalizedUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`
+      : `/product-images/${normalizedImagePath}`;
+  }
+
+  if (imagePath.startsWith('/')) {
+    return imagePath;
+  }
+
+  const normalizedImagePath = encodeImagePath(imagePath.replace(/^\/?(product-images\/)?/, ''));
+
+  if (!normalizedUrl) {
+    return `/product-images/${normalizedImagePath}`;
+  }
+
+  return `${normalizedUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`;
 }
 
 export function getProductImageUrls(product: Record<string, any>, publicSupabaseUrl: string, fallbackImage: string) {

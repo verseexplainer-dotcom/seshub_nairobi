@@ -1,5 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { storefrontDetails } from '../lib/storefront';
+
+const whatsappNumber = storefrontDetails.whatsappNumber;
 ---
 
 <Layout title="Track Order">
@@ -159,16 +162,16 @@ import Layout from '../layouts/Layout.astro';
   .contact-box a { color: var(--primary); }
 </style>
 
-<script>
+<script is:inline define:vars={{ whatsappNumber }}>
   const trackBtn = document.getElementById('track-btn');
-  const refInput = document.getElementById('order-ref') as HTMLInputElement;
+  const refInput = document.getElementById('order-ref');
 
   trackBtn?.addEventListener('click', () => {
-    const ref = refInput.value.trim();
+    const ref = refInput instanceof HTMLInputElement ? refInput.value.trim() : '';
     const message = ref 
       ? `Hi SES ICT HUB, I want to follow up order Ref: ${ref}`
       : `Hi SES ICT HUB, I want to follow up on my order.`;
     
-    window.location.href = `https://wa.me/254720480475?text=${encodeURIComponent(message)}`;
+    window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
   });
 </script>

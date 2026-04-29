@@ -1,6 +1,6 @@
 ---
-import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { getPrimaryImage } from '../lib/images';
+import { buildImageOnError, getSiteAssets } from '../lib/siteAssets';
 import { buildWhatsAppLink } from '../lib/storefront';
 import { formatKES, getAvailabilityLabel, getProductBrand } from '../lib/productPresentation';
 
@@ -16,6 +16,7 @@ const { spotlightProduct = null, totalProducts = 0, brandCount = 0, dealCount = 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const heroImage = siteAssets.hero;
 const finalFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const localPlaceholder = '/product-placeholder.svg';
 const heroOnError = buildImageOnError(heroImage.fallback, finalFallbackImage);
 const spotlightImage = spotlightProduct
   ? getPrimaryImage(spotlightProduct, {
@@ -23,7 +24,7 @@ const spotlightImage = spotlightProduct
       fallbackImage: finalFallbackImage
     })
   : heroImage.src;
-const spotlightImageOnError = buildImageOnError(finalFallbackImage, finalFallbackImage);
+const spotlightImageOnError = buildImageOnError(finalFallbackImage, localPlaceholder);
 const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I would like help choosing a laptop, smartphone, desktop, or printer from the homepage.');
 const spotlightBrand = spotlightProduct ? getProductBrand(spotlightProduct) : '';
 const stats = [

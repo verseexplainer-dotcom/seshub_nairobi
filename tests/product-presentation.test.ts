@@ -126,13 +126,16 @@ test('expanded storefront categories resolve by slug and database value', () => 
   assert.equal(getStoreCategoryBySlug('accessories')?.label, 'Accessories');
   assert.equal(getStoreCategoryByValue('Desktops')?.slug, 'desktops');
   assert.equal(getStoreCategoryByValue('Accessories')?.slug, 'accessories');
+  assert.equal(getStoreCategoryByValue('storage')?.slug, 'accessories');
   assert.equal(getStoreCategoryByValue('laptops')?.slug, 'laptops');
 });
 
 test('store category query values include canonical and imported lowercase forms', () => {
   assert.deepEqual(getStoreCategoryQueryValues('laptops'), ['Laptops', 'laptops']);
+  assert.deepEqual(getStoreCategoryQueryValues('accessories'), ['Accessories', 'accessories', 'storage']);
   assert.equal(matchesStoreCategoryValue('Laptops', 'laptops'), true);
   assert.equal(matchesStoreCategoryValue('laptops', 'laptops'), true);
+  assert.equal(matchesStoreCategoryValue('storage', 'accessories'), true);
   assert.equal(matchesStoreCategoryValue('desktops', 'laptops'), false);
 });
 

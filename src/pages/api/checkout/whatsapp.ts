@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { buildWhatsAppLink } from '../../../lib/storefront';
 import { recordServerEvent } from '../../../lib/server/analytics';
 import { verifyTurnstileToken } from '../../../lib/server/turnstile';
 import { asTrimmedString, errorResponse, getClientIp, getPublicEnvValue, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
@@ -362,7 +363,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const itemsSummary = cart.map((item) => `${item.qty}x ${item.title}`).join(', ');
     const message = `Hello SES ICT HUB, I want to place order ref ${orderRef}. Items: ${itemsSummary}. Total: KES ${computedTotalKes}.`;
-    const whatsappUrl = `https://wa.me/254720480475?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = buildWhatsAppLink(message);
 
     await recordServerEvent({
       supabaseUrl,

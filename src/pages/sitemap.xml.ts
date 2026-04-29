@@ -1,9 +1,22 @@
+import { filterVisibleCatalogProducts, normalizeCatalogProducts, runProductsQuery } from '../lib/catalog';
+import { setPublicCacheHeaders } from '../lib/http-cache';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 export async function GET() {
     const products = isSupabaseConfigured
-      ? (await supabase.from('products').select('slug, updated_at')).data || []
+      ? await (async () => {
+          const { data } = await runProductsQuery(
+            (selectClause) => supabase.from('products').select(selectClause),
+            ['slug', 'title', 'price_kes', 'updated_at', 'images', 'image_overrides'],
+            'Sitemap query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
+          );
+          const productRows = (data || []) as unknown as Array<Record<string, unknown>>;
+
+          return filterVisibleCatalogProducts(
+            normalizeCatalogProducts(productRows)
+          );
+        })()
       : [];
 
     const categories = [...STOREFRONT_CATEGORIES.map((category) => category.slug), 'all'];
@@ -37,9 +50,13 @@ export async function GET() {
   `).join('')}
 </urlset>`;
 
-    return new Response(sitemap, {
-        headers: {
-            'Content-Type': 'application/xml'
-        }
+    const headers = new Headers({
+      'Content-Type': 'application/xml'
     });
+    setPublicCacheHeaders(headers, new Request('https://sesicthub.co.ke/sitemap.xml'), {
+      sMaxAge: 21600,
+      staleWhileRevalidate: 86400
+    });
+
+    return new Response(sitemap, { headers });
 }

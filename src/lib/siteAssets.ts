@@ -8,6 +8,10 @@ export interface AssetSource {
   fallback: string;
 }
 
+interface AssetOptions {
+  preferRemote?: boolean;
+}
+
 const normalizeSupabaseUrl = (publicSupabaseUrl?: string) => {
   const normalized = (publicSupabaseUrl || '').trim().replace(/\/$/, '');
   return normalized || null;
@@ -20,20 +24,89 @@ const encodeAssetPath = (path: string) =>
     .map((segment) => encodeURIComponent(segment))
     .join('/');
 
-const buildAssetSource = (filename: string, localBase: string, remoteBase?: string | null): AssetSource => {
+const buildAssetSource = (
+  filename: string,
+  localBase: string,
+  remoteBase?: string | null,
+  options: AssetOptions = {}
+): AssetSource => {
   const encodedFilename = encodeAssetPath(filename);
   const localSrc = `${localBase}/${encodedFilename}`;
+  const remoteSrc = remoteBase ? `${remoteBase}/${encodedFilename}` : localSrc;
+
+  if (options.preferRemote && remoteBase) {
+    return {
+      src: remoteSrc,
+      fallback: localSrc
+    };
+  }
 
   return {
     src: localSrc,
-    fallback: remoteBase ? `${remoteBase}/${encodedFilename}` : localSrc
+    fallback: remoteSrc
   };
 };
+
+const BRAND_LOGO_FILENAMES = {
+  apple: 'apple-brand.webp',
+  canon: 'canon-brand.webp',
+  dell: 'dell-brand.webp',
+  epson: 'epson-brand.webp',
+  hp: 'hp-brand.webp',
+  lenovo: 'lenovo-brand.webp',
+  pixel: 'pixel-brand (1).webp',
+  samsung: 'Samsung-brand- (1).webp'
+} as const;
+
+type BrandLogoKey = keyof typeof BRAND_LOGO_FILENAMES;
+
+function normalizeBrandLogoKey(brand: string | null | undefined): BrandLogoKey | null {
+  const normalized = (brand || '').trim().toLowerCase();
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized === 'hp' || normalized.includes('hewlett')) {
+    return 'hp';
+  }
+
+  if (normalized.includes('dell')) {
+    return 'dell';
+  }
+
+  if (normalized.includes('lenovo')) {
+    return 'lenovo';
+  }
+
+  if (normalized.includes('samsung')) {
+    return 'samsung';
+  }
+
+  if (normalized.includes('apple')) {
+    return 'apple';
+  }
+
+  if (normalized.includes('canon')) {
+    return 'canon';
+  }
+
+  if (normalized.includes('epson')) {
+    return 'epson';
+  }
+
+  if (normalized.includes('pixel') || normalized.includes('google')) {
+    return 'pixel';
+  }
+
+  return null;
+}
 
 export function getSiteAssets(publicSupabaseUrl?: string) {
   const normalizedSupabaseUrl = normalizeSupabaseUrl(publicSupabaseUrl);
   const base = normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${SITE_ASSETS_BUCKET_PATH}` : null;
   const siteAsset = (filename: string) => buildAssetSource(filename, LOCAL_SITE_ASSETS_PATH, base);
+  const remoteSiteAsset = (filename: string) => buildAssetSource(filename, LOCAL_SITE_ASSETS_PATH, base, { preferRemote: true });
   const logo = siteAsset('ses-logo-2500px-by-2500px.svg');
 
   return {
@@ -59,8 +132,34 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
       payments: siteAsset('payments-secure-icon.webp'),
       security: siteAsset('security-trust-icon.webp')
     },
+    paymentMarks: {
+      visa: remoteSiteAsset('visa.webp'),
+      mastercard: remoteSiteAsset('mastercard-brand.webp')
+    },
+    brandLogos: {
+      apple: remoteSiteAsset(BRAND_LOGO_FILENAMES.apple),
+      canon: remoteSiteAsset(BRAND_LOGO_FILENAMES.canon),
+      dell: remoteSiteAsset(BRAND_LOGO_FILENAMES.dell),
+      epson: remoteSiteAsset(BRAND_LOGO_FILENAMES.epson),
+      hp: remoteSiteAsset(BRAND_LOGO_FILENAMES.hp),
+      lenovo: remoteSiteAsset(BRAND_LOGO_FILENAMES.lenovo),
+      pixel: remoteSiteAsset(BRAND_LOGO_FILENAMES.pixel),
+      samsung: remoteSiteAsset(BRAND_LOGO_FILENAMES.samsung)
+    },
+    campaigns: {
+      cashOnDelivery: remoteSiteAsset('cash-on-delivery-ses-brand.webp')
+    },
     productPlaceholder: siteAsset('product-placeholder.svg')
   };
+}
+
+export function getBrandLogoSource(brand: string | null | undefined, publicSupabaseUrl?: string) {
+  const key = normalizeBrandLogoKey(brand);
+  if (!key) {
+    return null;
+  }
+
+  return getSiteAssets(publicSupabaseUrl).brandLogos[key];
 }
 
 export function getProductImageSources(
@@ -84,10 +183,12 @@ export function getProductImageSources(
   const normalizedImage = encodeAssetPath(image.replace(/^\/?(product-images\/)?/, ''));
   const normalizedSupabaseUrl = normalizeSupabaseUrl(publicSupabaseUrl);
   const base = normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${PRODUCT_IMAGES_BUCKET_PATH}` : null;
+  const localSrc = `${LOCAL_PRODUCT_IMAGES_PATH}/${normalizedImage}`;
+  const remoteSrc = base ? `${base}/${normalizedImage}` : null;
 
   return {
-    src: `${LOCAL_PRODUCT_IMAGES_PATH}/${normalizedImage}`,
-    fallback: base ? `${base}/${normalizedImage}` : fallbackPlaceholder.src
+    src: remoteSrc || localSrc,
+    fallback: localSrc
   };
 }
 

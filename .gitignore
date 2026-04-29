@@ -26,5 +26,13 @@ venv/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# local tool output
+.wrangler/
+.playwright-cli/
 .aidesigner/*
 !.aidesigner/.gitkeep
+
+# local catalog image staging
+.catalog-assets/
+public/product-images/

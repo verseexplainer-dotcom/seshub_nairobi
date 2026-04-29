@@ -37,7 +37,8 @@ test('search suggest handles special characters safely', async (t) => {
         {
           title: 'HP EliteBook 840 G5',
           slug: 'hp-elitebook-840-g5',
-          price_kes: 42000
+          price_kes: 42000,
+          images: ['https://cdn.example.com/hp-elitebook-840-g5.webp']
         }
       ]),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

@@ -1,5 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { buildWhatsAppLink } from '../lib/storefront';
+
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help with prices, stock, or delivery.');
 ---
 
 <Layout title="Contact Us">
@@ -49,7 +52,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="prompt-card">
             <h2>Need help right away?</h2>
             <p>Message us on WhatsApp and we'll help you with prices, stock, or delivery.</p>
-            <a href="https://wa.me/254720480475" class="pill-button" style="background-color: #25D366; color: white;">
+            <a href={whatsappHref} class="pill-button" style="background-color: #25D366; color: white;">
               Message us on WhatsApp
             </a>
           </div>
