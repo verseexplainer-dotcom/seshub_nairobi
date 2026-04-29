@@ -1,6 +1,6 @@
 ---
-import { getSiteAssets } from '../lib/siteAssets';
 import { getProductPresentation } from '../lib/productPresentation';
+import { getSiteAssets } from '../lib/siteAssets';
 import { buildWhatsAppLink } from '../lib/storefront';
 
 interface Props {
@@ -27,6 +27,9 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 const addToCartLabel = `Add ${presentation.displayTitle} to cart`;
+const thumbMarkup = presentation.primaryImageUrl
+  ? `<div class="sticky-thumb-shell" data-product-media><img src="${escapeHtml(presentation.primaryImageUrl)}" alt="" class="sticky-thumb" onerror="${escapeHtml(imageOnError)}" /></div>`
+  : '<div class="sticky-thumb-shell no-image" data-product-media aria-hidden="true"></div>';
 const actionMarkup = presentation.stock.isInStock
   ? `
     <button
@@ -35,7 +38,7 @@ const actionMarkup = presentation.stock.isInStock
       data-title="${escapeHtml(presentation.rawTitle)}"
       data-price="${escapeHtml(presentation.pricing.price)}"
       data-slug="${escapeHtml(product.slug)}"
-      data-image="${escapeHtml(presentation.primaryImageUrl)}"
+      data-image="${escapeHtml(presentation.primaryImageUrl || '')}"
       aria-label="${escapeHtml(addToCartLabel)}"
     >
       Add to Cart
@@ -53,7 +56,7 @@ const stickyHtml = `
   <div class="sticky-atc" id="sticky-atc">
     <div class="container sticky-atc-content">
       <div class="sticky-info">
-        <img src="${escapeHtml(presentation.primaryImageUrl)}" alt="" class="sticky-thumb" onerror="${escapeHtml(imageOnError)}" />
+        ${thumbMarkup}
         <div class="sticky-text">
           <h3 class="sticky-title">${escapeHtml(presentation.displayTitle)}</h3>
           <div class="sticky-price-row">
@@ -114,14 +117,30 @@ const stickyHtml = `
     min-width: 0;
   }
 
-  .sticky-thumb {
+  .sticky-thumb-shell {
     width: 3rem;
     height: 3rem;
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    object-fit: contain;
     border-radius: 0.9rem;
     background: #f8fafc;
     border: 1px solid var(--border);
+  }
+
+  .sticky-thumb {
+    width: 3rem;
+    height: 3rem;
+    object-fit: contain;
+  }
+
+  .sticky-thumb-shell.no-image::after {
+    content: 'Photo unavailable';
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
   }
 
   .sticky-text {

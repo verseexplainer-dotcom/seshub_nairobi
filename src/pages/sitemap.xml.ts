@@ -2,6 +2,7 @@ import { filterVisibleCatalogProducts, normalizeCatalogProducts, runProductsQuer
 import { setPublicCacheHeaders } from '../lib/http-cache';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { blogPosts } from '../lib/homepageContent';
 
 export async function GET() {
     const products = isSupabaseConfigured
@@ -20,7 +21,7 @@ export async function GET() {
       : [];
 
     const categories = [...STOREFRONT_CATEGORIES.map((category) => category.slug), 'all'];
-    const pages = ['', 'shop', 'cart', 'track', 'contact', 'faq'];
+    const pages = ['', 'shop', 'cart', 'track', 'contact', 'faq', 'blog'];
 
     const baseUrl = 'https://sesicthub.co.ke';
 
@@ -45,6 +46,13 @@ export async function GET() {
       <loc>${baseUrl}/product/${prod.slug}</loc>
       <lastmod>${prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</lastmod>
       <changefreq>weekly</changefreq>
+      <priority>0.6</priority>
+    </url>
+  `).join('')}
+  ${blogPosts.map(post => `
+    <url>
+      <loc>${baseUrl}${post.href}</loc>
+      <changefreq>monthly</changefreq>
       <priority>0.6</priority>
     </url>
   `).join('')}

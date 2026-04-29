@@ -14,6 +14,14 @@ export type CartItem = {
 
 type CartItemInput = Omit<CartItem, 'qty'> & { qty?: number };
 
+function encodeImagePath(path: string) {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
 export function normalizeCartValue(raw: unknown): CartItem[] {
   if (!Array.isArray(raw)) {
     return [];
@@ -117,14 +125,27 @@ export function addCartItem(item: CartItemInput) {
   return saveCartToStorage(cart);
 }
 
-export function safeCartImageSrc(raw: string, fallbackImage: string) {
+export function safeCartImageSrc(raw: string) {
   if (!raw) {
-    return fallbackImage;
+    return '';
   }
 
-  if (raw.startsWith('https://') || raw.startsWith('http://') || raw.startsWith('/')) {
+  if (raw.startsWith('https://') || raw.startsWith('http://')) {
     return raw;
   }
 
-  return fallbackImage;
+  if (raw.startsWith('/storage/v1/object/public/product-images/')) {
+    return raw;
+  }
+
+  if (raw.startsWith('storage/v1/object/public/product-images/')) {
+    return `/${raw}`;
+  }
+
+  if (raw.startsWith('/') && !raw.startsWith('/product-images/')) {
+    return raw;
+  }
+
+  const normalizedPath = raw.replace(/^\/?(product-images\/)?/, '').trim();
+  return normalizedPath ? `/product-images/${encodeImagePath(normalizedPath)}` : '';
 }

@@ -1,3 +1,5 @@
+import { getProductGallery, resolveProductImage } from './images';
+
 export type StoreCategorySlug = 'laptops' | 'smartphones' | 'printers' | 'desktops' | 'accessories';
 export type CatalogCategorySlug = StoreCategorySlug | 'all';
 
@@ -83,14 +85,6 @@ const CATEGORY_VALUE_ALIASES = new Map<string, StoreCategorySlug>([
 
 export function normalizeText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function encodeImagePath(path: string) {
-  return path
-    .split('/')
-    .filter(Boolean)
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
 }
 
 export function toTitleCase(value: string) {
@@ -411,58 +405,16 @@ function parsePossibleImageArray(value: unknown) {
 export function getImageCandidates(product: Record<string, any>) {
   const overrides = parsePossibleImageArray(product?.image_overrides);
   const images = parsePossibleImageArray(product?.images);
-  return overrides.length > 0 ? overrides : images;
+  const candidates = overrides.length > 0 ? overrides : images;
+  return Array.from(new Set(candidates));
 }
 
 export function resolveProductImageUrl(image: unknown, publicSupabaseUrl: string, fallbackImage: string) {
-  const normalizedFallback = normalizeText(fallbackImage) || '/product-placeholder.svg';
-  const normalizedUrl = normalizeText(publicSupabaseUrl).replace(/\/$/, '');
-  const imagePath = normalizeText(image);
-
-  if (!imagePath) {
-    return normalizedFallback;
-  }
-
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
-  }
-
-  if (imagePath.startsWith('/product-images/')) {
-    const normalizedImagePath = encodeImagePath(imagePath.replace(/^\/product-images\//, ''));
-    return normalizedUrl
-      ? `${normalizedUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`
-      : `/product-images/${normalizedImagePath}`;
-  }
-
-  if (imagePath.startsWith('/storage/v1/object/public/product-images/')) {
-    const normalizedImagePath = encodeImagePath(
-      imagePath.replace(/^\/storage\/v1\/object\/public\/product-images\//, '')
-    );
-    return normalizedUrl
-      ? `${normalizedUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`
-      : `/product-images/${normalizedImagePath}`;
-  }
-
-  if (imagePath.startsWith('/')) {
-    return imagePath;
-  }
-
-  const normalizedImagePath = encodeImagePath(imagePath.replace(/^\/?(product-images\/)?/, ''));
-
-  if (!normalizedUrl) {
-    return `/product-images/${normalizedImagePath}`;
-  }
-
-  return `${normalizedUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`;
+  return resolveProductImage(image, publicSupabaseUrl, fallbackImage);
 }
 
 export function getProductImageUrls(product: Record<string, any>, publicSupabaseUrl: string, fallbackImage: string) {
-  const candidates = getImageCandidates(product);
-  if (candidates.length === 0) {
-    return [resolveProductImageUrl('', publicSupabaseUrl, fallbackImage)];
-  }
-
-  return candidates.map((image) => resolveProductImageUrl(image, publicSupabaseUrl, fallbackImage));
+  return getProductGallery(product, { publicSupabaseUrl, fallbackImage });
 }
 
 export function hasExplicitChargerIncluded(product: Record<string, any>) {
@@ -575,7 +527,7 @@ export function getProductPresentation(
   options: { publicSupabaseUrl?: string; fallbackImage?: string } = {}
 ) {
   const publicSupabaseUrl = normalizeText(options.publicSupabaseUrl);
-  const fallbackImage = normalizeText(options.fallbackImage) || '/product-placeholder.svg';
+  const fallbackImage = normalizeText(options.fallbackImage);
   const category = getStoreCategoryByValue(product?.category);
   const condition = getConditionMetaForProduct(product?.condition, product?.category);
   const grade = getRefurbGradeMeta(product?.refurb_grade, {
@@ -611,6 +563,6 @@ export function getProductPresentation(
     specRows,
     chargerIncluded: hasExplicitChargerIncluded(product),
     imageUrls,
-    primaryImageUrl: imageUrls[0] || fallbackImage
+    primaryImageUrl: imageUrls[0] || null
   };
 }

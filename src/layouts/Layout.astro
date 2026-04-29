@@ -7,10 +7,10 @@ import { getSiteAssets } from '../lib/siteAssets';
 
 interface Props {
   title: string;
-  description?: string;
-  image?: string;
-  canonical?: string;
-  hideAnnouncementStrip?: boolean;
+  description?: string | undefined;
+  image?: string | undefined;
+  canonical?: string | undefined;
+  hideAnnouncementStrip?: boolean | undefined;
 }
 
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
@@ -102,7 +102,6 @@ const faviconVersion = '20260322';
             price_kes: Number(button.dataset.price || '0'),
             slug: button.dataset.slug,
             image: button.dataset.image,
-            imageFallback: button.dataset.imageFallback,
             qty: 1
           };
 
@@ -112,16 +111,12 @@ const faviconVersion = '20260322';
             price_kes: number;
             slug: string;
             image?: string | undefined;
-            imageFallback?: string | undefined;
             qty: number;
           }>;
           const existing = cart.find((entry) => String(entry.id) === String(item.id));
 
           if (existing) {
             existing.qty += 1;
-            if (!existing.imageFallback && item.imageFallback) {
-              existing.imageFallback = item.imageFallback;
-            }
           } else {
             cart.push(item);
           }

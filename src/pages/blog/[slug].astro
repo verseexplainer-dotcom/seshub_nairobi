@@ -1,0 +1,282 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { blogPosts, getBlogPostBySlug } from '../../lib/homepageContent';
+import { buildWhatsAppLink } from '../../lib/storefront';
+
+export const prerender = false;
+
+const post = getBlogPostBySlug(Astro.params.slug);
+
+if (!post) {
+  return Astro.redirect('/blog');
+}
+
+const relatedPosts = blogPosts.filter((entry) => entry.slug !== post.slug).slice(0, 2);
+const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I read your guide: ${post.title}. I need help choosing the right product.`);
+const canonicalPath = `/blog/${post.slug}`;
+const articleStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  description: post.seoDescription,
+  datePublished: post.date,
+  author: {
+    '@type': 'Organization',
+    name: 'SES ICT HUB'
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'SES ICT HUB'
+  },
+  mainEntityOfPage: `https://sesicthub.co.ke${canonicalPath}`
+};
+---
+
+<Layout title={post.title} description={post.seoDescription} canonical={canonicalPath}>
+  <article class="blog-post">
+    <div class="container">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <a href="/blog">Blog</a>
+        <span>/</span>
+        <span aria-current="page">{post.category}</span>
+      </nav>
+
+      <header class="post-hero">
+        <div class="post-meta">
+          <span>{post.category}</span>
+          <span>{post.date}</span>
+          <span>{post.readingMinutes} min read</span>
+        </div>
+        <h1>{post.title}</h1>
+        <p>{post.heroSummary}</p>
+      </header>
+
+      <div class="post-layout">
+        <aside class="post-aside" aria-label="Article summary">
+          <p class="aside-label">Key takeaway</p>
+          <p>{post.takeaway}</p>
+          <a href={whatsappHref} class="pill-button primary" target="_blank" rel="noopener">Ask on WhatsApp</a>
+        </aside>
+
+        <div class="post-content">
+          {post.sections.map((section) => (
+            <section>
+              <h2>{section.heading}</h2>
+              {section.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+              {section.bullets && (
+                <ul>
+                  {section.bullets.map((bullet) => <li>{bullet}</li>)}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+      </div>
+
+      {relatedPosts.length > 0 && (
+        <section class="related-guides" aria-labelledby="related-guides-title">
+          <div class="related-head">
+            <p class="section-kicker">Keep reading</p>
+            <h2 id="related-guides-title">More practical guides</h2>
+          </div>
+          <div class="related-list">
+            {relatedPosts.map((related) => (
+              <a href={related.href} class="related-link">
+                <span>{related.category}</span>
+                <strong>{related.title}</strong>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  </article>
+
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(articleStructuredData)} />
+</Layout>
+
+<style>
+  .blog-post {
+    padding: clamp(2rem, 5vw, 4.5rem) 0;
+    background:
+      linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 1) 34%),
+      #ffffff;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1.6rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--color-primary);
+  }
+
+  .post-hero {
+    max-width: 62rem;
+    margin-bottom: clamp(2rem, 5vw, 4rem);
+  }
+
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .post-hero h1 {
+    margin: 0 0 1.15rem;
+    font-size: clamp(2.25rem, 6vw, 5rem);
+    line-height: 0.98;
+    letter-spacing: 0;
+  }
+
+  .post-hero p {
+    max-width: 48rem;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: clamp(1rem, 2vw, 1.22rem);
+  }
+
+  .post-layout {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .post-aside {
+    display: grid;
+    gap: 1rem;
+    padding: 1.2rem 0;
+    border-top: 2px solid var(--color-primary);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.86);
+  }
+
+  .aside-label {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .post-aside p:not(.aside-label) {
+    margin: 0;
+    color: var(--color-text);
+    font-weight: 750;
+    line-height: 1.55;
+  }
+
+  .post-content {
+    display: grid;
+    gap: 2rem;
+    max-width: 48rem;
+  }
+
+  .post-content section {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .post-content h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .post-content p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.03rem;
+    line-height: 1.75;
+  }
+
+  .post-content ul {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.2rem 0 0;
+    padding-left: 1.2rem;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+  }
+
+  .post-content li::marker {
+    color: var(--color-primary);
+  }
+
+  .related-guides {
+    display: grid;
+    gap: 1.4rem;
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: 2rem;
+    border-top: 1px solid rgba(203, 213, 225, 0.86);
+  }
+
+  .related-head h2 {
+    margin: 0.2rem 0 0;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    letter-spacing: 0;
+  }
+
+  .related-list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .related-link {
+    display: grid;
+    gap: 0.45rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(203, 213, 225, 0.82);
+    transition:
+      color var(--transition-fast),
+      transform var(--transition-fast);
+  }
+
+  .related-link:hover {
+    color: var(--color-primary);
+    transform: translateX(0.2rem);
+  }
+
+  .related-link span {
+    color: var(--color-text-muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .related-link strong {
+    font-size: 1.1rem;
+    line-height: 1.3;
+  }
+
+  @media (min-width: 920px) {
+    .post-layout {
+      grid-template-columns: minmax(13rem, 0.65fr) minmax(0, 1.6fr);
+    }
+
+    .post-aside {
+      position: sticky;
+      top: 6rem;
+    }
+
+    .related-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

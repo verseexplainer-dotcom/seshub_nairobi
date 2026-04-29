@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getPrimaryImage } from '../src/lib/images';
+import { getPrimaryImage, getProductGallery } from '../src/lib/images';
 import {
   getProductBadge,
   getProductBrand,
@@ -119,6 +119,90 @@ test('shared image resolver prefers overrides and safely encodes filenames', () 
     imageUrl,
     'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg'
   );
+});
+
+test('product galleries only use image_overrides when they exist', () => {
+  const gallery = getProductGallery(
+    createProduct({
+      images: ['stale-base-image.jpg'],
+      image_overrides: ['folder/override image (2).jpg', 'folder/override image.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+  const presentation = getProductPresentation(
+    createProduct({
+      images: ['stale-base-image.jpg'],
+      image_overrides: ['folder/override image (2).jpg', 'folder/override image.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  const expected = [
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg',
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image.webp'
+  ];
+
+  assert.deepEqual(gallery, expected);
+  assert.deepEqual(presentation.imageUrls, expected);
+});
+
+test('shared image resolver preserves absolute Supabase image URLs', () => {
+  const imageUrl = getPrimaryImage(
+    createProduct({
+      images: [
+        'https://jddjdebcuruzwxiwaqfq.supabase.co/storage/v1/object/public/product-images/dell-refurbished-ex-uk-latitude-5420-intel-core-i5-1135g7-11th-gen-16gb-ram-512gb-ssd-14-inch-hd-display-windows-11-pro-2.webp'
+      ]
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  assert.equal(
+    imageUrl,
+    'https://jddjdebcuruzwxiwaqfq.supabase.co/storage/v1/object/public/product-images/dell-refurbished-ex-uk-latitude-5420-intel-core-i5-1135g7-11th-gen-16gb-ram-512gb-ssd-14-inch-hd-display-windows-11-pro-2.webp'
+  );
+});
+
+test('shared image resolver promotes bucket paths to Supabase public URLs', () => {
+  const imageUrl = getPrimaryImage(
+    createProduct({
+      images: ['/product-images/folder/sample product.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co'
+    }
+  );
+  const storagePathUrl = getPrimaryImage(
+    createProduct({
+      images: ['/storage/v1/object/public/product-images/folder/sample product.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co'
+    }
+  );
+
+  assert.equal(
+    imageUrl,
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/sample%20product.webp'
+  );
+  assert.equal(storagePathUrl, imageUrl);
+});
+
+test('missing product images resolve to the storefront fallback image', () => {
+  const imageUrl = getPrimaryImage(createProduct());
+  const presentation = getProductPresentation(createProduct());
+
+  assert.equal(imageUrl, '/site-assets/product-placeholder.svg');
+  assert.deepEqual(presentation.imageUrls, ['/site-assets/product-placeholder.svg']);
+  assert.equal(presentation.primaryImageUrl, '/site-assets/product-placeholder.svg');
 });
 
 test('expanded storefront categories resolve by slug and database value', () => {

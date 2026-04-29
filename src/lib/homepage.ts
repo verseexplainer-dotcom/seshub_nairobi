@@ -204,35 +204,40 @@ function getHomepageCandidates(products: CatalogProduct[]) {
   return filterVisibleCatalogProducts(products);
 }
 
+function getMerchandisingCandidates(products: CatalogProduct[]) {
+  return getHomepageCandidates(products).filter(hasCatalogImage);
+}
+
 export function selectFeaturedProducts(products: CatalogProduct[], limit = 6) {
-  const ranked = sortByScore(getHomepageCandidates(products), scoreMerchandisingCandidate);
+  const ranked = sortByScore(getMerchandisingCandidates(products), scoreMerchandisingCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectNewInProducts(products: CatalogProduct[], limit = 6) {
-  const ranked = sortByScore(getHomepageCandidates(products), scoreNewInCandidate);
+  const ranked = sortByScore(getMerchandisingCandidates(products), scoreNewInCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectBestValueProducts(products: CatalogProduct[], limit = 6) {
-  const discounted = getHomepageCandidates(products).filter(hasDiscount);
-  const source = discounted.length >= Math.min(limit, 3) ? discounted : getHomepageCandidates(products);
+  const candidates = getMerchandisingCandidates(products);
+  const discounted = candidates.filter(hasDiscount);
+  const source = discounted.length >= Math.min(limit, 3) ? discounted : candidates;
   const ranked = sortByScore(source, scoreBestValueCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectPremiumProducts(products: CatalogProduct[], limit = 6) {
-  const ranked = sortByScore(getHomepageCandidates(products), scorePremiumCandidate);
+  const ranked = sortByScore(getMerchandisingCandidates(products), scorePremiumCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectDealsProducts(products: CatalogProduct[], limit = 3) {
-  const deals = getHomepageCandidates(products).filter((product) => isProductInStock(product) && hasDiscount(product));
+  const deals = getMerchandisingCandidates(products).filter((product) => isProductInStock(product) && hasDiscount(product));
   return sortByScore(deals, scoreBestValueCandidate).slice(0, limit);
 }
 
 export function buildUseCaseCollections(products: CatalogProduct[]) {
-  const allProducts = getHomepageCandidates(products);
+  const allProducts = getMerchandisingCandidates(products);
   const laptopProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops' && isProductInStock(product));
   const printerProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'printers' && isProductInStock(product));
   const smartphoneProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'smartphones' && isProductInStock(product));

@@ -2,10 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import TurnstileWidget from '../components/TurnstileWidget.astro';
 import type { SessionLocals } from '../lib/app-types';
-import { getSiteAssets } from '../lib/siteAssets';
-
-const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
-const cartFallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const locals = Astro.locals as SessionLocals;
 const profile = locals.profile;
 const user = locals.user;
@@ -14,7 +10,6 @@ const user = locals.user;
 <Layout title="Your Cart">
   <section class="cart-page">
     <div class="container">
-      <div id="cart-config" data-fallback-image={cartFallbackImage} hidden></div>
       <h1 class="page-title">Shopping Cart</h1>
       
       <div id="cart-container" class="cart-grid">
@@ -167,6 +162,17 @@ const user = locals.user;
     object-fit: contain;
     background-color: #f1f5f9;
     border-radius: var(--radius-sm);
+  }
+
+  .item-img-empty {
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    border: 1px solid var(--border);
   }
 
   .item-details {
@@ -360,33 +366,33 @@ const user = locals.user;
 <script>
   import { MAX_ITEM_QTY, loadCartFromStorage, saveCartToStorage, safeCartImageSrc, type CartItem } from '../lib/cartClient';
 
-  const cartConfig = document.getElementById('cart-config');
-  const fallbackImage = cartConfig?.getAttribute('data-fallback-image') || '/product-placeholder.svg';
-  const finalFallbackImage = '/product-placeholder.svg';
   const loadCart = () => loadCartFromStorage();
-
-  function attachFallback(img: HTMLImageElement) {
-    img.addEventListener('error', () => {
-      const currentSrc = img.getAttribute('src') || '';
-      if (img.dataset.fallbackApplied === '1' || currentSrc === fallbackImage) {
-        img.onerror = null;
-        img.src = finalFallbackImage;
-        return;
-      }
-      img.dataset.fallbackApplied = '1';
-      img.src = fallbackImage;
-    });
-  }
 
   function createCartItemElement(item: CartItem, idx: number) {
     const itemEl = document.createElement('div');
     itemEl.className = 'cart-item';
 
-    const imageEl = document.createElement('img');
-    imageEl.className = 'item-img';
-    imageEl.alt = item.title;
-    imageEl.src = safeCartImageSrc(item.image, fallbackImage);
-    attachFallback(imageEl);
+    const imageSrc = safeCartImageSrc(item.image);
+    let imageEl: HTMLImageElement | HTMLDivElement;
+    if (imageSrc) {
+      const productImage = document.createElement('img');
+      productImage.className = 'item-img';
+      productImage.alt = item.title;
+      productImage.src = imageSrc;
+      productImage.addEventListener('error', () => {
+        const emptyImage = document.createElement('div');
+        emptyImage.className = 'item-img item-img-empty';
+        emptyImage.setAttribute('aria-hidden', 'true');
+        emptyImage.textContent = 'Photo unavailable';
+        productImage.replaceWith(emptyImage);
+      });
+      imageEl = productImage;
+    } else {
+      imageEl = document.createElement('div');
+      imageEl.className = 'item-img item-img-empty';
+      imageEl.setAttribute('aria-hidden', 'true');
+      imageEl.textContent = 'Photo unavailable';
+    }
 
     const detailsEl = document.createElement('div');
     detailsEl.className = 'item-details';

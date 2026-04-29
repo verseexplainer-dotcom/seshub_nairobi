@@ -5,7 +5,9 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
     site: 'https://sesicthub.co.ke',
     output: 'server',
-    adapter: cloudflare(),
+    adapter: cloudflare({
+        imageService: 'compile'
+    }),
     session: {
         driver: 'memory'
     },

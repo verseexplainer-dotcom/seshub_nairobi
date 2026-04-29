@@ -8,6 +8,7 @@ import StockBadge from './StockBadge.astro';
 import { getConditionLabel } from '../../lib/catalog';
 import { getPrimaryImage } from '../../lib/images';
 import { buildWhatsAppLink } from '../../lib/storefront';
+import { getRuntimeEnv } from '../../lib/runtime';
 import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
 import { formatKES, getSavingsAmount, hasDiscount } from '../../lib/pricing';
 import { getWarrantyLabel } from '../../lib/productPresentation';
@@ -17,13 +18,14 @@ interface Props {
   publicSupabaseUrl?: string | undefined;
 }
 
-const { product, publicSupabaseUrl } = Astro.props as Props;
-const resolvedPublicSupabaseUrl = publicSupabaseUrl || import.meta.env.PUBLIC_SUPABASE_URL;
-const siteAssets = getSiteAssets(resolvedPublicSupabaseUrl);
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
+const { product, publicSupabaseUrl: providedPublicSupabaseUrl } = Astro.props as Props;
+const runtimeEnv = getRuntimeEnv(Astro.locals);
+const publicSupabaseUrl = providedPublicSupabaseUrl || runtimeEnv.PUBLIC_SUPABASE_URL;
+const siteAssets = getSiteAssets(publicSupabaseUrl);
+const fallbackImage = (runtimeEnv.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
 const finalFallback = '/product-placeholder.svg';
 const imageSource = getPrimaryImage(product, {
-  publicSupabaseUrl: resolvedPublicSupabaseUrl,
+  publicSupabaseUrl,
   fallbackImage
 });
 const imageOnError = buildImageOnError(fallbackImage, finalFallback);
@@ -97,7 +99,7 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
           data-title={product.title}
           data-price={product.price_kes}
           data-slug={product.slug}
-          data-image={imageSource}
+          data-image={imageSource || ''}
           data-image-fallback={fallbackImage}
         >
           Add to Cart
@@ -153,6 +155,14 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
     height: 100%;
     object-fit: contain;
     transition: transform 0.35s ease;
+  }
+
+  .media-link.no-image::after {
+    content: 'Photo unavailable';
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .product-card:hover .media-link img {

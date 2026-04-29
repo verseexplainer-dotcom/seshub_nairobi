@@ -1,64 +1,29 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import CatalogListing from '../components/CatalogListing.astro';
-import { getHomepageProducts } from '../lib/catalog';
+import ProductCard from '../components/ui/ProductCard.astro';
+import { searchCatalogProducts } from '../lib/catalog';
 import { getRuntimeEnv } from '../lib/runtime';
 
 const runtimeEnv = getRuntimeEnv(Astro.locals);
-const query = Astro.url.searchParams.get('q')?.toLowerCase().trim() || '';
+const rawQuery = Astro.url.searchParams.get('q')?.trim() || '';
+const query = rawQuery.toLowerCase();
 const category = Astro.url.searchParams.get('category')?.toLowerCase().trim() || '';
 const condition = Astro.url.searchParams.get('condition')?.toLowerCase().trim() || '';
 const priceRange = Astro.url.searchParams.get('price')?.trim() || '';
+const hasFilters = Boolean(query || category || condition || priceRange);
+const [minStr, maxStr] = priceRange.split('-');
+const minPrice = priceRange ? Number.parseInt(minStr || '0', 10) : null;
+const maxPrice = priceRange ? Number.parseInt(maxStr || String(Number.MAX_SAFE_INTEGER), 10) : null;
 
-let products = await getHomepageProducts(Astro.locals);
-
-// Filter by search query
-if (query) {
-  products = products.filter(product => {
-    const searchFields = [
-      product.title?.toLowerCase() || '',
-      product.description?.toLowerCase() || '',
-      product.brand?.toLowerCase() || '',
-      product.short_specs?.toLowerCase() || ''
-    ].join(' ');
-    
-    return query.split(' ').some(term => searchFields.includes(term));
-  });
-}
-
-// Filter by category
-if (category) {
-  products = products.filter(product => {
-    return product.category?.toLowerCase() === category;
-  });
-}
-
-// Filter by condition
-if (condition) {
-  const conditionMap: Record<string, string> = {
-    'brand_new': 'Brand New',
-    'refurbished': 'Refurbished'
-  };
-  const conditionFilter = conditionMap[condition];
-  
-  products = products.filter(product => {
-    const productCondition = product.condition?.toLowerCase() === 'new' ? 'Brand New' : 
-                             product.refurb_grade ? 'Refurbished' : '';
-    return productCondition === conditionFilter;
-  });
-}
-
-// Filter by price range
-if (priceRange) {
-  const [minStr, maxStr] = priceRange.split('-');
-  const min = parseInt(minStr, 10);
-  const max = parseInt(maxStr, 10);
-  
-  products = products.filter(product => {
-    const price = product.price_kes || 0;
-    return price >= min && price <= max;
-  });
-}
+let products = hasFilters
+  ? await searchCatalogProducts(Astro.locals, {
+      query,
+      category,
+      condition,
+      minPrice,
+      maxPrice
+    })
+  : [];
 
 // Sort by featured then price
 products = products.sort((a, b) => {
@@ -67,9 +32,8 @@ products = products.sort((a, b) => {
   return (a.price_kes || 0) - (b.price_kes || 0);
 });
 
-const hasFilters = query || category || condition || priceRange;
 const pageTitle = hasFilters 
-  ? `Search Results${query ? ` for "${query}"` : ''}${category ? ` in ${category}` : ''}`
+  ? `Search Results${rawQuery ? ` for "${rawQuery}"` : ''}${category ? ` in ${category}` : ''}`
   : 'Search Products';
 ---
 
@@ -90,17 +54,25 @@ const pageTitle = hasFilters
       </div>
 
       {products.length > 0 ? (
-        <CatalogListing
-          products={products}
-          publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
-        />
+        <div class="search-grid">
+          {products.map((product) => (
+            <ProductCard product={product} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
+          ))}
+        </div>
       ) : (
         <div class="no-results">
-          <p>No products found matching your search.</p>
-          {hasFilters && (
-            <p>Try adjusting your filters or search terms.</p>
+          {hasFilters ? (
+            <>
+              <p>No products matched your search.</p>
+              <p>Try a different brand, a wider price range, or fewer filters.</p>
+            </>
+          ) : (
+            <>
+              <p>Start with a product name, brand, or category to see matching items.</p>
+              <p>You can also use the quick search on the homepage to narrow things down fast.</p>
+            </>
           )}
-          <a href="/" class="btn-link">← Back to home</a>
+          <a href={hasFilters ? '/search' : '/'} class="btn-link">{hasFilters ? 'Clear search' : '← Back to home'}</a>
         </div>
       )}
     </div>
@@ -125,6 +97,12 @@ const pageTitle = hasFilters
   .search-meta {
     color: var(--color-text-muted);
     font-size: 1rem;
+  }
+
+  .search-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .no-results {
@@ -153,5 +131,17 @@ const pageTitle = hasFilters
 
   .btn-link:hover {
     background: var(--color-primary-dark);
+  }
+
+  @media (min-width: 768px) {
+    .search-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .search-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 </style>

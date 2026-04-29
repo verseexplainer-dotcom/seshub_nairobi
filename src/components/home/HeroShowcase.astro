@@ -8,7 +8,7 @@ import HeroSearch from './HeroSearch.astro';
 import { getConditionLabel } from '../../lib/catalog';
 import { getPrimaryImage } from '../../lib/images';
 import { buildWhatsAppLink } from '../../lib/storefront';
-import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
+import { getSiteAssets } from '../../lib/siteAssets';
 
 interface Props {
   products: CatalogProduct[];
@@ -20,313 +20,276 @@ interface Props {
 const { products, liveCount, brandCount, publicSupabaseUrl } = Astro.props as Props;
 const spotlight = products[0] || null;
 const highlights = products.slice(1, 4);
-const trustChips = ['Warranty Included', 'Tested & Ready to Use', 'Delivery Available', 'Nairobi Pickup'];
 const siteAssets = getSiteAssets(publicSupabaseUrl);
-const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src).trim();
-const imageOnError = buildImageOnError(fallbackImage, '/product-placeholder.svg');
+const spotlightImage = spotlight ? getPrimaryImage(spotlight, { publicSupabaseUrl }) : siteAssets.heroMoments.primary.src;
+const highlightCards = highlights.map((product) => ({
+  product,
+  imageSource: getPrimaryImage(product, { publicSupabaseUrl })
+}));
+const imageOnError = "this.closest('[data-product-media]')?.classList.add('no-image');this.remove();";
 const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing the right laptop, printer, desktop, or phone.');
 ---
 
-<section
-  class="hero-showcase"
-  style={`--hero-stage:url(${siteAssets.heroMoments.tertiary.src}); --hero-poster:url(${siteAssets.heroMoments.primary.src}); --hero-detail:url(${siteAssets.heroMoments.secondary.src});`}
->
-  <div class="hero-stage">
-    <div class="container hero-grid">
-      <div class="hero-copy">
-        <p class="hero-kicker">Affordable tech, ready to order</p>
-        <h1>Affordable laptops, printers, phones, and desktops in Kenya.</h1>
-        <p class="hero-text">
-          Shop verified specs, fair pricing, warranty-backed listings, and ready-to-order stock from SES ICT HUB.
-        </p>
+<section class="hero-showcase">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="hero-kicker">Exclusive SES ICT HUB picks</p>
+      <h1>Affordable tech ready to order in Kenya.</h1>
+      <p class="hero-text">
+        Shop laptops, printers, phones, desktops, and accessories with clear specs, live stock, and WhatsApp support.
+      </p>
 
-        <HeroSearch publicSupabaseUrl={publicSupabaseUrl} />
+      <HeroSearch publicSupabaseUrl={publicSupabaseUrl} />
 
-        <div class="hero-actions">
-          <Button href="/category/laptops">Shop Laptops</Button>
-          <Button href={whatsappHref} variant="ghost" target="_blank" rel="noreferrer">Chat on WhatsApp</Button>
-        </div>
-
-        <div class="hero-trust" aria-label="Trust highlights">
-          {trustChips.map((item) => (
-            <Badge tone="neutral">{item}</Badge>
-          ))}
-        </div>
-
-        <div class="hero-stats">
-          <div>
-            <strong>{liveCount}</strong>
-            <span>Live products</span>
-          </div>
-          <div>
-            <strong>{brandCount}</strong>
-            <span>Active brands</span>
-          </div>
-        </div>
+      <div class="hero-actions">
+        <Button href="/shop">Shop Now</Button>
+        <Button href={whatsappHref} variant="ghost" target="_blank" rel="noreferrer">WhatsApp Us</Button>
       </div>
 
-      <div class="hero-visual" aria-label="Live catalog highlights">
-        {spotlight ? (
-          <article class="spotlight-card">
-            <div class="spotlight-shell">
-              <div class="spotlight-topline">
-                <span>Available now</span>
-                <span>Catalog-led picks</span>
-              </div>
-
-              <a href={`/product/${spotlight.slug}`} class="spotlight-media">
-                <img
-                  src={getPrimaryImage(spotlight, { publicSupabaseUrl, fallbackImage })}
-                  alt={spotlight.title}
-                  loading="eager"
-                  decoding="async"
-                  onerror={imageOnError}
-                />
-              </a>
-
-              <div class="spotlight-copy">
-                <div class="spotlight-badges">
-                  {getConditionLabel(spotlight) && (
-                    <Badge tone={getConditionLabel(spotlight) === 'Brand New' ? 'primary' : 'warning'}>
-                      {getConditionLabel(spotlight)}
-                    </Badge>
-                  )}
-                  <Badge tone="success">Live Stock</Badge>
-                </div>
-                <h2><a href={`/product/${spotlight.slug}`}>{spotlight.title}</a></h2>
-                <SpecChips product={spotlight} />
-                <PriceBlock product={spotlight} />
-              </div>
-            </div>
-          </article>
-        ) : (
-          <div class="spotlight-card empty">
-            <h2>Live inventory is loading.</h2>
-            <p>Browse laptops first, then contact us on WhatsApp and we will help you confirm stock.</p>
-          </div>
-        )}
-
-        {highlights.length > 0 && (
-          <div class="mini-grid">
-            {highlights.map((product, index) => (
-              <a href={`/product/${product.slug}`} class={`mini-card mini-${index + 1}`}>
-                <img
-                  src={getPrimaryImage(product, { publicSupabaseUrl, fallbackImage })}
-                  alt={product.title}
-                  loading="lazy"
-                  decoding="async"
-                  onerror={imageOnError}
-                />
-                <div class="mini-copy">
-                  <span>{product.category}</span>
-                  <strong>{product.title}</strong>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
+      <div class="hero-stats" aria-label="Store highlights">
+        <div>
+          <strong>{liveCount}</strong>
+          <span>Live products</span>
+        </div>
+        <div>
+          <strong>{brandCount}</strong>
+          <span>Active brands</span>
+        </div>
+        <div>
+          <strong>30</strong>
+          <span>Day support</span>
+        </div>
       </div>
     </div>
+
+    <div class="hero-product" aria-label="Featured product">
+      <div class="hero-price-badge">
+        <span>From</span>
+        <strong>KSh</strong>
+      </div>
+
+      <a
+        href={spotlight ? `/product/${spotlight.slug}` : '/shop'}
+        class={`hero-product-media ${spotlightImage ? '' : 'no-image'}`}
+        data-product-media
+        aria-label={spotlight ? `View ${spotlight.title}` : 'Browse SES ICT HUB products'}
+      >
+        {spotlightImage && (
+          <img
+            src={spotlightImage}
+            alt={spotlight?.title || 'SES ICT HUB electronics showcase'}
+            loading="eager"
+            decoding="async"
+            onerror={imageOnError}
+          />
+        )}
+      </a>
+
+      {spotlight && (
+        <div class="hero-product-copy">
+          <div class="spotlight-badges">
+            {getConditionLabel(spotlight) && (
+              <Badge tone={getConditionLabel(spotlight) === 'Brand New' ? 'primary' : 'warning'}>
+                {getConditionLabel(spotlight)}
+              </Badge>
+            )}
+            <Badge tone="success">Live Stock</Badge>
+          </div>
+          <h2><a href={`/product/${spotlight.slug}`}>{spotlight.title}</a></h2>
+          <SpecChips product={spotlight} />
+          <PriceBlock product={spotlight} />
+        </div>
+      )}
+    </div>
   </div>
+
+  {highlightCards.length > 0 && (
+    <div class="container hero-highlight-row" aria-label="Popular products">
+      {highlightCards.map(({ product, imageSource }) => (
+        <a href={`/product/${product.slug}`} class="hero-mini-product">
+          <span class={`mini-product-media ${imageSource ? '' : 'no-image'}`} data-product-media>
+            {imageSource && (
+              <img
+                src={imageSource}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                onerror={imageOnError}
+              />
+            )}
+          </span>
+          <span class="mini-product-copy">
+            <span>{product.category}</span>
+            <strong>{product.title}</strong>
+          </span>
+        </a>
+      ))}
+    </div>
+  )}
 </section>
 
 <style>
   .hero-showcase {
-    position: relative;
-    overflow: clip;
-    background: linear-gradient(180deg, #ffffff, #f8fbff);
-  }
-
-  .hero-stage {
-    position: relative;
-    padding-block: clamp(2.25rem, 6vw, 5rem);
-  }
-
-  .hero-stage::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.78) 52%, rgba(255, 255, 255, 0.92)),
-      linear-gradient(135deg, rgba(21, 93, 252, 0.12), rgba(8, 145, 178, 0.06) 34%, transparent 60%),
-      var(--hero-stage) 72% center / cover no-repeat;
-    pointer-events: none;
-  }
-
-  .hero-stage::after {
-    content: '';
-    position: absolute;
-    inset: auto 0 0 auto;
-    width: min(34rem, 48vw);
-    height: min(22rem, 40vw);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.06)),
-      var(--hero-poster) center / cover no-repeat;
-    opacity: 0.16;
-    filter: saturate(1.05);
-    pointer-events: none;
+    overflow: hidden;
+    padding: clamp(1.35rem, 3vw, 2rem) 0 clamp(1.75rem, 4vw, 3rem);
+    background: #3496e7;
+    color: #ffffff;
   }
 
   .hero-grid {
-    position: relative;
     display: grid;
-    gap: 1.5rem;
-    min-height: clamp(34rem, 76svh, 45rem);
-    align-items: end;
-  }
-
-  .hero-copy,
-  .spotlight-card,
-  .mini-card {
-    position: relative;
-    z-index: 1;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    min-height: clamp(37rem, 75svh, 48rem);
+    align-items: center;
   }
 
   .hero-copy {
     display: grid;
     gap: 1rem;
-    align-content: start;
-    max-width: 34rem;
+    max-width: 37rem;
   }
 
   .hero-kicker {
-    color: var(--color-primary);
+    color: rgba(255, 255, 255, 0.84);
     font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
+    font-weight: 900;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
   .hero-copy h1 {
     max-width: 11ch;
-    font-size: clamp(2.4rem, 9vw, 5rem);
-    line-height: 0.96;
-    letter-spacing: -0.07em;
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(2.65rem, 8vw, 5.8rem);
+    line-height: 0.95;
+    letter-spacing: 0;
   }
 
   .hero-text {
-    max-width: 32ch;
-    color: var(--color-text-muted);
-    font-size: clamp(1rem, 2.6vw, 1.12rem);
+    max-width: 35rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: clamp(1rem, 2.2vw, 1.18rem);
   }
 
-  .hero-actions,
-  .hero-trust {
+  .hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
   }
 
+  .hero-actions :global(.ui-button.primary) {
+    background: #ef3f3f;
+    color: #ffffff;
+    box-shadow: 0 12px 28px rgba(127, 29, 29, 0.2);
+  }
+
+  .hero-actions :global(.ui-button.ghost) {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+
   .hero-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.9rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    max-width: 31rem;
   }
 
   .hero-stats div {
     display: grid;
-    gap: 0.2rem;
-    min-width: 7rem;
-    padding: 0.95rem 1rem;
-    border: 1px solid rgba(191, 219, 254, 0.52);
-    border-radius: var(--radius-card);
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(16px);
-    box-shadow: var(--shadow-sm);
+    gap: 0.1rem;
+    padding-block: 0.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.36);
   }
 
   .hero-stats strong {
-    font-size: 1.5rem;
-    letter-spacing: -0.05em;
+    color: #ffffff;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    line-height: 1;
   }
 
   .hero-stats span {
-    color: var(--color-text-muted);
-    font-size: 0.82rem;
-    font-weight: 700;
-  }
-
-  .hero-visual {
-    display: grid;
-    gap: 1rem;
-    align-content: end;
-  }
-
-  .spotlight-card,
-  .mini-card {
-    overflow: hidden;
-    border: 1px solid rgba(191, 219, 254, 0.7);
-    border-radius: calc(var(--radius-card) + 0.2rem);
-    background:
-      radial-gradient(circle at top right, rgba(191, 219, 254, 0.7), transparent 24%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94));
-    box-shadow: var(--shadow-lg);
-  }
-
-  .spotlight-card {
-    padding: 1rem;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.92)),
-      linear-gradient(135deg, rgba(255, 255, 255, 0), rgba(21, 93, 252, 0.1)),
-      var(--hero-detail) center / cover no-repeat;
-    backdrop-filter: blur(18px);
-    animation: heroFloat 9s ease-in-out infinite;
-  }
-
-  .spotlight-card.empty {
-    padding: 1.6rem;
-  }
-
-  .spotlight-shell {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .spotlight-topline {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
-  }
-
-  .spotlight-topline span {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2rem;
-    padding: 0.3rem 0.7rem;
-    border-radius: var(--radius-pill);
-    background: rgba(255, 255, 255, 0.76);
-    color: var(--color-primary-strong);
-    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
     font-weight: 800;
-    letter-spacing: 0.12em;
+  }
+
+  .hero-product {
+    position: relative;
+    display: grid;
+    gap: 1rem;
+    align-content: center;
+    justify-items: center;
+  }
+
+  .hero-price-badge {
+    position: absolute;
+    top: 0;
+    right: min(4vw, 1.25rem);
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 5.75rem;
+    height: 5.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.84);
+    border-radius: 50%;
+    background: #ffffff;
+    color: #ef3f3f;
+    box-shadow: 0 18px 40px rgba(29, 78, 216, 0.24);
+  }
+
+  .hero-price-badge span {
+    color: #64748b;
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .spotlight-media {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 4 / 3;
-    border-radius: calc(var(--radius-card) - 0.25rem);
-    background:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.75), transparent 35%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.94));
+  .hero-price-badge strong {
+    font-size: 1rem;
   }
 
-  .spotlight-media img,
-  .mini-card img {
+  .hero-product-media {
+    display: grid;
+    place-items: center;
+    width: min(100%, 33rem);
+    aspect-ratio: 1 / 0.88;
+  }
+
+  .hero-product-media img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    filter: drop-shadow(0 32px 34px rgba(15, 23, 42, 0.26));
+    animation: heroProductIn 720ms ease both;
   }
 
-  .spotlight-media img {
-    padding: 1rem;
-  }
-
-  .spotlight-copy {
+  .hero-product-media.no-image::after,
+  .mini-product-media.no-image::after {
+    content: 'Photo unavailable';
     display: grid;
-    gap: 0.8rem;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .hero-product-copy {
+    display: grid;
+    gap: 0.65rem;
+    width: min(100%, 28rem);
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 0.7rem;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--color-text);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
   }
 
   .spotlight-badges {
@@ -335,142 +298,132 @@ const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing the
     gap: 0.45rem;
   }
 
-  .spotlight-copy h2 {
-    font-size: clamp(1.25rem, 4vw, 1.8rem);
+  .hero-product-copy h2 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: clamp(1.15rem, 3vw, 1.55rem);
     line-height: 1.15;
-    letter-spacing: -0.05em;
+    letter-spacing: 0;
   }
 
-  .mini-grid {
+  .hero-highlight-row {
     display: grid;
     gap: 0.9rem;
+    margin-top: -0.5rem;
   }
 
-  .mini-card {
+  .hero-mini-product {
     display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr);
+    grid-template-columns: 5.25rem minmax(0, 1fr);
     gap: 0.85rem;
     align-items: center;
+    min-height: 6rem;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(14px);
-    animation: heroFloat 8s ease-in-out infinite;
+    border-radius: 0.65rem;
+    background: #ffffff;
+    color: var(--color-text);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
-  .mini-2 {
-    animation-delay: 0.8s;
+  .hero-mini-product:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
   }
 
-  .mini-3 {
-    animation-delay: 1.6s;
-  }
-
-  .mini-card img {
-    aspect-ratio: 1 / 1;
-    padding: 0.45rem;
-    border-radius: 1rem;
-    background: rgba(248, 250, 252, 0.88);
-  }
-
-  .mini-copy {
+  .mini-product-media {
     display: grid;
-    gap: 0.3rem;
+    place-items: center;
+    aspect-ratio: 1 / 1;
+    border-radius: 0.55rem;
+    background: #f1f5f9;
   }
 
-  .mini-copy span {
-    color: var(--color-primary);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
+  .mini-product-media img {
+    width: 100%;
+    height: 100%;
+    padding: 0.45rem;
+    object-fit: contain;
+  }
+
+  .mini-product-media.no-image::after {
+    color: var(--color-text-muted);
+    font-size: 0.62rem;
+    text-align: center;
+  }
+
+  .mini-product-copy {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .mini-product-copy span {
+    color: #ef3f3f;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
-  .mini-copy strong {
+  .mini-product-copy strong {
     display: -webkit-box;
     overflow: hidden;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     font-size: 0.95rem;
-    line-height: 1.35;
+    line-height: 1.3;
   }
 
-  @keyframes heroFloat {
-    0%,
-    100% {
-      transform: translateY(0);
+  @keyframes heroProductIn {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.98);
     }
 
-    50% {
-      transform: translateY(-6px);
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
   }
 
-  @media (min-width: 980px) {
-    .hero-stage::before {
-      background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.94) 30%, rgba(255, 255, 255, 0.82) 48%, rgba(255, 255, 255, 0.36) 100%),
-        linear-gradient(135deg, rgba(21, 93, 252, 0.14), rgba(8, 145, 178, 0.06) 34%, transparent 60%),
-        var(--hero-stage) right center / cover no-repeat;
-    }
-
+  @media (min-width: 900px) {
     .hero-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(23rem, 29rem);
+      grid-template-columns: minmax(0, 0.95fr) minmax(27rem, 1.05fr);
     }
 
-    .hero-visual {
-      justify-self: end;
-      width: min(100%, 28rem);
-    }
-
-    .mini-grid {
+    .hero-highlight-row {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .mini-card {
-      grid-template-columns: 1fr;
-      align-content: start;
-    }
-
-    .mini-card img {
-      width: 100%;
-      aspect-ratio: 4 / 3;
+      margin-top: -2rem;
     }
   }
 
-  @media (max-width: 979px) {
-    .hero-stage {
-      padding-block: clamp(1.5rem, 5vw, 2.4rem) clamp(2rem, 7vw, 3.1rem);
-    }
-
-    .hero-stage::before {
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 32%, rgba(255, 255, 255, 0.82) 58%, rgba(255, 255, 255, 0.94) 100%),
-        linear-gradient(145deg, rgba(21, 93, 252, 0.16), rgba(8, 145, 178, 0.06) 38%, transparent 74%),
-        var(--hero-stage) center top / 132% auto no-repeat;
-    }
-
-    .hero-stage::after {
-      width: min(17rem, 72vw);
-      height: min(11.5rem, 46vw);
-      inset: 1.15rem -2rem auto auto;
-      opacity: 0.18;
+  @media (max-width: 899px) {
+    .hero-showcase {
+      padding-top: 1rem;
     }
 
     .hero-grid {
       min-height: auto;
-      gap: 1.15rem;
     }
 
-    .hero-visual {
-      max-width: 100%;
+    .hero-copy h1 {
+      max-width: 12ch;
     }
 
-    .hero-copy {
-      max-width: 31rem;
+    .hero-stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .mini-grid {
-      grid-template-columns: 1fr;
+    .hero-product {
+      justify-items: stretch;
+    }
+
+    .hero-price-badge {
+      width: 4.75rem;
+      height: 4.75rem;
     }
   }
 </style>

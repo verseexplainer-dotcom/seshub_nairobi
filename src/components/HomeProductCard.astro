@@ -36,9 +36,9 @@ const productHref = `/product/${product.slug}`;
 ---
 
 <article class={`home-product-card ${tone === 'contrast' ? 'contrast' : ''}`}>
-  <a href={productHref} class="home-product-media" aria-label={`View ${product.title}`}>
+  <a href={productHref} class={`home-product-media ${imageSource ? '' : 'no-image'}`} aria-label={`View ${product.title}`} data-product-media>
     {badge && <span class={`product-badge-chip ${badgeTone}`}>{badge}</span>}
-    <img src={imageSource} alt={product.title} loading="lazy" decoding="async" onerror={imageOnError} />
+    {imageSource && <img src={imageSource} alt={product.title} loading="lazy" decoding="async" onerror={imageOnError} />}
   </a>
 
   <div class="home-product-body">
@@ -64,7 +64,7 @@ const productHref = `/product/${product.slug}`;
       data-title={product.title}
       data-price={product.price_kes}
       data-slug={product.slug}
-      data-image={imageSource}
+      data-image={imageSource || ''}
       data-image-fallback={finalFallbackImage}
     >
       Add to cart
@@ -120,6 +120,18 @@ const productHref = `/product/${product.slug}`;
     object-fit: contain;
     padding: 1rem;
     transition: transform 0.3s ease;
+  }
+
+  .home-product-media.no-image::after {
+    content: 'Photo unavailable';
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .home-product-card:hover .home-product-media img {

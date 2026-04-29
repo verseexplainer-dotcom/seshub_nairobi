@@ -217,7 +217,7 @@ const productStructuredData = {
   '@type': 'Product',
   name: product.title,
   description: plainMetaDescription,
-  image: presentation.imageUrls,
+  image: presentation.imageUrls.length > 0 ? presentation.imageUrls : undefined,
   sku: product.sku || undefined,
   brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
   itemCondition: structuredItemCondition,
@@ -234,7 +234,7 @@ const productStructuredData = {
 <Layout
   title={productSeoTitle}
   description={plainMetaDescription}
-  image={presentation.primaryImageUrl}
+  image={presentation.primaryImageUrl || undefined}
   canonical={canonicalPath}
 >
   <div class="product-page">
@@ -260,14 +260,18 @@ const productStructuredData = {
 
       <div class="product-layout">
         <section class="gallery-panel" aria-label="Product image gallery">
-          <div class="main-image-shell">
-            <img
-              src={presentation.primaryImageUrl}
-              alt={presentation.displayTitle}
-              id="main-product-image"
-              class="main-image"
-              onerror={imageOnError}
-            />
+          <div class={`main-image-shell ${presentation.primaryImageUrl ? '' : 'no-image'}`} data-product-gallery>
+            {presentation.primaryImageUrl ? (
+              <img
+                src={presentation.primaryImageUrl}
+                alt={presentation.displayTitle}
+                id="main-product-image"
+                class="main-image"
+                onerror={imageOnError}
+              />
+            ) : (
+              <p class="main-image-empty-copy">Product photo unavailable</p>
+            )}
           </div>
 
           {presentation.imageUrls.length > 1 && (
@@ -333,7 +337,7 @@ const productStructuredData = {
                 data-title={presentation.rawTitle}
                 data-price={presentation.pricing.price}
                 data-slug={product.slug}
-                data-image={presentation.primaryImageUrl}
+                data-image={presentation.primaryImageUrl || ''}
                 aria-label={`Add ${presentation.displayTitle} to cart`}
               >
                 Add to Cart
@@ -543,6 +547,18 @@ const productStructuredData = {
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+
+  .main-image-shell.no-image {
+    place-items: center;
+  }
+
+  .main-image-empty-copy {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
   }
 
   .thumbnail-row {

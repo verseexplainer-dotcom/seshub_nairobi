@@ -2,6 +2,7 @@
 import '../styles/home.css';
 import Layout from '../layouts/Layout.astro';
 import AnnouncementStrip from '../components/home/AnnouncementStrip.astro';
+import BrandCarousel from '../components/BrandCarousel.astro';
 import CategoryQuickLinks from '../components/home/CategoryQuickLinks.astro';
 import CustomerActionBanner from '../components/home/CustomerActionBanner.astro';
 import DealsBand from '../components/home/DealsBand.astro';
@@ -41,13 +42,14 @@ const inventorySummary = getInventorySummary(products);
   hideAnnouncementStrip
 >
   <div class="homepage-shell">
+    <AnnouncementStrip />
     <HeroShowcase
       products={featuredProducts.slice(0, 4)}
       liveCount={inventorySummary.liveCount}
       brandCount={inventorySummary.brandCount}
       publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
     />
-    <AnnouncementStrip />
+    <BrandCarousel />
     <CategoryQuickLinks items={categoryCounts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
     <TrustHighlights />
     <FeaturedProductsGrid

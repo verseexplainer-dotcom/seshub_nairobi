@@ -75,14 +75,16 @@ const stats = [
           <span class="hero-card-chip subtle">{spotlightProduct ? getAvailabilityLabel(spotlightProduct) : 'Need help choosing?'}</span>
         </div>
 
-        <div class="hero-card-media">
-          <img
-            src={spotlightImage}
-            alt={spotlightProduct?.title || 'Premium electronics showcase'}
-            loading="lazy"
-            decoding="async"
-            onerror={spotlightProduct ? spotlightImageOnError : heroOnError}
-          />
+        <div class={`hero-card-media ${spotlightProduct && !spotlightImage ? 'no-image' : ''}`} data-product-media>
+          {spotlightImage && (
+            <img
+              src={spotlightImage}
+              alt={spotlightProduct?.title || 'Premium electronics showcase'}
+              loading="lazy"
+              decoding="async"
+              onerror={spotlightProduct ? spotlightImageOnError : heroOnError}
+            />
+          )}
         </div>
 
         <div class="hero-card-copy">
@@ -307,6 +309,18 @@ const stats = [
     height: 100%;
     object-fit: contain;
     padding: 1rem;
+  }
+
+  .hero-card-media.no-image::after {
+    content: 'Photo unavailable';
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: rgba(226, 232, 240, 0.78);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .hero-card-copy {

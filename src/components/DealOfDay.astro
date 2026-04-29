@@ -65,8 +65,16 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of
       </div>
 
       <div class="deal-card surface-card">
-        <div class="deal-card-media">
-          <img src={imageSource} alt={product?.title || 'Deal of the day visual'} loading="lazy" decoding="async" onerror={product ? imageOnError : buildImageOnError(heroImage.fallback, finalFallbackImage)} />
+        <div class={`deal-card-media ${product && !imageSource ? 'no-image' : ''}`} data-product-media>
+          {imageSource && (
+            <img
+              src={imageSource}
+              alt={product?.title || 'Deal of the day visual'}
+              loading="lazy"
+              decoding="async"
+              onerror={product ? imageOnError : buildImageOnError(heroImage.fallback, finalFallbackImage)}
+            />
+          )}
         </div>
 
         <div class="deal-card-body">
@@ -185,6 +193,18 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like the deal of
     height: 100%;
     object-fit: contain;
     padding: 1rem;
+  }
+
+  .deal-card-media.no-image::after {
+    content: 'Photo unavailable';
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .deal-card-body {

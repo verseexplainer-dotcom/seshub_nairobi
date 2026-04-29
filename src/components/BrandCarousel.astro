@@ -1,15 +1,39 @@
 ---
-import { techBrands } from '../lib/homepageContent';
+const SUPABASE_SITE_ASSETS = 'https://jddjdebcuruzwxiwaqfq.supabase.co/storage/v1/object/public/site-assets';
 
-const tickerBrands = [...techBrands, ...techBrands];
+interface BrandLogo {
+  label: string;
+  href: string;
+  src?: string;
+}
+
+const brandLogos: BrandLogo[] = [
+  { label: 'HP', href: '/shop?brand=HP', src: `${SUPABASE_SITE_ASSETS}/hp-brand.webp` },
+  { label: 'Asus', href: '/shop?brand=Asus', src: `${SUPABASE_SITE_ASSETS}/asus-brand.webp` },
+  { label: 'Canon', href: '/shop?brand=Canon', src: `${SUPABASE_SITE_ASSETS}/canon-brand.webp` },
+  { label: 'Google Pixel', href: '/shop?brand=Google%20Pixel', src: `${SUPABASE_SITE_ASSETS}/pixel-brand%20(1).webp` },
+  { label: 'Dell', href: '/shop?brand=Dell', src: `${SUPABASE_SITE_ASSETS}/dell-brand.webp` },
+  { label: 'Lenovo', href: '/shop?brand=Lenovo', src: `${SUPABASE_SITE_ASSETS}/lenovo-brand.webp` },
+  { label: 'Samsung', href: '/shop?brand=Samsung', src: `${SUPABASE_SITE_ASSETS}/samsung-brand.webp` },
+  { label: 'Epson', href: '/shop?brand=Epson', src: `${SUPABASE_SITE_ASSETS}/epson-brand.webp` },
+  { label: 'Apple', href: '/shop?brand=Apple', src: `${SUPABASE_SITE_ASSETS}/apple-brand.webp` },
+  { label: 'Acer', href: '/shop?brand=Acer', src: `${SUPABASE_SITE_ASSETS}/acer-brand.webp` }
+];
+
+const tickerBrands = [...brandLogos, ...brandLogos];
+const imageOnError = "this.closest('[data-brand-logo]')?.classList.add('logo-missing');this.remove();";
 ---
 
-<section class="brand-ticker" aria-label="Popular technology brands">
+<section class="brand-carousel" aria-label="Popular technology brands">
+  <div class="brand-carousel-copy">
+    <span>Shop trusted brands</span>
+  </div>
   <div class="brand-ticker-inner">
     <div class="brand-track">
       {tickerBrands.map((brand, index) => (
-        <a href={`/shop?brand=${encodeURIComponent(brand)}`} class="brand-pill" aria-label={`Browse ${brand} products`} data-brand-order={index}>
-          <span>{brand}</span>
+        <a href={brand.href} class="brand-logo-pill" aria-label={`Browse ${brand.label} products`} data-brand-order={index} data-brand-logo>
+          {brand.src && <img src={brand.src} alt="" loading="lazy" decoding="async" onerror={imageOnError} />}
+          <span>{brand.label}</span>
         </a>
       ))}
     </div>
@@ -17,18 +41,28 @@ const tickerBrands = [...techBrands, ...techBrands];
 </section>
 
 <style>
-  .brand-ticker {
+  .brand-carousel {
+    display: grid;
+    gap: 0.85rem;
     overflow: hidden;
     padding: 1rem 0;
-    border-block: 1px solid rgba(229, 231, 235, 0.92);
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(14px);
+    border-block: 1px solid rgba(203, 213, 225, 0.76);
+    background: #ffffff;
+  }
+
+  .brand-carousel-copy {
+    padding-inline: max(1rem, calc((100vw - 1180px) / 2));
+    color: var(--color-text-muted);
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
   .brand-ticker-inner {
     display: flex;
     overflow: hidden;
-    mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 1) 12%, rgba(0, 0, 0, 1) 88%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   }
 
   .brand-track {
@@ -36,36 +70,52 @@ const tickerBrands = [...techBrands, ...techBrands];
     gap: 0.85rem;
     min-width: max-content;
     padding-inline: 1rem;
-    animation: brand-marquee 30s linear infinite;
+    animation: brand-marquee 34s linear infinite;
     will-change: transform;
   }
 
-  .brand-ticker:hover .brand-track {
+  .brand-carousel:hover .brand-track {
     animation-play-state: paused;
   }
 
-  .brand-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 3rem;
-    padding: 0.8rem 1.1rem;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
-    color: #334155;
-    font-size: 0.92rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+  .brand-logo-pill {
+    display: inline-grid;
+    grid-template-columns: 5.5rem;
+    place-items: center;
+    min-height: 4.25rem;
+    min-width: 8.25rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 0.65rem;
+    background: #f8fafc;
+    color: #1f2937;
+    font-size: 0.82rem;
+    font-weight: 900;
     text-transform: uppercase;
-    white-space: nowrap;
-    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition:
+      transform var(--transition-fast),
+      border-color var(--transition-fast),
+      background-color var(--transition-fast);
   }
 
-  .brand-pill:hover {
+  .brand-logo-pill:hover {
     transform: translateY(-2px);
-    border-color: rgba(37, 99, 235, 0.24);
-    color: var(--color-primary);
+    border-color: rgba(37, 99, 235, 0.34);
+    background: #ffffff;
+  }
+
+  .brand-logo-pill img {
+    max-width: 5.4rem;
+    max-height: 2.35rem;
+    object-fit: contain;
+  }
+
+  .brand-logo-pill span {
+    display: none;
+  }
+
+  .brand-logo-pill.logo-missing span {
+    display: inline;
   }
 
   @keyframes brand-marquee {
