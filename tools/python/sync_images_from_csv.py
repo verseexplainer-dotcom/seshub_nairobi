@@ -8,8 +8,8 @@ updates in dry-run mode by default, and can optionally push the changes to the
 live Supabase `products` table.
 
 Usage:
-  python3 scripts/sync_images_from_csv.py --input /path/to/products.csv
-  python3 scripts/sync_images_from_csv.py --input /path/to/products.csv --apply-supabase
+  python3 tools/python/sync_images_from_csv.py --input /path/to/products.csv
+  python3 tools/python/sync_images_from_csv.py --input /path/to/products.csv --apply-supabase
 """
 
 from __future__ import annotations

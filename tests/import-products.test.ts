@@ -45,7 +45,7 @@ test('import_products_csv reconstructs rows with trailing helper and images colu
 
   const result = spawnSync(
     'python3',
-    ['scripts/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
+    ['tools/python/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
     {
       cwd: process.cwd(),
       encoding: 'utf8'
@@ -100,7 +100,7 @@ test('import_products_csv supports stable primary_image and images suffix column
 
   const result = spawnSync(
     'python3',
-    ['scripts/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
+    ['tools/python/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
     {
       cwd: process.cwd(),
       encoding: 'utf8'
@@ -155,7 +155,7 @@ test('import_products_csv normalizes missing images to an empty array', () => {
 
   const result = spawnSync(
     'python3',
-    ['scripts/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
+    ['tools/python/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
     {
       cwd: process.cwd(),
       encoding: 'utf8'

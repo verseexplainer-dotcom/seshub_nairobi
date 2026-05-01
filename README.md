@@ -12,7 +12,12 @@ Astro + Supabase storefront for SES ICT HUB, deployed only as a **Cloudflare Wor
 - `src/pages` storefront pages and API routes (`/api/*`)
 - `src/components` UI components
 - `src/lib` shared clients/utilities
+- `src/content` reserved for Astro content collections when needed
+- `docs` architecture, route, content, homepage, product page, and data quality notes
+- `ai/prompts/codex` reusable prompts for repeatable agent tasks
 - `supabase/*.sql` schema + migration scripts
+- `supabase/policies.sql` RLS policy reference extracted from the canonical schema
+- `supabase/migrations` approved future database migrations
 - `wrangler.jsonc` Worker runtime config
 - `scripts/deploy-worker.sh` locked deploy script
 
@@ -20,23 +25,28 @@ Guardrail and copy-control structure:
 
 ```text
 /
-├── AGENTS.md
-├── PROJECT_GUARDRAILS.md
+├── ai/
+│   ├── AGENTS.md
+│   ├── GUARDRAILS.md
+│   ├── BRAND.md
+│   ├── PROMPTS.md
+│   ├── SKILLS.md
+│   ├── agents/
+│   ├── codex/
+│   ├── codex-skills/
+│   ├── design/
+│   └── prompts/
 ├── tools/
-│   ├── copy-lint.js
-│   ├── copy-lint-rules.md
-├── .codex/
-│   ├── rules/
-│   │   ├── frontend.md
-│   │   ├── api.md
-│   │   ├── database.md
-│   ├── hooks/
-│   │   ├── pre-commit.sh
+│   ├── node/
+│   │   ├── copy-lint.js
+│   │   └── copy-lint-rules.md
+│   └── python/
 ```
 
 ## Requirements
 - Node.js 20+
 - npm 10+
+- Python 3 with packages from `tools/python/requirements.txt` for catalog helper scripts
 - Supabase project with Storage buckets:
   - `product-images` (public)
   - `site-assets` (public)
@@ -96,18 +106,42 @@ npm install
 npm run dev
 ```
 
+## Docker Development
+Docker is only for local development and validation. Production deployment remains the Cloudflare Worker flow.
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+```text
+http://localhost:4321/
+```
+
+Run the same checks inside Docker:
+
+```bash
+docker compose run --rm app npm run validate
+```
+
+Keep secrets in `.env.local`. The Docker image ignores `.env` files so credentials are not baked into the image. During local Docker runs, the project folder is mounted into the container and Astro reads `.env.local` from there.
+
 ## Quality Gates
 ```bash
 npm run lint
 npm run test
 npm run build
+npm run routes:check
+npm run content:check
+npm run repo:audit
 npm run validate
 ```
 
 ## Codex Skills
 - Already available globally: `cloudflare-deploy`, `spreadsheet`, `figma`, `figma-implement-design`, `notion-spec-to-implementation`
 - Installed for this project review on March 27, 2026: `frontend-skill`, `playwright`, `security-best-practices`, `sentry`
-- Repo-specific companion notes live in `tools/codex-skills/`
+- Repo-specific companion notes live in `ai/codex-skills/`
 - Restart Codex after new global skill installs so future sessions can discover them
 
 ## Catalog Data Quality Tools
@@ -117,22 +151,22 @@ npm run validate
 # supabase/schema_verify_2026_03_09.sql
 
 # Audit duplicates / suspicious specs (live DB)
-python3 scripts/audit_catalog.py
+python3 tools/python/audit_catalog.py
 
 # Audit built snapshot instead of DB
-python3 scripts/audit_catalog.py --source dist
+python3 tools/python/audit_catalog.py --source dist
 
 # Link product images with confidence threshold + optional manual overrides
-python3 scripts/link_images.py --dry-run --min-confidence 0.80 --overrides-file scripts/image_overrides.json
+python3 tools/python/link_images.py --dry-run --min-confidence 0.80 --overrides-file tools/python/image_overrides.json
 
 # Sync product images directly from a CSV that already contains matched_images
-python3 scripts/sync_images_from_csv.py --input /path/to/products_with_matched_images.csv
+python3 tools/python/sync_images_from_csv.py --input /path/to/products_with_matched_images.csv
 
 # Upload only missing local product images to the Supabase bucket
-node scripts/upload-supabase-assets.mjs --bucket product-images --missing-only --dry-run
+node tools/node/upload-supabase-assets.mjs --bucket product-images --missing-only --dry-run
 ```
 
-Use `scripts/image_overrides.example.json` as a template for manual image mapping overrides.
+Use `tools/python/image_overrides.example.json` as a template for manual image mapping overrides.
 
 ## Deploy (Cloudflare Worker Only)
 ```bash
@@ -142,6 +176,13 @@ npm run deploy
 `npm run deploy` uses `scripts/deploy-worker.sh`, which enforces:
 - `CLOUDFLARE_API_TOKEN` is set
 - `wrangler.jsonc` account id matches `e1d8076a3dc603837814ca828736561f`
+
+Deploy only after local validation passes:
+
+```bash
+npm run validate
+npm run deploy
+```
 
 ## API Endpoints
 - `GET /api/search/suggest?q=...`

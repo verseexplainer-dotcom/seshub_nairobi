@@ -3,6 +3,7 @@ node_modules/
 
 # build outputs
 dist/
+output/
 .astro/
 
 # environment variables
@@ -28,6 +29,8 @@ __pycache__/
 *$py.class
 
 # local tool output
+.agents
+.codex
 .wrangler/
 .playwright-cli/
 .aidesigner/*

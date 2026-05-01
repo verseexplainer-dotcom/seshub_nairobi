@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const rootDir = process.cwd();
 const srcDir = path.join(rootDir, 'src');
-const rewriteMapPath = path.join(rootDir, 'tools', 'rewrite-map.json');
+const rewriteMapPath = path.join(rootDir, 'tools', 'node', 'rewrite-map.json');
 const targetExtensions = new Set(['.astro', '.ts', '.tsx', '.js', '.jsx', '.md']);
 
 function escapeRegExp(value) {

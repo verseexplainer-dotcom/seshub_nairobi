@@ -80,7 +80,7 @@ test('clean_catalog_data normalizes laptop grades and reports invalid laptop row
     'utf8'
   );
 
-  const result = spawnSync('python3', ['scripts/clean_catalog_data.py', '--input', inputPath, '--output-dir', outputDir], {
+  const result = spawnSync('python3', ['tools/python/clean_catalog_data.py', '--input', inputPath, '--output-dir', outputDir], {
     cwd: process.cwd(),
     encoding: 'utf8'
   });
@@ -134,7 +134,7 @@ test('clean_catalog_data refuses live apply when invalid laptop rows remain', ()
 
   const result = spawnSync(
     'python3',
-    ['scripts/clean_catalog_data.py', '--input', inputPath, '--output-dir', outputDir, '--apply-supabase'],
+    ['tools/python/clean_catalog_data.py', '--input', inputPath, '--output-dir', outputDir, '--apply-supabase'],
     {
       cwd: process.cwd(),
       encoding: 'utf8'

@@ -1,6 +1,64 @@
-# PROJECT_GUARDRAILS.md
+# Project Guardrails
 
-This project should read like a real Nairobi electronics shop, not a product demo.
+This file summarizes the rules agents and developers must keep in mind. The detailed source is `ai/AGENTS.md`.
+
+## Platform
+
+- Keep Astro configured for Cloudflare Workers.
+- Keep API routes under `src/pages/api/*`.
+- Do not introduce Supabase Edge Functions.
+- Do not move writes to the browser.
+- Do not weaken RLS assumptions.
+- Keep TypeScript and vanilla CSS unless a change is explicitly approved.
+
+## Product Data
+
+Use the existing product schema:
+
+- `cpu`
+- `ram_gb`
+- `storage_gb`
+- `storage_type`
+- `screen_in`
+- `warranty_months`
+- `in_stock`
+- `stock_qty`
+- `images`
+- `image_overrides`
+
+If a field is empty, hide that UI detail. Do not fabricate missing values.
+
+## Images
+
+Product image priority:
+
+1. `image_overrides`
+2. `images`
+3. fallback image
+
+Products should never render with broken images.
+
+## Categories
+
+Featured homepage categories:
+
+- Laptops
+- Smartphones
+- Printers
+- Desktops
+
+Accessories remain available through search and category routes, but should not be featured on the homepage.
+
+## Safety
+
+Ask before:
+
+- Changing database schema
+- Deleting files
+- Refactoring large areas of code
+- Adding major dependencies
+- Modifying production data
+- Deploying to production
 
 ## Shop Assistant Tone
 

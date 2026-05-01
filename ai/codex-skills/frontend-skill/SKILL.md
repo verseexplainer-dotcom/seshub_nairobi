@@ -9,7 +9,7 @@ Use this skill as the storefront-specific overlay on top of the official `fronte
 
 ## Workflow
 
-1. Re-read `AGENTS.md` before editing. That file defines the allowed schema, category set, image fallback rules, and conversion behavior.
+1. Re-read `ai/AGENTS.md` before editing. That file defines the allowed schema, category set, image fallback rules, and conversion behavior.
 2. Start from the route entry file, then inspect the supporting components:
    - `src/pages/index.astro`
    - `src/pages/shop.astro`

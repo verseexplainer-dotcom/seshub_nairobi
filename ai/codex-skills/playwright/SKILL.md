@@ -9,7 +9,7 @@ Use this skill as the storefront-specific overlay on top of the official `playwr
 
 ## Workflow
 
-1. Read `AGENTS.md` so the browser checks match the product schema and route requirements.
+1. Read `ai/AGENTS.md` so the browser checks match the product schema and route requirements.
 2. Check `package.json` and the repo tree before adding Playwright files. Ask before adding the Playwright dependency or CI wiring because this repo treats new major dependencies as approval-required.
 3. Keep browser tests separate from the current `tsx --test` suite in `tests/*.test.ts`.
 4. Prefer short smoke flows first, then grow coverage only after selectors and data are stable.

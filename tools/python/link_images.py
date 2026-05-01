@@ -16,11 +16,11 @@ Important:
   - The database keeps the exact storage object names returned by Supabase.
 
 Usage:
-  python3 scripts/link_images.py              # live run – writes to DB
-  python3 scripts/link_images.py --dry-run    # preview only – no writes
-  python3 scripts/link_images.py --min-confidence 0.80
-  python3 scripts/link_images.py --overrides-file scripts/image_overrides.json
-  python3 scripts/link_images.py --allow-low-confidence
+  python3 tools/python/link_images.py              # live run – writes to DB
+  python3 tools/python/link_images.py --dry-run    # preview only – no writes
+  python3 tools/python/link_images.py --min-confidence 0.80
+  python3 tools/python/link_images.py --overrides-file tools/python/image_overrides.json
+  python3 tools/python/link_images.py --allow-low-confidence
 """
 
 import os
@@ -51,7 +51,7 @@ def parse_arg_value(flag: str, default: str) -> str:
             return sys.argv[i + 1].strip()
     return default
 
-OVERRIDES_FILE = parse_arg_value("--overrides-file", "scripts/image_overrides.json")
+OVERRIDES_FILE = parse_arg_value("--overrides-file", "tools/python/image_overrides.json")
 PRODUCTS_CSV = parse_arg_value("--products-csv", "public/products_clean.csv")
 MIN_CONFIDENCE = float(os.getenv("IMAGE_LINK_MIN_CONFIDENCE", parse_arg_value("--min-confidence", "0.72")))
 
@@ -1326,7 +1326,7 @@ def link_images():
 
     if DRY_RUN:
         print("\n💡  Run without --dry-run to apply changes:")
-        print("    python3 scripts/link_images.py")
+        print("    python3 tools/python/link_images.py")
 
 
 if __name__ == "__main__":

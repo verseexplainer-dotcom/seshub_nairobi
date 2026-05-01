@@ -1,4 +1,4 @@
-# AGENTS.md
+# ai/AGENTS.md
 Project: SES ICT HUB Storefront
 Stack: Astro + Supabase + Cloudflare Workers
 
@@ -395,7 +395,7 @@ Secondary skills:
 - `figma` or `figma-implement-design` when a Figma file or node link exists
 - `notion-spec-to-implementation` when changes need structured planning and task tracking
 
-Project-specific companion notes for these skills live in `tools/codex-skills/`.
+Project-specific companion notes for these skills live in `ai/codex-skills/`.
 
 ---
 

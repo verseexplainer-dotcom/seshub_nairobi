@@ -7,9 +7,9 @@ Sources:
   --source dist      (parses dist/product/*/index.html)
 
 Usage:
-  python3 scripts/audit_catalog.py
-  python3 scripts/audit_catalog.py --source dist
-  python3 scripts/audit_catalog.py --near-threshold 0.9
+  python3 tools/python/audit_catalog.py
+  python3 tools/python/audit_catalog.py --source dist
+  python3 tools/python/audit_catalog.py --near-threshold 0.9
 """
 
 from __future__ import annotations

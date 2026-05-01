@@ -24,7 +24,7 @@ import importlib.util
 import json
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location('sync_images_from_csv', 'scripts/sync_images_from_csv.py')
+spec = importlib.util.spec_from_file_location('sync_images_from_csv', 'tools/python/sync_images_from_csv.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 

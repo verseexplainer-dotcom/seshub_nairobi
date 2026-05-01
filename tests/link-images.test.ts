@@ -19,7 +19,7 @@ test('link_images matches Epson L8050 assets without confusing them with L18050'
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -90,7 +90,7 @@ test('link_images rejects iPhone 13 base products against Pro and Pro Max images
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -133,7 +133,7 @@ test('link_images keeps a validated existing 2TB image instead of downgrading to
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -178,7 +178,7 @@ test('link_images keeps Tecno Camon 40 Premier separate from Camon 40 Pro', () =
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -223,7 +223,7 @@ test('link_images accepts Apple-prefixed iPhone files for live slugs that omit t
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -266,7 +266,7 @@ test('link_images rejects Lenovo T450 images for T440s products', () => {
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -309,7 +309,7 @@ test('link_images accepts same-model laptop images across trim differences', () 
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -354,7 +354,7 @@ test('link_images accepts same-model Galaxy files when the product slug omits th
 import importlib.util
 import json
 
-spec = importlib.util.spec_from_file_location('link_images', 'scripts/link_images.py')
+spec = importlib.util.spec_from_file_location('link_images', 'tools/python/link_images.py')
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
