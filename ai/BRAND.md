@@ -2,6 +2,8 @@
 
 SES ICT HUB is a Nairobi electronics shop. The storefront should sound practical, clear, and human.
 
+Visual design direction lives in `docs/design.md`. This file remains the source for voice, copy, and truthfulness rules.
+
 ## Voice
 
 Use wording that sounds like a shop assistant speaking to a customer:
@@ -43,4 +45,3 @@ Avoid:
 ## Product Truth
 
 Only show product facts that exist in the current schema. Do not invent specs, warranty terms, stock levels, ratings, or review counts.
-

@@ -14,6 +14,7 @@ Astro + Supabase storefront for SES ICT HUB, deployed only as a **Cloudflare Wor
 - `src/lib` shared clients/utilities
 - `src/content` reserved for Astro content collections when needed
 - `docs` architecture, route, content, homepage, product page, and data quality notes
+- `docs/design.md` visual design system for dark-first storefront UI work
 - `ai/prompts/codex` reusable prompts for repeatable agent tasks
 - `supabase/*.sql` schema + migration scripts
 - `supabase/policies.sql` RLS policy reference extracted from the canonical schema
