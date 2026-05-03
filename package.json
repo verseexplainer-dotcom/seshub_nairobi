@@ -13,6 +13,7 @@
     "copy:fix": "node tools/node/copy-autofix.js",
     "copy:lint": "node tools/node/copy-lint.js",
     "copy:check": "npm run copy:fix && npm run copy:lint",
+    "products:validate": "node scripts/validate-products.mjs",
     "content:check": "node tools/node/check-content.mjs",
     "routes:check": "node tools/node/check-routes.mjs",
     "env:check": "node tools/node/check-env.mjs",

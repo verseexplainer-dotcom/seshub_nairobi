@@ -3,138 +3,19 @@ import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import StickyATC from '../../components/StickyATC.astro';
-import { hasCatalogImage, normalizeCatalogProduct } from '../../lib/catalog';
 import { setPublicCacheHeaders } from '../../lib/http-cache';
-import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { getProductBySlug, getRelatedProducts } from '../../lib/products';
 import { getSiteAssets } from '../../lib/siteAssets';
 import { sanitizeProductDescription } from '../../lib/sanitize';
 import { getProductPresentation, getWarrantyLabel, normalizeText } from '../../lib/productPresentation';
 import { buildWhatsAppLink } from '../../lib/storefront';
+import type { CatalogProduct } from '../../types/catalog';
 
 export const prerender = false;
 const { slug } = Astro.params;
 setPublicCacheHeaders(Astro.response.headers, Astro.request);
-const PRODUCT_PAGE_SELECT = [
-  'id',
-  'slug',
-  'title',
-  'category',
-  'brand',
-  'price_kes',
-  'compare_at_kes',
-  'in_stock',
-  'stock_qty',
-  'condition',
-  'refurb_grade',
-  'short_specs',
-  'description',
-  'warranty_months',
-  'images',
-  'featured_home',
-  'featured_rank',
-  'sku',
-  'cpu',
-  'ram_gb',
-  'storage_gb',
-  'storage_type',
-  'screen_in',
-  'seo_title',
-  'meta_description'
-].join(', ');
-const RELATED_PRODUCT_SELECT = [
-  'id',
-  'slug',
-  'title',
-  'category',
-  'brand',
-  'price_kes',
-  'compare_at_kes',
-  'in_stock',
-  'stock_qty',
-  'condition',
-  'refurb_grade',
-  'short_specs',
-  'warranty_months',
-  'images',
-  'cpu',
-  'ram_gb',
-  'storage_gb',
-  'storage_type',
-  'screen_in'
-].join(', ');
-
-let product: Record<string, any> | null = null;
-let related: Array<Record<string, any>> = [];
-const canShowProduct = (item: Record<string, any> | null | undefined) => Boolean(item) && hasCatalogImage(normalizeCatalogProduct(item || {}));
-
-if (isSupabaseConfigured) {
-  const { data: productData } = await supabase.from('products').select(PRODUCT_PAGE_SELECT).eq('slug', slug).single();
-  product = canShowProduct(productData || null) ? (productData || null) : null;
-
-  if (product) {
-    const relatedIds = new Set<string | number>([product.id]);
-
-    if (normalizeText(product.brand)) {
-      const { data: sameBrandData } = await supabase
-        .from('products')
-        .select(RELATED_PRODUCT_SELECT)
-        .eq('category', product.category)
-        .eq('brand', product.brand)
-        .neq('id', product.id)
-        .limit(4);
-      const sameBrand = (sameBrandData || []) as Array<Record<string, any>>;
-
-      for (const item of sameBrand) {
-        if (canShowProduct(item) && !relatedIds.has(item.id)) {
-          related.push(item);
-          relatedIds.add(item.id);
-        }
-      }
-    }
-
-    if (related.length < 4) {
-      const { data: sameCategoryData } = await supabase
-        .from('products')
-        .select(RELATED_PRODUCT_SELECT)
-        .eq('category', product.category)
-        .neq('id', product.id)
-        .limit(8);
-      const sameCategory = (sameCategoryData || []) as Array<Record<string, any>>;
-
-      for (const item of sameCategory) {
-        if (related.length >= 4) {
-          break;
-        }
-
-        if (canShowProduct(item) && !relatedIds.has(item.id)) {
-          related.push(item);
-          relatedIds.add(item.id);
-        }
-      }
-    }
-
-    if (related.length < 4) {
-      const { data: featuredFallbackData } = await supabase
-        .from('products')
-        .select(RELATED_PRODUCT_SELECT)
-        .eq('featured_home', true)
-        .neq('id', product.id)
-        .limit(8);
-      const featuredFallback = (featuredFallbackData || []) as Array<Record<string, any>>;
-
-      for (const item of featuredFallback) {
-        if (related.length >= 4) {
-          break;
-        }
-
-        if (canShowProduct(item) && !relatedIds.has(item.id)) {
-          related.push(item);
-          relatedIds.add(item.id);
-        }
-      }
-    }
-  }
-}
+let product: CatalogProduct | null = getProductBySlug(slug);
+let related: CatalogProduct[] = product ? getRelatedProducts(product, 4) : [];
 
 if (!product) {
   return Astro.redirect('/404');
@@ -145,7 +26,6 @@ const localPlaceholder = '/product-placeholder.svg';
 const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src || localPlaceholder).trim();
 const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(localPlaceholder)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
 const presentation = getProductPresentation(product, {
-  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
   fallbackImage
 });
 const productWhatsappHref = buildWhatsAppLink(

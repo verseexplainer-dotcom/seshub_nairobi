@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { buildWhatsAppLink } from '../../../lib/storefront';
+import { getAllProducts } from '../../../lib/products';
 import { recordServerEvent } from '../../../lib/server/analytics';
 import { verifyTurnstileToken } from '../../../lib/server/turnstile';
 import { asTrimmedString, errorResponse, getClientIp, getPublicEnvValue, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
@@ -106,45 +107,19 @@ function normalizeCart(cart: unknown): RequestedCartItem[] {
   });
 }
 
-function buildProductsLookupUrl(supabaseUrl: string, ids: string[]) {
-  const params = new URLSearchParams({
-    select: 'id,title,slug,price_kes,in_stock',
-    id: `in.(${ids.join(',')})`,
-    limit: String(ids.length)
-  });
-  return `${supabaseUrl.replace(/\/$/, '')}/rest/v1/products?${params.toString()}`;
-}
-
-async function fetchCatalogProducts(
-  supabaseUrl: string,
-  serviceRoleKey: string,
-  ids: string[]
-): Promise<Map<string, CatalogProduct>> {
-  const response = await fetch(buildProductsLookupUrl(supabaseUrl, ids), {
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`
-    }
-  });
-
-  if (!response.ok) {
-    const upstreamError = await response.text().catch(() => '');
-    console.error('products lookup error', response.status, upstreamError);
-    throw new CheckoutUpstreamError(502, 'PRODUCT_LOOKUP_FAILED', 'Unable to validate cart products right now.');
-  }
-
-  const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
-  if (!Array.isArray(rows)) {
-    throw new CheckoutUpstreamError(502, 'PRODUCT_LOOKUP_FAILED', 'Unable to validate cart products right now.');
-  }
-
+function fetchCatalogProducts(ids: string[]): Map<string, CatalogProduct> {
+  const idSet = new Set(ids);
   const map = new Map<string, CatalogProduct>();
-  for (const row of rows) {
-    const id = typeof row.id === 'string' ? row.id : '';
-    const title = typeof row.title === 'string' ? row.title.trim().slice(0, MAX_TITLE_LENGTH) : '';
-    const slug = typeof row.slug === 'string' && row.slug.trim() ? row.slug.trim() : null;
-    const price = Number(row.price_kes);
-    const inStock = row.in_stock !== false;
+  for (const product of getAllProducts()) {
+    const id = typeof product.id === 'string' ? product.id : product.slug;
+    if (!idSet.has(id)) {
+      continue;
+    }
+
+    const title = typeof product.title === 'string' ? product.title.trim().slice(0, MAX_TITLE_LENGTH) : '';
+    const slug = typeof product.slug === 'string' && product.slug.trim() ? product.slug.trim() : null;
+    const price = Number(product.price_kes);
+    const inStock = product.in_stock !== false;
 
     if (!id || !title || !Number.isFinite(price) || price <= 0) {
       continue;
@@ -273,7 +248,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const uniqueIds = Array.from(new Set(requestedCart.map((item) => item.id)));
-    const catalogById = await fetchCatalogProducts(supabaseUrl, serviceRoleKey, uniqueIds);
+    const catalogById = fetchCatalogProducts(uniqueIds);
 
     const cart: CartItem[] = [];
     for (const item of requestedCart) {

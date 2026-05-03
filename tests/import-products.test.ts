@@ -168,3 +168,58 @@ test('import_products_csv normalizes missing images to an empty array', () => {
   const normalizedCsv = readFileSync(join(outputDir, 'products.normalized.csv'), 'utf8');
   assert.match(normalizedCsv, /\[\]/);
 });
+
+test('import_products_csv accepts JSON product rows and writes normalized JSON', () => {
+  const workdir = mkdtempSync(join(tmpdir(), 'import-products-json-'));
+  const inputPath = join(workdir, 'products.json');
+  const outputDir = join(workdir, 'output');
+
+  writeFileSync(
+    inputPath,
+    JSON.stringify(
+      {
+        products: [
+          {
+            title: 'Dell Latitude 5420 Intel Core i5 16GB RAM 512GB SSD Refurbished',
+            slug: 'dell-latitude-5420-core-i5-16gb-512gb-refurbished',
+            category: 'laptops',
+            brand: 'Dell',
+            price_kes: 42500,
+            compare_at_kes: 48000,
+            short_specs: ['Intel Core i5', '16GB RAM', '512GB SSD', '14-inch display'],
+            description: '<p>Grade A refurbished laptop.</p>',
+            seo_title: 'Dell Latitude 5420 laptop',
+            meta_description: 'Dell Latitude 5420 refurbished laptop in Kenya.',
+            condition: 'refurbished',
+            warranty_months: 6,
+            in_stock: true,
+            images: ['latitude-5420.webp', 'latitude-5420-side.webp']
+          }
+        ]
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+
+  const result = spawnSync(
+    'python3',
+    ['tools/python/import_products_csv.py', '--input', inputPath, '--output-dir', outputDir],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8'
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Prepared rows: 1/);
+  assert.match(result.stdout, /Normalized JSON:/);
+
+  const normalized = JSON.parse(readFileSync(join(outputDir, 'products.normalized.json'), 'utf8'));
+  assert.equal(normalized[0].slug, 'dell-latitude-5420-core-i5-16gb-512gb-refurbished');
+  assert.equal(normalized[0].category, 'laptops');
+  assert.equal(normalized[0].condition, 'refurbished');
+  assert.equal(normalized[0].warranty_months, 6);
+  assert.deepEqual(normalized[0].images, ['latitude-5420.webp', 'latitude-5420-side.webp']);
+});

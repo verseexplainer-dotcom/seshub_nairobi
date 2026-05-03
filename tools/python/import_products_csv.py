@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Import product rows from the generated catalog CSV into Supabase.
+Import product rows from generated catalog CSV or JSON into Supabase.
 
 The source CSV is not aligned to the live products schema:
 - the first 6 columns are stable
@@ -9,7 +9,7 @@ The source CSV is not aligned to the live products schema:
 - some exports append blank helper columns and/or a trailing `images` column
 
 This script reconstructs each row, maps it to the existing `products`
-table shape, writes a normalized CSV for review, and can optionally
+table shape, writes normalized JSON and CSV artifacts for review, and can optionally
 apply inserts/updates to Supabase using `.env.local` credentials.
 """
 
@@ -102,31 +102,43 @@ NORMALIZED_FIELDNAMES = [
 
 CATEGORY_MAP = {
     "laptop": "laptops",
+    "laptops": "laptops",
     "smartphone": "smartphones",
+    "smartphones": "smartphones",
     "printer": "printers",
+    "printers": "printers",
     "desktop": "desktops",
+    "desktops": "desktops",
     "accessory": "accessories",
+    "accessories": "accessories",
     "storage": "accessories",
 }
 
 CONDITION_MAP = {
     "brand new": "brand_new",
+    "brand_new": "brand_new",
     "refurbished": "refurbished",
+    "refurb": "refurbished",
     "unknown": "unknown",
 }
 
 STOCK_STATUS_MAP = {
     "in_stock": (True, None),
+    "in stock": (True, None),
+    "true": (True, None),
+    "available": (True, None),
     "out_of_stock": (False, 0),
     "out-of-stock": (False, 0),
+    "out of stock": (False, 0),
     "sold_out": (False, 0),
     "sold-out": (False, 0),
+    "false": (False, 0),
 }
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Import products CSV into Supabase.")
-    parser.add_argument("--input", required=True, help="Path to the source CSV file.")
+    parser = argparse.ArgumentParser(description="Import products CSV or JSON into Supabase.")
+    parser.add_argument("--input", required=True, help="Path to the source CSV or JSON file.")
     parser.add_argument(
         "--output-dir",
         default="output/import",
@@ -220,6 +232,9 @@ def reconstruct_source_row(row: list[str], row_number: int, trailing_image_field
 
 
 def read_source_rows(path: Path, limit: int = 0) -> list[dict[str, str]]:
+    if path.suffix.lower() == ".json":
+        return read_json_source_rows(path, limit=limit)
+
     rows: list[dict[str, str]] = []
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle)
@@ -229,6 +244,71 @@ def read_source_rows(path: Path, limit: int = 0) -> list[dict[str, str]]:
             rows.append(reconstruct_source_row(row, index, trailing_image_fields))
             if limit and len(rows) >= limit:
                 break
+    return rows
+
+
+def pick_json_value(row: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in row and row[key] is not None:
+            return row[key]
+    return ""
+
+
+def json_images_value(value: Any) -> str:
+    if isinstance(value, list):
+        return ",".join(as_text(entry) for entry in value if as_text(entry))
+    return as_text(value)
+
+
+def json_text_value(value: Any) -> str:
+    if isinstance(value, list):
+        return ", ".join(as_text(entry) for entry in value if as_text(entry))
+    return as_text(value)
+
+
+def normalize_json_source_row(row: dict[str, Any]) -> dict[str, str]:
+    images = pick_json_value(row, "images", "Images", "image_overrides")
+    stock_status = pick_json_value(row, "stock_status", "in_stock")
+    return {
+        "title": as_text(pick_json_value(row, "title", "name", "Product Name")),
+        "slug": as_text(pick_json_value(row, "slug", "URL Slug")),
+        "source_category": as_text(pick_json_value(row, "source_category", "category", "Category")),
+        "brand": as_text(pick_json_value(row, "brand", "Brand")),
+        "price_kes": as_text(pick_json_value(row, "price_kes", "price", "Price (KES)")),
+        "compare_at_price": as_text(pick_json_value(row, "compare_at_price", "compare_at_kes", "compare_at", "Regular Price (KES)")),
+        "short_specs": json_text_value(pick_json_value(row, "short_specs", "specs", "Short Specs")),
+        "short_description": as_text(pick_json_value(row, "short_description", "summary", "Short Description")),
+        "description_html": as_text(pick_json_value(row, "description_html", "description", "Long Description")),
+        "meta_title": as_text(pick_json_value(row, "meta_title", "seo_title", "Meta Title")),
+        "meta_description": as_text(pick_json_value(row, "meta_description", "Meta Description")),
+        "focus_keyword": as_text(pick_json_value(row, "focus_keyword", "Keywords Primary")),
+        "search_keywords": as_text(pick_json_value(row, "search_keywords", "Keywords Secondary", "Tags")),
+        "condition": as_text(pick_json_value(row, "condition", "Condition")),
+        "warranty": as_text(pick_json_value(row, "warranty", "warranty_months", "Warranty")),
+        "stock_status": as_text(stock_status) or "available",
+        "primary_image": json_images_value(pick_json_value(row, "primary_image")),
+        "images": json_images_value(images),
+    }
+
+
+def read_json_source_rows(path: Path, limit: int = 0) -> list[dict[str, str]]:
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(raw, dict):
+        for key in ("products", "rows", "data"):
+            if isinstance(raw.get(key), list):
+                raw = raw[key]
+                break
+
+    if not isinstance(raw, list):
+        raise RuntimeError("JSON input must be an array, or an object with a products, rows, or data array.")
+
+    rows: list[dict[str, str]] = []
+    for index, item in enumerate(raw, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError(f"JSON row {index} must be an object.")
+        rows.append(normalize_json_source_row(item))
+        if limit and len(rows) >= limit:
+            break
     return rows
 
 
@@ -269,6 +349,9 @@ def parse_warranty_months(value: str) -> float | None:
     text = as_text(value).lower()
     if not text:
         return None
+
+    if re.fullmatch(r"\d+(?:\.\d+)?", text):
+        return float(text)
 
     match = re.search(r"\b(\d{1,2})\s*(?:yr|year)\b", text)
     if match:
@@ -516,6 +599,11 @@ def write_csv_rows(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
+def write_json_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 def http_json_request(
     method: str,
     url: str,
@@ -688,14 +776,17 @@ def main() -> None:
             )
 
     normalized_csv_path = output_dir / "products.normalized.csv"
+    normalized_json_path = output_dir / "products.normalized.json"
     report_path = output_dir / "products_import_report.json"
     write_csv_rows(normalized_csv_path, normalized_csv_rows)
+    write_json_rows(normalized_json_path, normalized_rows)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         json.dumps(
             {
-                "source_csv": str(input_path),
+                "source_input": str(input_path),
                 "normalized_csv": str(normalized_csv_path),
+                "normalized_json": str(normalized_json_path),
                 "total_source_rows": len(source_rows),
                 "prepared_rows": len(normalized_rows),
                 "rejected_rows": rejected_rows,
@@ -725,6 +816,7 @@ def main() -> None:
     for category, count in sorted(category_counts.items()):
         print(f"  {category}: {count}")
     print(f"Normalized CSV: {normalized_csv_path}")
+    print(f"Normalized JSON: {normalized_json_path}")
     print(f"Report: {report_path}")
     if args.apply_supabase:
         print(f"Supabase inserts: {inserted}")

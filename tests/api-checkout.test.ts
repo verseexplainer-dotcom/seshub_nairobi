@@ -6,11 +6,12 @@ const originalFetch = globalThis.fetch;
 
 const validCart = [
   {
-    id: 'prod-1',
+    id: 'dell-latitude-7450-core-i5-refurbished',
     qty: 1,
-    slug: 'hp-elitebook-840-g5'
+    slug: 'dell-latitude-7450-core-i5-refurbished'
   }
 ];
+const validCartTotalKes = 16500;
 
 function createTurnstileSuccess(action: string) {
   return new Response(JSON.stringify({ success: true, action }), {
@@ -38,18 +39,7 @@ test('checkout rejects mismatched totals', async (t) => {
       return createTurnstileSuccess('checkout_whatsapp');
     }
 
-    return new Response(
-      JSON.stringify([
-        {
-          id: 'prod-1',
-          title: 'HP EliteBook',
-          slug: 'hp-elitebook-840-g5',
-          price_kes: 42000,
-          in_stock: true
-        }
-      ]),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    throw new Error(`Unexpected fetch in local product lookup test: ${url}`);
   }) as typeof fetch;
 
   t.after(() => {
@@ -86,7 +76,7 @@ test('checkout rejects invalid phone', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cart: validCart,
-        total_kes: 42000,
+        total_kes: validCartTotalKes,
         customer_name: 'Jane Doe',
         phone: 'abc',
         location: 'Westlands',
@@ -109,7 +99,7 @@ test('checkout requires turnstile verification', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cart: validCart,
-        total_kes: 42000,
+        total_kes: validCartTotalKes,
         customer_name: 'Jane Doe',
         phone: '0712345678',
         location: 'Westlands',
@@ -140,21 +130,6 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
       body: bodyText ? JSON.parse(bodyText) : null
     });
 
-    if (url.includes('/rest/v1/products')) {
-      return new Response(
-        JSON.stringify([
-          {
-            id: 'prod-1',
-            title: 'HP EliteBook',
-            slug: 'hp-elitebook-840-g5',
-            price_kes: 42000,
-            in_stock: true
-          }
-        ]),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
     return new Response(JSON.stringify([{ order_id: 'order-uuid-123', order_number: 'SES-20260319-00001' }]), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -171,7 +146,7 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cart: validCart,
-        total_kes: 42000,
+        total_kes: validCartTotalKes,
         customer_name: 'Jane Doe',
         phone: '0712345678',
         location: 'Westlands',
@@ -190,11 +165,11 @@ test('checkout succeeds and returns whatsapp URL', async (t) => {
   assert.equal(body.order_id, 'order-uuid-123');
   assert.equal(body.order_number, 'SES-20260319-00001');
   assert.match(body.whatsapp_url, /wa\.me/);
-  assert.equal(requests.length, 4);
-  assert.equal(requests[3]?.url, 'https://project.supabase.co/rest/v1/events');
-  assert.equal(requests[3]?.body?.event_type, 'whatsapp_checkout_redirect');
-  assert.equal(requests[3]?.body?.session_id, 'session-12345');
-  assert.equal(JSON.stringify(requests[3]?.body).includes('jane@example.com'), false);
+  assert.equal(requests.length, 3);
+  assert.equal(requests[2]?.url, 'https://project.supabase.co/rest/v1/events');
+  assert.equal(requests[2]?.body?.event_type, 'whatsapp_checkout_redirect');
+  assert.equal(requests[2]?.body?.session_id, 'session-12345');
+  assert.equal(JSON.stringify(requests[2]?.body).includes('jane@example.com'), false);
 });
 
 test('checkout forwards the signed-in user to order creation', async (t) => {
@@ -210,21 +185,6 @@ test('checkout forwards the signed-in user to order creation', async (t) => {
     const bodyText = typeof init?.body === 'string' ? init.body : '';
     const body = bodyText ? JSON.parse(bodyText) : null;
     requests.push({ url, body });
-
-    if (url.includes('/rest/v1/products')) {
-      return new Response(
-        JSON.stringify([
-          {
-            id: 'prod-1',
-            title: 'HP EliteBook',
-            slug: 'hp-elitebook-840-g5',
-            price_kes: 42000,
-            in_stock: true
-          }
-        ]),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
 
     return new Response(JSON.stringify([{ order_id: 'order-uuid-456', order_number: 'SES-20260319-00002' }]), {
       status: 200,
@@ -242,7 +202,7 @@ test('checkout forwards the signed-in user to order creation', async (t) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cart: validCart,
-        total_kes: 42000,
+        total_kes: validCartTotalKes,
         customer_name: 'Jane Doe',
         phone: '0712345678',
         location: 'Westlands',
@@ -261,29 +221,18 @@ test('checkout forwards the signed-in user to order creation', async (t) => {
   } as any);
 
   assert.equal(response.status, 200);
-  assert.equal(requests[2]?.body?.p_user_id, 'user-123');
-  assert.equal(requests[2]?.body?.p_customer_email, 'jane@example.com');
+  assert.equal(requests[1]?.body?.p_user_id, 'user-123');
+  assert.equal(requests[1]?.body?.p_customer_email, 'jane@example.com');
 });
 
-test('checkout rejects out-of-stock items', async (t) => {
+test('checkout rejects unavailable local catalog items', async (t) => {
   globalThis.fetch = (async (input) => {
     const url = String(input);
     if (url.includes('turnstile')) {
       return createTurnstileSuccess('checkout_whatsapp');
     }
 
-    return new Response(
-      JSON.stringify([
-        {
-          id: 'prod-1',
-          title: 'HP EliteBook',
-          slug: 'hp-elitebook-840-g5',
-          price_kes: 42000,
-          in_stock: false
-        }
-      ]),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    throw new Error(`Unexpected fetch in local product lookup test: ${url}`);
   }) as typeof fetch;
 
   t.after(() => {
@@ -295,8 +244,8 @@ test('checkout rejects out-of-stock items', async (t) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        cart: validCart,
-        total_kes: 42000,
+        cart: [{ id: 'missing-product', qty: 1, slug: 'missing-product' }],
+        total_kes: validCartTotalKes,
         customer_name: 'Jane Doe',
         phone: '0712345678',
         location: 'Westlands',
@@ -308,12 +257,12 @@ test('checkout rejects out-of-stock items', async (t) => {
     locals: createCheckoutLocals()
   } as any);
 
-  assert.equal(response.status, 409);
+  assert.equal(response.status, 400);
   const body = await response.json();
-  assert.equal(body.error.code, 'OUT_OF_STOCK');
+  assert.equal(body.error.code, 'INVALID_CART_ITEM');
 });
 
-test('checkout returns 502 when product lookup fails', async (t) => {
+test('checkout returns 502 when order creation fails', async (t) => {
   globalThis.fetch = (async (input) => {
     const url = String(input);
     if (url.includes('turnstile')) {
@@ -336,7 +285,7 @@ test('checkout returns 502 when product lookup fails', async (t) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cart: validCart,
-        total_kes: 42000,
+        total_kes: validCartTotalKes,
         customer_name: 'Jane Doe',
         phone: '0712345678',
         location: 'Westlands',
@@ -350,5 +299,5 @@ test('checkout returns 502 when product lookup fails', async (t) => {
 
   assert.equal(response.status, 502);
   const body = await response.json();
-  assert.equal(body.error.code, 'PRODUCT_LOOKUP_FAILED');
+  assert.equal(body.error.code, 'ORDER_CREATE_FAILED');
 });

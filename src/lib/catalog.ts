@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
 import type { SessionLocals } from './app-types';
 import type { CatalogProduct, HomepageBrandCount, HomepageCategoryCount } from '../types/catalog';
 import { buildBrandFilterHref } from './filters';
 import { hasResolvableProductImage } from './images';
 import { getCompareAtPrice } from './pricing';
-import { getCategorySlug, getStoreCategoryQueryValues, normalizeText, parsePositiveNumber } from './productPresentation';
-import { getRuntimeEnv } from './runtime';
+import { getCategorySlug, normalizeText, parsePositiveNumber } from './productPresentation';
 
 const LOW_STOCK_THRESHOLD = 3;
 const IMAGE_OVERRIDES_COLUMN = 'image_overrides';
@@ -82,7 +80,6 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
 ];
 
 const PREFERRED_HOME_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Epson'];
-const SEARCHABLE_PRODUCT_FIELDS = ['title', 'description', 'brand', 'short_specs'] as const;
 type CatalogRuntimeSource = { locals?: SessionLocals | null } | SessionLocals | null | undefined;
 let homepageImageOverridesAvailable: boolean | null = null;
 
@@ -195,38 +192,6 @@ export async function runProductsQuery<T>(
   }
 
   return result;
-}
-
-function createCatalogClient(source?: CatalogRuntimeSource) {
-  const env = getRuntimeEnv(source);
-  const supabaseUrl = env.PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = env.PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return null;
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  });
-}
-
-function escapeSearchTerm(value: string) {
-  return value
-    .replace(/[%_*()[\]{}<>,"']/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function getSearchTerms(value: string | null | undefined) {
-  return normalizeText(value)
-    .split(/\s+/)
-    .map((term) => escapeSearchTerm(term))
-    .filter(Boolean)
-    .slice(0, 6);
 }
 
 export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogProduct {
@@ -392,104 +357,15 @@ export function getProductSpecChips(product: CatalogProduct, limit = 3) {
 }
 
 export async function getHomepageProducts(source?: CatalogRuntimeSource) {
-  const supabase = createCatalogClient(source);
-  if (!supabase) {
-    return [] as CatalogProduct[];
-  }
-
-  const fetchHomepageRows = async (selectClause: string) =>
-    supabase
-      .from('products')
-      .select(selectClause)
-      .order('in_stock', { ascending: false })
-      .order('featured_home', { ascending: false })
-      .order('featured_rank', { ascending: true, nullsFirst: false })
-      .order('updated_at', { ascending: false });
-
-  const { data, error } = await runProductsQuery(
-    fetchHomepageRows,
-    HOMEPAGE_PRODUCT_COLUMN_NAMES,
-    'Homepage catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-  );
-
-  if (error) {
-    console.error('Homepage catalog query failed', {
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      message: error.message
-    });
-    return [] as CatalogProduct[];
-  }
-
-  const rows = (data || []) as unknown as Array<Record<string, unknown>>;
-
-  return filterVisibleCatalogProducts(normalizeCatalogProducts(rows));
+  void source;
+  const { getAllProducts } = await import('./products');
+  return getAllProducts();
 }
 
 export async function searchCatalogProducts(source: CatalogRuntimeSource, filters: CatalogSearchFilters = {}) {
-  const supabase = createCatalogClient(source);
-  if (!supabase) {
-    return [] as CatalogProduct[];
-  }
-
-  const searchTerms = getSearchTerms(filters.query);
-  const categoryValues = getStoreCategoryQueryValues(filters.category);
-  const normalizedCondition = normalizeText(filters.condition).toLowerCase();
-  const minPrice = parsePositiveNumber(filters.minPrice);
-  const maxPrice = parsePositiveNumber(filters.maxPrice);
-
-  const runSearchQuery = (selectClause: string) => {
-    let query = supabase.from('products').select(selectClause);
-
-    if (searchTerms.length > 0) {
-      query = query.or(
-        searchTerms
-          .flatMap((term) => SEARCHABLE_PRODUCT_FIELDS.map((field) => `${field}.ilike.%${term}%`))
-          .join(',')
-      );
-    }
-
-    if (categoryValues.length > 0) {
-      query = query.in('category', categoryValues);
-    }
-
-    if (normalizedCondition === 'brand_new' || normalizedCondition === 'refurbished') {
-      query = query.eq('condition', normalizedCondition);
-    }
-
-    if (minPrice !== null) {
-      query = query.gte('price_kes', minPrice);
-    }
-
-    if (maxPrice !== null) {
-      query = query.lte('price_kes', maxPrice);
-    }
-
-    return query
-      .order('featured_home', { ascending: false })
-      .order('price_kes', { ascending: true })
-      .order('updated_at', { ascending: false });
-  };
-
-  const { data, error } = await runProductsQuery(
-    runSearchQuery,
-    HOMEPAGE_PRODUCT_COLUMN_NAMES,
-    'Catalog search query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-  );
-
-  if (error) {
-    console.error('Catalog search query failed', {
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      message: error.message
-    });
-    return [] as CatalogProduct[];
-  }
-
-  const rows = (data || []) as unknown as Array<Record<string, unknown>>;
-  return filterVisibleCatalogProducts(normalizeCatalogProducts(rows));
+  void source;
+  const { searchProducts } = await import('./products');
+  return searchProducts(filters);
 }
 
 export async function getCategoryCounts(products?: CatalogProduct[]) {

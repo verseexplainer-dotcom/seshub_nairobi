@@ -1,24 +1,10 @@
-import { filterVisibleCatalogProducts, normalizeCatalogProducts, runProductsQuery } from '../lib/catalog';
 import { setPublicCacheHeaders } from '../lib/http-cache';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getAllProducts } from '../lib/products';
 import { blogPosts } from '../lib/homepageContent';
 
 export async function GET() {
-    const products = isSupabaseConfigured
-      ? await (async () => {
-          const { data } = await runProductsQuery(
-            (selectClause) => supabase.from('products').select(selectClause),
-            ['slug', 'title', 'price_kes', 'updated_at', 'images', 'image_overrides'],
-            'Sitemap query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-          );
-          const productRows = (data || []) as unknown as Array<Record<string, unknown>>;
-
-          return filterVisibleCatalogProducts(
-            normalizeCatalogProducts(productRows)
-          );
-        })()
-      : [];
+    const products = getAllProducts();
 
     const categories = [...STOREFRONT_CATEGORIES.map((category) => category.slug), 'all'];
     const pages = ['', 'shop', 'cart', 'track', 'contact', 'faq', 'blog'];

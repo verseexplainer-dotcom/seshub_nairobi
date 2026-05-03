@@ -2,11 +2,6 @@
 import ProductCard from './ProductCard.astro';
 import SearchBar from './SearchBar.astro';
 import {
-  filterVisibleCatalogProducts,
-  normalizeCatalogProducts,
-  runProductsQuery
-} from '../lib/catalog';
-import {
   SHOP_PATH,
   STOREFRONT_CATEGORIES,
   formatCurrencyKes,
@@ -14,13 +9,12 @@ import {
   formatStorageSize,
   formatNumberLabel,
   getStoreCategoryBySlug,
-  getStoreCategoryQueryValues,
   matchesStoreCategoryValue,
   normalizeText,
   parsePositiveNumber
 } from '../lib/productPresentation';
 import type { CatalogProduct } from '../types/catalog';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getAllProducts } from '../lib/products';
 
 interface Props {
   mode: 'shop' | 'category';
@@ -63,262 +57,79 @@ const hasFilters =
   maxPrice !== null ||
   selectedSort !== 'featured';
 
-const productColumnNames = [
-  'id',
-  'slug',
-  'title',
-  'category',
-  'brand',
-  'price_kes',
-  'compare_at_kes',
-  'in_stock',
-  'stock_qty',
-  'condition',
-  'refurb_grade',
-  'short_specs',
-  'warranty_months',
-  'images',
-  'image_overrides',
-  'featured_home',
-  'featured_rank',
-  'cpu',
-  'ram_gb',
-  'storage_gb',
-  'storage_type',
-  'screen_in'
-];
-const facetColumnNames = [
-  'slug',
-  'title',
-  'category',
-  'brand',
-  'price_kes',
-  'in_stock',
-  'condition',
-  'cpu',
-  'ram_gb',
-  'storage_gb',
-  'screen_in',
-  'images',
-  'image_overrides'
-];
 let products: CatalogProduct[] = [];
 let totalCount = 0;
 let facetRows: CatalogProduct[] = [];
 let featuredProducts: CatalogProduct[] = [];
 let currentPage = requestedPage;
 
-function applyCatalogScope(query: any) {
-  if (activeCategory) {
-    query = query.in('category', getStoreCategoryQueryValues(activeCategory));
-  }
-
-  return query;
-}
-
-function applyCatalogFilters(query: any) {
-  query = applyCatalogScope(query);
-
-  if (selectedBrand) {
-    query = query.eq('brand', selectedBrand);
-  }
-
-  if (selectedCondition) {
-    query = query.eq('condition', selectedCondition);
-  }
-
-  if (!isShopMode && selectedCpu) {
-    query = query.eq('cpu', selectedCpu);
-  }
-
-  if (!isShopMode && selectedRamValue !== null) {
-    query = query.eq('ram_gb', selectedRamValue);
-  }
-
-  if (!isShopMode && selectedStorageValue !== null) {
-    query = query.eq('storage_gb', selectedStorageValue);
-  }
-
-  if (!isShopMode && selectedScreenValue !== null) {
-    query = query.eq('screen_in', selectedScreenValue);
-  }
-
-  if (stockFilter === '1') {
-    query = query.eq('in_stock', true);
-  } else if (stockFilter === '0') {
-    query = query.eq('in_stock', false);
-  }
-
-  if (minPrice !== null) {
-    query = query.gte('price_kes', minPrice);
-  }
-
-  if (maxPrice !== null) {
-    query = query.lte('price_kes', maxPrice);
-  }
-
-  return query;
-}
-
-function applyCatalogSort(query: any, sort = selectedSort) {
+function sortCatalogRows(rows: CatalogProduct[], sort = selectedSort) {
+  const sorted = [...rows];
   switch (sort) {
     case 'price_asc':
-      return query
-        .order('price_kes', { ascending: true })
-        .order('updated_at', { ascending: false })
-        .order('title', { ascending: true });
+      return sorted.sort((left, right) =>
+        (left.price_kes || 0) - (right.price_kes || 0) ||
+        normalizeText(right.updated_at).localeCompare(normalizeText(left.updated_at)) ||
+        normalizeText(left.title).localeCompare(normalizeText(right.title))
+      );
     case 'price_desc':
-      return query
-        .order('price_kes', { ascending: false })
-        .order('updated_at', { ascending: false })
-        .order('title', { ascending: true });
+      return sorted.sort((left, right) =>
+        (right.price_kes || 0) - (left.price_kes || 0) ||
+        normalizeText(right.updated_at).localeCompare(normalizeText(left.updated_at)) ||
+        normalizeText(left.title).localeCompare(normalizeText(right.title))
+      );
     case 'newest':
-      return query
-        .order('created_at', { ascending: false })
-        .order('updated_at', { ascending: false })
-        .order('title', { ascending: true });
+      return sorted.sort((left, right) =>
+        normalizeText(right.created_at).localeCompare(normalizeText(left.created_at)) ||
+        normalizeText(right.updated_at).localeCompare(normalizeText(left.updated_at)) ||
+        normalizeText(left.title).localeCompare(normalizeText(right.title))
+      );
     default:
-      return query
-        .order('in_stock', { ascending: false })
-        .order('featured_rank', { ascending: true, nullsFirst: false })
-        .order('updated_at', { ascending: false })
-        .order('title', { ascending: true });
+      return sorted.sort((left, right) =>
+        Number(right.in_stock === true) - Number(left.in_stock === true) ||
+        (Number(left.featured_rank || Number.MAX_SAFE_INTEGER) - Number(right.featured_rank || Number.MAX_SAFE_INTEGER)) ||
+        normalizeText(right.updated_at).localeCompare(normalizeText(left.updated_at)) ||
+        normalizeText(left.title).localeCompare(normalizeText(right.title))
+      );
   }
 }
 
-if (isSupabaseConfigured) {
-  const { count, error: countError } = await applyCatalogFilters(
-    supabase.from('products').select('id', { count: 'exact', head: true })
-  );
+const allCatalogRows = getAllProducts();
+facetRows = activeCategory
+  ? allCatalogRows.filter((product) => matchesStoreCategoryValue(product.category, activeCategory))
+  : allCatalogRows;
 
-  if (countError) {
-    console.error('Catalog product count query failed', {
-      code: countError.code,
-      details: countError.details,
-      hint: countError.hint,
-      message: countError.message,
-      path: Astro.url.pathname
-    });
-  } else {
-    totalCount = count || 0;
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-    currentPage = Math.min(requestedPage, totalPages);
-  }
+const filteredRows = facetRows.filter((product) => {
+  if (selectedBrand && normalizeText(product.brand) !== selectedBrand) return false;
+  if (selectedCondition && product.condition !== selectedCondition) return false;
+  if (!isShopMode && selectedCpu && normalizeText(product.cpu) !== selectedCpu) return false;
+  if (!isShopMode && selectedRamValue !== null && Number(product.ram_gb) !== selectedRamValue) return false;
+  if (!isShopMode && selectedStorageValue !== null && Number(product.storage_gb) !== selectedStorageValue) return false;
+  if (!isShopMode && selectedScreenValue !== null && Number(product.screen_in) !== selectedScreenValue) return false;
+  if (stockFilter === '1' && product.in_stock !== true) return false;
+  if (stockFilter === '0' && product.in_stock === true) return false;
+  if (minPrice !== null && Number(product.price_kes) < minPrice) return false;
+  if (maxPrice !== null && Number(product.price_kes) > maxPrice) return false;
+  return true;
+});
 
-  const pageFrom = (currentPage - 1) * pageSize;
-  const pageTo = pageFrom + pageSize - 1;
-  const { data: pagedData, error: productsError } = await runProductsQuery(
-    (selectClause) =>
-      applyCatalogSort(
-        applyCatalogFilters(
-          supabase
-            .from('products')
-            .select(selectClause)
-        )
-      )
-        .range(pageFrom, pageTo),
-    productColumnNames,
-    'Catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-  );
+totalCount = filteredRows.length;
+const calculatedTotalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+currentPage = Math.min(requestedPage, calculatedTotalPages);
+const pageFrom = (currentPage - 1) * pageSize;
+products = sortCatalogRows(filteredRows).slice(pageFrom, pageFrom + pageSize);
 
-  if (productsError) {
-    console.error('Catalog product query failed', {
-      code: productsError.code,
-      details: productsError.details,
-      hint: productsError.hint,
-      message: productsError.message,
-      path: Astro.url.pathname
-    });
-  } else {
-    products = filterVisibleCatalogProducts(
-      normalizeCatalogProducts(((pagedData || []) as Array<Record<string, unknown>>))
-    );
-  }
+if (isShopMode && !hasFilters) {
+  featuredProducts = sortCatalogRows(
+    facetRows.filter((product) => product.in_stock === true && product.featured_home),
+    'featured'
+  ).slice(0, 4);
 
-  const { data: facetData, error: facetError } = await runProductsQuery(
-    (selectClause) =>
-      applyCatalogScope(
-        supabase
-          .from('products')
-          .select(selectClause)
-      ),
-    facetColumnNames,
-    'Catalog facet query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-  );
-
-  if (facetError) {
-    console.error('Catalog facet query failed', {
-      code: facetError.code,
-      details: facetError.details,
-      hint: facetError.hint,
-      message: facetError.message,
-      path: Astro.url.pathname
-    });
-  } else {
-    facetRows = filterVisibleCatalogProducts(
-      normalizeCatalogProducts(((facetData || []) as Array<Record<string, unknown>>))
-    );
-  }
-
-  if (isShopMode && !hasFilters) {
-    const { data: featuredData, error: featuredError } = await runProductsQuery(
-      (selectClause) =>
-        applyCatalogSort(
-          supabase
-            .from('products')
-            .select(selectClause)
-            .eq('in_stock', true)
-            .eq('featured_home', true),
-          'featured'
-        )
-          .limit(4),
-      productColumnNames,
-      'Featured products query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-    );
-
-    if (featuredError) {
-      console.error('Featured products query failed', {
-        code: featuredError.code,
-        details: featuredError.details,
-        hint: featuredError.hint,
-        message: featuredError.message,
-        path: Astro.url.pathname
-      });
-    } else {
-      featuredProducts = filterVisibleCatalogProducts(
-        normalizeCatalogProducts(((featuredData || []) as Array<Record<string, unknown>>))
-      );
-    }
-
-    if (featuredProducts.length === 0) {
-      const { data: fallbackFeaturedData, error: fallbackFeaturedError } = await runProductsQuery(
-        (selectClause) =>
-          applyCatalogSort(
-            supabase
-              .from('products')
-              .select(selectClause)
-              .eq('in_stock', true),
-            'featured'
-          )
-            .limit(4),
-        productColumnNames,
-        'Featured fallback query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-      );
-
-      if (fallbackFeaturedError) {
-        console.error('Featured fallback query failed', {
-          code: fallbackFeaturedError.code,
-          details: fallbackFeaturedError.details,
-          hint: fallbackFeaturedError.hint,
-          message: fallbackFeaturedError.message,
-          path: Astro.url.pathname
-        });
-      } else {
-        featuredProducts = filterVisibleCatalogProducts(
-          normalizeCatalogProducts(((fallbackFeaturedData || []) as Array<Record<string, unknown>>))
-        );
-      }
-    }
+  if (featuredProducts.length === 0) {
+    featuredProducts = sortCatalogRows(
+      facetRows.filter((product) => product.in_stock === true),
+      'featured'
+    ).slice(0, 4);
   }
 }
 
@@ -836,7 +647,7 @@ const breadcrumbData = isShopMode
             </p>
             <h2>All products</h2>
             <p class="results-note">
-              Browse everything here, or open a category page if you want a quicker shortlist.
+              All products are listed here. Open a category page if you want fewer items to compare.
             </p>
           </div>
         </div>
