@@ -1,0 +1,27 @@
+---
+const trustItems = [
+  {
+    title: 'Tested devices',
+    copy: 'We check key functions before listing devices for sale.'
+  },
+  {
+    title: 'Warranty',
+    copy: 'Selected items include warranty support. We confirm terms before dispatch.'
+  },
+  {
+    title: 'Fast delivery',
+    copy: 'Same-day Nairobi delivery is available after stock confirmation.'
+  }
+];
+---
+
+<section class="trust-bar" aria-label="Why customers buy from SES ICT HUB">
+  <div class="home-container trust-bar__grid">
+    {trustItems.map((item) => (
+      <article>
+        <strong>{item.title}</strong>
+        <p>{item.copy}</p>
+      </article>
+    ))}
+  </div>
+</section>

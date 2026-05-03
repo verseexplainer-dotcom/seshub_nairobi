@@ -1,0 +1,54 @@
+---
+const categories = [
+  {
+    title: 'Laptops',
+    href: '/category/laptops',
+    image: '/site-assets/laptop-category-card.webp',
+    copy: 'Work laptops, student laptops, and clean refurbished options.',
+    label: 'Fresh stock'
+  },
+  {
+    title: 'Printers',
+    href: '/category/printers',
+    image: '/site-assets/Printers-category-card.webp',
+    copy: 'Ink tank, laser, and office printers with setup help.',
+    label: 'Office ready'
+  },
+  {
+    title: 'Desktops',
+    href: '/category/desktops',
+    image: '/site-assets/desktop-category-card.webp',
+    copy: 'Office desktops and monitors for business or home use.',
+    label: 'Good value'
+  },
+  {
+    title: 'Accessories',
+    href: '/search?category=accessories',
+    image: '/site-assets/accessories-category-card.webp',
+    copy: 'Chargers, storage, cables, bags, and useful add-ons.',
+    label: 'Ask us'
+  }
+];
+---
+
+<section class="home-section featured-categories" aria-labelledby="featured-categories-title">
+  <div class="home-container">
+    <div class="home-section__head">
+      <p class="home-kicker">Shop by category</p>
+      <h2 id="featured-categories-title">Start with what you need.</h2>
+    </div>
+
+    <div class="category-grid">
+      {categories.map((category) => (
+        <a href={category.href} class="category-tile">
+          <img src={category.image} alt={`${category.title} available at SES ICT HUB`} width="640" height="480" loading="lazy" decoding="async" />
+          <span class="category-tile__label">{category.label}</span>
+          <span class="category-tile__copy">
+            <strong>{category.title}</strong>
+            <span>{category.copy}</span>
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

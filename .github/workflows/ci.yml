@@ -23,8 +23,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint and type checks
-        run: npm run lint
-
-      - name: Run tests
-        run: npm run test
+      - name: Validate storefront
+        run: npm run validate

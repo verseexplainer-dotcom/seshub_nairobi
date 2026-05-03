@@ -19,134 +19,108 @@ const priceRanges = [
 ];
 ---
 
-<div class="hero-search-wrapper">
-  <form id="hero-search-form" class="hero-search-form">
-    <div class="search-input-group">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
+<form class="hero-search-form" action="/search" method="get">
+  <div class="search-row">
+    <label class="search-input-group" for="hero-search-q">
+      <span class="search-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </span>
       <input
-        type="text"
+        id="hero-search-q"
+        type="search"
         class="search-input"
         placeholder="Search laptops, phones, printers..."
         aria-label="Search products"
         autocomplete="off"
         name="q"
       />
+    </label>
+
+    <button type="submit" class="search-submit">
+      <span>Check availability</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-select">
+      <label for="category-filter">Category</label>
+      <select id="category-filter" name="category">
+        <option value="">All</option>
+        {categories.map((category) => <option value={category.value}>{category.label}</option>)}
+      </select>
     </div>
 
-    <div class="filter-group">
-      <div class="filter-select">
-        <label for="category-filter">Category</label>
-        <select id="category-filter" name="category">
-          <option value="">All</option>
-          {categories.map(cat => (
-            <option value={cat.value}>{cat.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <div class="filter-select">
-        <label for="condition-filter">Condition</label>
-        <select id="condition-filter" name="condition">
-          <option value="">All</option>
-          {conditions.map(cond => (
-            <option value={cond.value}>{cond.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <div class="filter-select">
-        <label for="price-filter">Price (KES)</label>
-        <select id="price-filter" name="price">
-          <option value="">All</option>
-          {priceRanges.map(range => (
-            <option value={range.value}>{range.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <button type="submit" class="search-submit" aria-label="Search">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-        Search
-      </button>
+    <div class="filter-select">
+      <label for="condition-filter">Condition</label>
+      <select id="condition-filter" name="condition">
+        <option value="">All</option>
+        {conditions.map((condition) => <option value={condition.value}>{condition.label}</option>)}
+      </select>
     </div>
-  </form>
-</div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('hero-search-form') as HTMLFormElement;
-    if (!form) return;
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      const query = (form.querySelector('input[name="q"]') as HTMLInputElement)?.value || '';
-      const category = (form.querySelector('select[name="category"]') as HTMLSelectElement)?.value || '';
-      const condition = (form.querySelector('select[name="condition"]') as HTMLSelectElement)?.value || '';
-      const price = (form.querySelector('select[name="price"]') as HTMLSelectElement)?.value || '';
-
-      const params = new URLSearchParams();
-      if (query) params.append('q', query);
-      if (category) params.append('category', category);
-      if (condition) params.append('condition', condition);
-      if (price) params.append('price', price);
-
-      const queryString = params.toString();
-      const searchUrl = queryString ? `/search?${queryString}` : '/search';
-      window.location.href = searchUrl;
-    });
-  });
-</script>
+    <div class="filter-select">
+      <label for="price-filter">Price (KES)</label>
+      <select id="price-filter" name="price">
+        <option value="">All</option>
+        {priceRanges.map((range) => <option value={range.value}>{range.label}</option>)}
+      </select>
+    </div>
+  </div>
+</form>
 
 <style>
-  .hero-search-wrapper {
+  .hero-search-form {
+    display: grid;
+    gap: 0.8rem;
     width: 100%;
-    margin: 1.25rem 0 0 0;
+    margin-top: 1.15rem;
   }
 
-  .hero-search-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+  .search-row {
+    display: grid;
+    gap: 0.7rem;
   }
 
   .search-input-group {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.65rem 1rem;
+    min-height: 3.25rem;
+    padding: 0.72rem 1rem;
+    border: 1px solid rgba(191, 219, 254, 0.92);
+    border-radius: var(--radius-pill);
     background: #ffffff;
-    border: 1.5px solid rgba(191, 219, 254, 0.8);
-    border-radius: var(--radius-full);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
     transition:
       border-color var(--transition-fast),
-      box-shadow var(--transition-fast);
-    box-shadow: 0 4px 12px rgba(21, 93, 252, 0.08);
+      box-shadow var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .search-input-group:focus-within {
-    border-color: #155dfc;
-    box-shadow: 0 4px 16px rgba(21, 93, 252, 0.16);
+    border-color: rgba(21, 93, 252, 0.55);
+    box-shadow: 0 14px 28px rgba(21, 93, 252, 0.12);
   }
 
   .search-icon {
-    color: #155dfc;
+    display: inline-flex;
+    color: var(--color-primary);
     flex-shrink: 0;
-    opacity: 0.8;
   }
 
   .search-input {
-    flex: 1;
+    width: 100%;
     min-width: 0;
-    border: none;
-    background: none;
-    font-size: 0.95rem;
-    color: var(--color-text-main);
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.98rem;
     outline: none;
   }
 
@@ -154,119 +128,78 @@ const priceRanges = [
     color: var(--color-text-muted);
   }
 
-  .filter-group {
-    display: flex;
-    flex-wrap: wrap;
+  .search-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3.2rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
+    color: #ffffff;
+    font-size: 0.92rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-sm);
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .search-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.65rem;
-    align-items: flex-end;
   }
 
   .filter-select {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    flex: 1;
-    min-width: 120px;
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
   }
 
   .filter-select label {
-    font-size: 0.75rem;
-    font-weight: 700;
     color: var(--color-text-muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
   }
 
   .filter-select select {
-    padding: 0.55rem 0.75rem;
-    background: #ffffff;
-    border: 1px solid rgba(191, 219, 254, 0.6);
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    color: var(--color-text-main);
-    cursor: pointer;
+    min-width: 0;
+    min-height: 2.95rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.98);
+    color: var(--color-text);
+    font-size: 0.92rem;
     transition:
       border-color var(--transition-fast),
       box-shadow var(--transition-fast);
   }
 
-  .filter-select select:hover {
-    border-color: rgba(21, 93, 252, 0.8);
-  }
-
   .filter-select select:focus {
     outline: none;
-    border-color: #155dfc;
-    box-shadow: 0 0 0 2px rgba(21, 93, 252, 0.1);
+    border-color: rgba(21, 93, 252, 0.5);
+    box-shadow: var(--focus-ring);
   }
 
-  .search-submit {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.55rem 1.2rem;
-    background: linear-gradient(135deg, #155dfc, #0f3a99);
-    color: #ffffff;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition:
-      transform var(--transition-fast),
-      box-shadow var(--transition-fast),
-      background var(--transition-fast);
-    box-shadow: 0 4px 12px rgba(21, 93, 252, 0.3);
-    white-space: nowrap;
-  }
-
-  .search-submit:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(21, 93, 252, 0.4);
-  }
-
-  .search-submit:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    .hero-search-form {
-      gap: 0.6rem;
-    }
-
-    .filter-group {
-      gap: 0.5rem;
-    }
-
-    .filter-select {
-      min-width: 100px;
-      flex: 0 1 auto;
-    }
-
-    .search-submit {
-      padding: 0.55rem 1rem;
-      font-size: 0.85rem;
+  @media (min-width: 760px) {
+    .search-row {
+      grid-template-columns: minmax(0, 1fr) auto;
     }
   }
 
-  @media (max-width: 640px) {
-    .search-input-group {
-      padding: 0.6rem 0.85rem;
-    }
-
-    .search-input {
-      font-size: 0.9rem;
-    }
-
-    .filter-group {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .filter-select {
-      width: 100%;
-      min-width: unset;
+  @media (max-width: 759px) {
+    .filter-row {
+      grid-template-columns: 1fr;
     }
 
     .search-submit {

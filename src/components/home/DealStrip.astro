@@ -1,0 +1,16 @@
+---
+const deals = [
+  'Laptop deals from KSh 24,000',
+  'Printer setup help available',
+  'Same-day Nairobi delivery available',
+  'Warranty support on selected items'
+];
+---
+
+<section class="deal-strip" aria-label="Current SES ICT HUB offers">
+  <div class="deal-strip__track">
+    {[...deals, ...deals].map((deal) => (
+      <span>{deal}</span>
+    ))}
+  </div>
+</section>

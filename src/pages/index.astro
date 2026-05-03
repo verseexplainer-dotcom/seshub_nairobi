@@ -1,73 +1,26 @@
 ---
 import '../styles/home.css';
 import Layout from '../layouts/Layout.astro';
-import AnnouncementStrip from '../components/home/AnnouncementStrip.astro';
-import BrandCarousel from '../components/BrandCarousel.astro';
-import CategoryQuickLinks from '../components/home/CategoryQuickLinks.astro';
-import CustomerActionBanner from '../components/home/CustomerActionBanner.astro';
-import DealsBand from '../components/home/DealsBand.astro';
-import FeaturedProductsGrid from '../components/home/FeaturedProductsGrid.astro';
-import HeroShowcase from '../components/home/HeroShowcase.astro';
-import LatestGuidesPreview from '../components/home/LatestGuidesPreview.astro';
-import RefurbishedVsBrandNew from '../components/home/RefurbishedVsBrandNew.astro';
-import ShopByBrand from '../components/home/ShopByBrand.astro';
-import TrustHighlights from '../components/home/TrustHighlights.astro';
-import UseCaseCollections from '../components/home/UseCaseCollections.astro';
+import HomeHero from '../components/home/HomeHero.astro';
+import FeaturedCategories from '../components/home/FeaturedCategories.astro';
+import DealStrip from '../components/home/DealStrip.astro';
+import ProductShowcase from '../components/home/ProductShowcase.astro';
+import TrustBar from '../components/home/TrustBar.astro';
 import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
-import { getBrandCounts, getCategoryCounts, getDealsProducts, getHomepageFeaturedProducts, getHomepageProducts } from '../lib/catalog';
-import { setPublicCacheHeaders } from '../lib/http-cache';
-import { blogPosts } from '../lib/homepageContent';
-import { buildUseCaseCollections, getInventorySummary, selectBestValueProducts, selectNewInProducts, selectPremiumProducts } from '../lib/homepage';
-import { getRuntimeEnv } from '../lib/runtime';
-
-setPublicCacheHeaders(Astro.response.headers, Astro.request);
-
-const runtimeEnv = getRuntimeEnv(Astro.locals);
-const products = await getHomepageProducts(Astro.locals);
-const featuredProducts = await getHomepageFeaturedProducts(products);
-const categoryCounts = await getCategoryCounts(products);
-const brandCounts = (await getBrandCounts(products)).slice(0, 6);
-const dealsProducts = await getDealsProducts(products);
-const newInProducts = selectNewInProducts(products);
-const bestValueProducts = selectBestValueProducts(products);
-const premiumProducts = selectPremiumProducts(products);
-const useCaseCollections = buildUseCaseCollections(products);
-const inventorySummary = getInventorySummary(products);
 ---
 
 <Layout
-  title="Affordable laptops, printers, phones, and desktops in Kenya"
-  description="Browse live laptops, smartphones, printers, desktops, and accessories from SES ICT HUB with clear pricing, warranty-backed listings, and easy WhatsApp support."
+  title="Quality laptops, printers, and tech deals in Kenya"
+  description="Shop laptops, printers, desktops, accessories, and tech deals from SES ICT HUB with clear prices, warranty support, and delivery in Kenya."
   canonical="/"
   hideAnnouncementStrip
 >
-  <div class="homepage-shell">
-    <AnnouncementStrip />
-    <HeroShowcase
-      products={featuredProducts.slice(0, 4)}
-      liveCount={inventorySummary.liveCount}
-      brandCount={inventorySummary.brandCount}
-      publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
-    />
-    <BrandCarousel />
-    <CategoryQuickLinks items={categoryCounts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
-    <TrustHighlights />
-    <FeaturedProductsGrid
-      featured={featuredProducts}
-      newIn={newInProducts}
-      bestValue={bestValueProducts}
-      premium={premiumProducts}
-      publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
-    />
-    <RefurbishedVsBrandNew
-      brandNewCount={inventorySummary.brandNewCount}
-      refurbishedCount={inventorySummary.refurbishedCount}
-    />
-    <DealsBand products={dealsProducts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
-    <ShopByBrand brands={brandCounts} />
-    <UseCaseCollections collections={useCaseCollections} />
-    <WhyBuyFromSES publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
-    <LatestGuidesPreview posts={blogPosts} />
-    <CustomerActionBanner />
+  <div class="home-page">
+    <HomeHero />
+    <FeaturedCategories />
+    <DealStrip />
+    <ProductShowcase />
+    <TrustBar />
+    <WhyBuyFromSES />
   </div>
 </Layout>

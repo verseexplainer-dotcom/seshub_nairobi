@@ -3,32 +3,19 @@ import PortalShell from '../../components/PortalShell.astro';
 import StatusPill from '../../components/StatusPill.astro';
 import { adminNavItems } from '../../lib/navigation';
 import { formatDateTime } from '../../lib/order-utils';
-import { createAdminSupabaseClient } from '../../lib/supabase-admin';
+import { getAllProducts } from '../../lib/products';
 
-const adminSupabase = createAdminSupabaseClient(Astro.locals);
 const q = Astro.url.searchParams.get('q')?.trim() || '';
 const stock = Astro.url.searchParams.get('stock') || '';
-
-let query = adminSupabase
-  .from('products')
-  .select('id, title, slug, category, in_stock, stock_qty, featured_home, updated_at')
-  .order('updated_at', { ascending: false })
-  .limit(150);
-
-if (q) {
-  query = query.or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
-}
-
-if (stock === 'in') {
-  query = query.eq('in_stock', true);
-}
-
-if (stock === 'out') {
-  query = query.eq('in_stock', false);
-}
-
-const { data } = await query;
-const products = data ?? [];
+const queryText = q.toLowerCase();
+const products = getAllProducts()
+  .filter((product) => {
+    const matchesSearch = !queryText || `${product.title} ${product.slug}`.toLowerCase().includes(queryText);
+    const matchesStock = stock === 'in' ? product.in_stock === true : stock === 'out' ? product.in_stock !== true : true;
+    return matchesSearch && matchesStock;
+  })
+  .sort((left, right) => String(right.updated_at || '').localeCompare(String(left.updated_at || '')))
+  .slice(0, 150);
 ---
 
 <PortalShell

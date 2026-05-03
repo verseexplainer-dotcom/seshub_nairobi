@@ -1,0 +1,75 @@
+---
+const products = [
+  {
+    title: 'HP EliteBook Core i5',
+    specs: '8GB RAM / 256GB SSD',
+    price: 'KSh 32,000',
+    image: '/site-assets/hero-image-1.webp',
+    badge: 'Tested'
+  },
+  {
+    title: 'Epson Ink Tank Printer',
+    specs: 'For home and office printing',
+    price: 'KSh 24,500',
+    image: '/site-assets/Printers-category-card.webp',
+    badge: 'Office pick'
+  },
+  {
+    title: 'Dell Desktop Set',
+    specs: 'Monitor, keyboard, and mouse',
+    price: 'KSh 28,000',
+    image: '/site-assets/desktop-category-card.webp',
+    badge: 'Good value'
+  },
+  {
+    title: 'Laptop Accessories Pack',
+    specs: 'Bag, mouse, and charger options',
+    price: 'From KSh 1,500',
+    image: '/site-assets/accessories-category-card.webp',
+    badge: 'Useful add-ons'
+  }
+];
+
+const filters = ['i5', 'i7', '8GB', '16GB', 'SSD', 'Printers', 'Desktops'];
+---
+
+<section class="home-section product-showcase" aria-labelledby="product-showcase-title">
+  <div class="home-container">
+    <div class="home-section__head home-section__head--split">
+      <div>
+        <p class="home-kicker">Featured products</p>
+        <h2 id="product-showcase-title">Popular picks customers ask for.</h2>
+      </div>
+      <a href="/shop" class="home-text-link">View all products</a>
+    </div>
+
+    <div class="product-grid">
+      {products.map((product) => (
+        <article class="product-tile">
+          <div class="product-tile__media">
+            <img src={product.image} alt={`${product.title} at SES ICT HUB`} width="640" height="480" loading="lazy" decoding="async" />
+            <span>{product.badge}</span>
+          </div>
+          <div class="product-tile__body">
+            <h3>{product.title}</h3>
+            <p>{product.specs}</p>
+            <strong>{product.price}</strong>
+            <a href="/shop" class="home-button home-button--small">View details</a>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <div class="search-band" aria-labelledby="search-band-title">
+      <div>
+        <p class="home-kicker">Quick search</p>
+        <h2 id="search-band-title">Find stock by the specs you already know.</h2>
+      </div>
+      <div class="search-band__filters" aria-label="Popular search filters">
+        {filters.map((filter) => (
+          <a href={`/search?q=${encodeURIComponent(filter)}`}>{filter}</a>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

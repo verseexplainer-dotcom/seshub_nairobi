@@ -1,0 +1,122 @@
+---
+import { buildWhatsAppLink } from '../../lib/storefront';
+
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help confirming availability before I buy.');
+
+const sideProducts = [
+  {
+    label: 'Laptops',
+    title: 'HP ProBook Core i5',
+    price: 'KSh 36,000',
+    image: '/site-assets/laptop-category-card.webp',
+    href: '/category/laptops'
+  },
+  {
+    label: 'Accessories',
+    title: 'Storage and chargers',
+    price: 'From KSh 1,500',
+    image: '/site-assets/accessories-category-card.webp',
+    href: '/search?category=accessories'
+  },
+  {
+    label: 'Printers',
+    title: 'Epson ink tank printer',
+    price: 'KSh 24,500',
+    image: '/site-assets/Printers-category-card.webp',
+    href: '/category/printers'
+  }
+];
+---
+
+<section class="home-hero" aria-labelledby="home-hero-title">
+  <div class="home-hero__inner">
+    <div class="home-hero__copy">
+      <p class="home-pill">Affordable tech, ready to order</p>
+      <h1 id="home-hero-title">
+        Affordable <em>laptops,</em> printers, phones, and desktops in Kenya.
+      </h1>
+      <p class="home-hero__text">
+        Compare clear specs, fair prices, and warranty-backed options from SES ICT HUB.
+      </p>
+
+      <form class="hero-filter" action="/search" method="get">
+        <label>
+          <span>Category</span>
+          <select name="category">
+            <option value="">All</option>
+            <option value="laptops">Laptops</option>
+            <option value="printers">Printers</option>
+            <option value="desktops">Desktops</option>
+            <option value="accessories">Accessories</option>
+          </select>
+        </label>
+        <label>
+          <span>Condition</span>
+          <select name="condition">
+            <option value="">All</option>
+            <option value="brand_new">Brand New</option>
+            <option value="refurbished">Refurbished</option>
+          </select>
+        </label>
+        <label>
+          <span>Price (KES)</span>
+          <select name="price">
+            <option value="">All</option>
+            <option value="0-50000">Under 50K</option>
+            <option value="50000-100000">50K-100K</option>
+            <option value="100000-200000">100K-200K</option>
+          </select>
+        </label>
+        <button type="submit">Shop Laptops</button>
+        <a href={whatsappHref} target="_blank" rel="noreferrer">Chat on WhatsApp</a>
+      </form>
+
+      <div class="home-hero__stats" aria-label="Store stats">
+        <span><strong>225</strong>Live products</span>
+        <span><strong>17</strong>Active brands</span>
+      </div>
+    </div>
+
+    <article class="hero-product-card">
+      <div class="hero-product-card__top">
+        <span>Available now</span>
+        <span>Top pick</span>
+      </div>
+      <img
+        src="/site-assets/hero-image-1.webp"
+        alt="Dell Precision laptop available at SES ICT HUB"
+        width="760"
+        height="560"
+        loading="eager"
+        decoding="async"
+      />
+      <div class="hero-product-card__body">
+        <p><span>Refurbished</span><span>Live stock</span></p>
+        <h2>Dell Precision 3551 Intel Core i7 32GB RAM 512GB SSD...</h2>
+        <div class="hero-product-card__specs">
+          <span>Intel Core i7</span>
+          <span>32GB RAM</span>
+          <span>512GB SSD</span>
+        </div>
+        <div class="hero-product-card__price">
+          <span>KSh 40,000</span>
+          <strong>KSh 36,000</strong>
+          <em>Save KSh 4,000</em>
+        </div>
+      </div>
+    </article>
+
+    <div class="hero-side-list" aria-label="More products">
+      {sideProducts.map((product) => (
+        <a href={product.href} class="hero-side-card">
+          <img src={product.image} alt={`${product.title} at SES ICT HUB`} width="96" height="96" loading="lazy" decoding="async" />
+          <span>
+            <small>{product.label}</small>
+            <strong>{product.title}</strong>
+            <em>{product.price}</em>
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

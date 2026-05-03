@@ -1,157 +1,29 @@
 ---
-import Button from '../ui/Button.astro';
-import SectionHeading from '../ui/SectionHeading.astro';
-import { getSiteAssets } from '../../lib/siteAssets';
-import { buildWhatsAppLink, storefrontDetails } from '../../lib/storefront';
+import { buildWhatsAppLink } from '../../lib/storefront';
 
-interface Props {
-  publicSupabaseUrl?: string | undefined;
-}
-
-const { publicSupabaseUrl } = Astro.props as Props;
-const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I would like help choosing the right product before I pay.');
-const siteAssets = getSiteAssets(publicSupabaseUrl);
-const reasons = [
-  'Physical Nairobi shop presence for easier coordination and pickup.',
-  'Practical support before payment on WhatsApp or phone.',
-  'Catalog-first stock guidance so buyers are not pushed into fake urgency.',
-  'Clear KES pricing, condition labels, and warranty visibility where available.'
-];
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I want to confirm availability before I buy.');
 ---
 
-<section class="why-buy section">
-  <div class="container why-grid">
-    <div class="story-panel" style={`--story-image:url(${siteAssets.heroMoments.secondary.src})`}>
-      <div class="story-copy">
-        <p class="story-kicker">Why Buy From SES</p>
-        <h3>Visit the Moi Avenue shop or order on WhatsApp with real stock guidance.</h3>
-        <p>
-          SES ICT HUB works best when shoppers can confirm stock, compare practical specs, and ask questions before paying.
-        </p>
-      </div>
+<section class="home-section why-ses" aria-labelledby="why-ses-title">
+  <div class="home-container why-ses__inner">
+    <div class="why-ses__copy">
+      <p class="home-kicker">Before you buy</p>
+      <h2 id="why-ses-title">We can help you confirm the right item.</h2>
+      <p>
+        Tell us your budget, the work you need to do, and the specs you prefer. One of our team will assist you on WhatsApp.
+      </p>
+      <a class="home-button home-button--whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">
+        Confirm on WhatsApp
+      </a>
     </div>
-
-    <div class="detail-panel">
-      <SectionHeading
-        eyebrow="Trust First"
-        title="A practical storefront built around clarity, not pressure."
-        description="The homepage keeps pricing, condition, warranty, and support visible so buyers can decide faster."
-      />
-
-      <div class="detail-card">
-        <h3>Physical shop</h3>
-        <p>{storefrontDetails.fullLocation}</p>
-      </div>
-      <div class="detail-card">
-        <h3>Store support</h3>
-        <p>{storefrontDetails.deliverySummary}</p>
-      </div>
-      <div class="reason-list">
-        {reasons.map((reason) => (
-          <p>{reason}</p>
-        ))}
-      </div>
-
-      <div class="actions">
-        <Button href={whatsappHref} target="_blank" rel="noreferrer">Talk to Us on WhatsApp</Button>
-        <Button href="/contact" variant="ghost">Visit Contact Page</Button>
-      </div>
+    <div class="why-ses__panel" aria-label="SES ICT HUB support checklist">
+      <span>What we can confirm</span>
+      <ul>
+        <li>Current stock and final price</li>
+        <li>Warranty terms for the item</li>
+        <li>Delivery or pickup timing</li>
+        <li>Accessories you may need</li>
+      </ul>
     </div>
   </div>
 </section>
-
-<style>
-  .why-grid {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .story-panel {
-    position: relative;
-    min-height: 20rem;
-    overflow: hidden;
-    border-radius: calc(var(--radius-card) + 0.15rem);
-    background:
-      linear-gradient(135deg, rgba(15, 23, 42, 0.66), rgba(15, 23, 42, 0.14)),
-      var(--story-image) center / cover no-repeat;
-    box-shadow: var(--shadow-md);
-  }
-
-  .story-panel::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.6));
-  }
-
-  .story-copy {
-    position: absolute;
-    inset: auto 1.3rem 1.3rem 1.3rem;
-    z-index: 1;
-    display: grid;
-    gap: 0.7rem;
-    max-width: 27rem;
-    color: #f8fafc;
-  }
-
-  .story-kicker {
-    color: rgba(191, 219, 254, 0.95);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  .story-copy h3 {
-    font-size: clamp(1.6rem, 4vw, 2.3rem);
-    line-height: 1.02;
-    letter-spacing: -0.05em;
-    color: #ffffff;
-  }
-
-  .story-copy p:last-child {
-    color: rgba(248, 250, 252, 0.88);
-  }
-
-  .detail-card,
-  .reason-list {
-    padding: 1.25rem;
-    border: 1px solid rgba(203, 213, 225, 0.72);
-    border-radius: calc(var(--radius-card) + 0.1rem);
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
-  .detail-panel {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .detail-card,
-  .reason-list {
-    display: grid;
-    gap: 0.55rem;
-  }
-
-  .detail-card p,
-  .reason-list p {
-    color: var(--color-text-muted);
-  }
-
-  @media (min-width: 980px) {
-    .why-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
-      align-items: start;
-    }
-
-    .story-panel {
-      min-height: 100%;
-    }
-  }
-</style>
