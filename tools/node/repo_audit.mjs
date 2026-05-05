@@ -38,6 +38,7 @@ const requiredPaths = [
   'tools/node/check-content.mjs',
   'tools/node/check-routes.mjs',
   'tools/node/check-env.mjs',
+  'tools/node/check-config.mjs',
   'tools/node/repo_audit.mjs',
   'tools/node/copy-lint.js',
   'tools/node/copy-autofix.js',

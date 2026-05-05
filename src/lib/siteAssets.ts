@@ -48,14 +48,15 @@ const buildAssetSource = (
 };
 
 const BRAND_LOGO_FILENAMES = {
-  apple: 'apple-brand.webp',
-  canon: 'canon-brand.webp',
-  dell: 'dell-brand.webp',
-  epson: 'epson-brand.webp',
-  hp: 'hp-brand.webp',
-  lenovo: 'lenovo-brand.webp',
-  pixel: 'pixel-brand (1).webp',
-  samsung: 'Samsung-brand- (1).webp'
+  apple: 'brands/apple-brand.webp',
+  asus: 'brands/asus-brand.webp',
+  canon: 'brands/canon-brand.webp',
+  dell: 'brands/dell-brand.webp',
+  epson: 'brands/epson-brand.webp',
+  hp: 'brands/hp-brand.webp',
+  lenovo: 'brands/lenovo-brand.webp',
+  pixel: 'brands/pixel-brand.webp',
+  samsung: 'brands/Samsung-brand-.webp'
 } as const;
 
 type BrandLogoKey = keyof typeof BRAND_LOGO_FILENAMES;
@@ -77,6 +78,10 @@ function normalizeBrandLogoKey(brand: string | null | undefined): BrandLogoKey |
 
   if (normalized.includes('lenovo')) {
     return 'lenovo';
+  }
+
+  if (normalized.includes('asus')) {
+    return 'asus';
   }
 
   if (normalized.includes('samsung')) {
@@ -113,19 +118,37 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
     base,
     logo,
     logoFallback: logo.fallback,
-    hero: siteAsset('hero-image.webp'),
+    hero: siteAsset('hero-laptops3.webp'),
     heroMoments: {
-      primary: siteAsset('hero-image.webp'),
-      secondary: siteAsset('hero-image-1.webp'),
-      tertiary: siteAsset('hero-image-3.webp')
+      primary: siteAsset('hero-laptops3.webp'),
+      secondary: siteAsset('hero-desktops.webp'),
+      tertiary: siteAsset('hero-printers.webp')
+    },
+    homeHero: {
+      laptops: siteAsset('hero-laptops3.webp'),
+      laptopsAlt: siteAsset('hero lenovo laptops.webp'),
+      desktops: siteAsset('hero-desktops.webp'),
+      desktopsAlt: siteAsset('hero-desktops1.webp'),
+      printers: siteAsset('hero-printers.webp'),
+      accessories: siteAsset('hero-laptop and accessories.webp')
     },
     categoryCards: {
-      laptops: siteAsset('laptop-category-card.webp'),
-      desktops: siteAsset('desktop-category-card.webp'),
-      smartphones: siteAsset('smartphones-category-card.webp'),
-      printers: siteAsset('Printers-category-card.webp'),
-      printersLegacy: siteAsset('Printers-category-card.webp'),
-      accessories: siteAsset('accessories-category-card.webp')
+      laptops: siteAsset('category-laptops.webp'),
+      desktops: siteAsset('category-desktops.webp'),
+      smartphones: siteAsset('category-smartphones.webp'),
+      printers: siteAsset('category-printers.webp'),
+      printersLegacy: siteAsset('category-printers.webp'),
+      accessories: siteAsset('product-placeholder.webp')
+    },
+    homeBanners: {
+      businessLaptops: siteAsset('banner-business-laptops.webp'),
+      zbookWorkstations: siteAsset('banner-zbook-workstations.webp'),
+      officeSetup: siteAsset('banner-office-setup.webp')
+    },
+    homeLifestyle: {
+      primary: siteAsset('lifestyle-series.webp'),
+      secondary: siteAsset('lifestyle-series2.webp'),
+      tertiary: siteAsset('lifestyle-series (2).webp')
     },
     trustIcons: {
       delivery: siteAsset('delivery-icon.webp'),
@@ -137,14 +160,15 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
       mastercard: remoteSiteAsset('mastercard-brand.webp')
     },
     brandLogos: {
-      apple: remoteSiteAsset(BRAND_LOGO_FILENAMES.apple),
-      canon: remoteSiteAsset(BRAND_LOGO_FILENAMES.canon),
-      dell: remoteSiteAsset(BRAND_LOGO_FILENAMES.dell),
-      epson: remoteSiteAsset(BRAND_LOGO_FILENAMES.epson),
-      hp: remoteSiteAsset(BRAND_LOGO_FILENAMES.hp),
-      lenovo: remoteSiteAsset(BRAND_LOGO_FILENAMES.lenovo),
-      pixel: remoteSiteAsset(BRAND_LOGO_FILENAMES.pixel),
-      samsung: remoteSiteAsset(BRAND_LOGO_FILENAMES.samsung)
+      apple: siteAsset(BRAND_LOGO_FILENAMES.apple),
+      asus: siteAsset(BRAND_LOGO_FILENAMES.asus),
+      canon: siteAsset(BRAND_LOGO_FILENAMES.canon),
+      dell: siteAsset(BRAND_LOGO_FILENAMES.dell),
+      epson: siteAsset(BRAND_LOGO_FILENAMES.epson),
+      hp: siteAsset(BRAND_LOGO_FILENAMES.hp),
+      lenovo: siteAsset(BRAND_LOGO_FILENAMES.lenovo),
+      pixel: siteAsset(BRAND_LOGO_FILENAMES.pixel),
+      samsung: siteAsset(BRAND_LOGO_FILENAMES.samsung)
     },
     campaigns: {
       cashOnDelivery: remoteSiteAsset('cash-on-delivery-ses-brand.webp')

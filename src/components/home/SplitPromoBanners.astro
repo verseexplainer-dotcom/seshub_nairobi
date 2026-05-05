@@ -1,0 +1,228 @@
+---
+import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
+
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const fallbackImage = '/product-placeholder.svg';
+
+const promos = [
+  {
+    title: 'Business Laptops',
+    copy: 'Core i5 and Core i7 laptops for teams, schools, and professionals who need reliable daily performance.',
+    href: '/category/laptops?sort=featured&in_stock=1',
+    cta: 'Shop business laptops',
+    image: siteAssets.homeBanners.businessLaptops,
+    alt: 'Business laptops displayed for SES ICT HUB customers',
+    imageSide: 'left',
+    tone: 'dark',
+    focal: '70% center'
+  },
+  {
+    title: 'Workstations and ZBook',
+    copy: 'Performance-focused laptops and desktops for design, engineering, accounting, and heavier office workloads.',
+    href: '/search?q=zbook',
+    cta: 'View workstations',
+    image: siteAssets.homeBanners.zbookWorkstations,
+    alt: 'Workstation computers and ZBook options at SES ICT HUB',
+    imageSide: 'right',
+    tone: 'light',
+    focal: '70% center'
+  },
+  {
+    title: 'Office Setup',
+    copy: 'Desktops, printers, monitors, and practical accessories for counters, home offices, and growing teams.',
+    href: '/shop?sort=featured&in_stock=1',
+    cta: 'Build an office setup',
+    image: siteAssets.homeBanners.officeSetup,
+    alt: 'Office technology setup with computers and printers',
+    imageSide: 'left',
+    tone: 'light',
+    focal: '72% center'
+  }
+];
+---
+
+<section class="split-promos" aria-label="SES ICT HUB promotional collections">
+  <div class="split-promos__inner">
+    {promos.map((promo) => (
+      <article
+        class={`split-promo ${promo.imageSide === 'right' ? 'image-right' : ''} tone-${promo.tone}`}
+        style={`--promo-focal:${promo.focal};`}
+      >
+        <a href={promo.href} class="split-promo__media" aria-label={promo.title}>
+          <img
+            src={promo.image.src}
+            alt={promo.alt}
+            width="1920"
+            height="1080"
+            loading="lazy"
+            decoding="async"
+            onerror={buildImageOnError(promo.image.fallback, fallbackImage)}
+          />
+          <span class="split-promo__shade" aria-hidden="true"></span>
+          <span class="split-promo__copy">
+            <span class="split-promo__eyebrow">Featured collection</span>
+            <span class="split-promo__title">{promo.title}</span>
+            <span class="split-promo__text">{promo.copy}</span>
+            <span class="split-promo__cta">{promo.cta}</span>
+          </span>
+        </a>
+      </article>
+    ))}
+  </div>
+</section>
+
+<style>
+  .split-promos {
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+    background: #f8fafc;
+  }
+
+  .split-promos__inner {
+    display: grid;
+    gap: clamp(1rem, 2.4vw, 1.5rem);
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .split-promo {
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.88);
+    border-radius: 0.85rem;
+    background: #0b1220;
+  }
+
+  .split-promo__media {
+    position: relative;
+    display: grid;
+    align-items: center;
+    min-height: clamp(25rem, 64vw, 31rem);
+    overflow: hidden;
+    background: #0b1220;
+    color: #ffffff;
+  }
+
+  .split-promo__media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    object-fit: cover;
+    object-position: var(--promo-focal, 70% center);
+    transition: transform 260ms ease;
+  }
+
+  .split-promo:hover .split-promo__media img {
+    transform: scale(1.03);
+  }
+
+  .split-promo__shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(5, 11, 22, 0.86) 0%, rgba(5, 11, 22, 0.72) 38%, rgba(5, 11, 22, 0.1) 72%),
+      linear-gradient(180deg, rgba(5, 11, 22, 0.08), rgba(5, 11, 22, 0.46));
+  }
+
+  .split-promo.tone-light .split-promo__media {
+    color: #07111f;
+  }
+
+  .split-promo.tone-light .split-promo__shade {
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.86) 37%, rgba(255, 255, 255, 0.08) 70%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.5));
+  }
+
+  .split-promo__copy {
+    position: relative;
+    z-index: 1;
+    grid-area: 1 / 1;
+    align-self: center;
+    display: grid;
+    gap: clamp(0.6rem, 2vw, 0.8rem);
+    width: min(78%, 24rem);
+    padding: clamp(1.35rem, 5vw, 3.5rem);
+  }
+
+  .split-promo__eyebrow {
+    color: #a7f3d0;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .tone-light .split-promo__eyebrow {
+    color: #155dfc;
+  }
+
+  .split-promo__title {
+    font-size: clamp(2rem, 5vw, 3.35rem);
+    font-weight: 900;
+    line-height: 0.98;
+  }
+
+  .split-promo__text {
+    max-width: 35rem;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 1rem;
+  }
+
+  .tone-light .split-promo__text {
+    color: #526174;
+  }
+
+  .split-promo__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 3rem;
+    margin-top: 0.3rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #07111f;
+    font-weight: 900;
+  }
+
+  .tone-light .split-promo__cta {
+    background: #07111f;
+    color: #ffffff;
+  }
+
+  @media (max-width: 640px) {
+    .split-promos__inner {
+      width: min(100% - 1rem, 1180px);
+    }
+
+    .split-promo__media {
+      min-height: 27rem;
+    }
+
+    .split-promo__copy {
+      width: min(76%, 18.5rem);
+      padding: 1.3rem;
+    }
+
+    .split-promo__title {
+      font-size: clamp(1.95rem, 10vw, 2.6rem);
+      line-height: 1.02;
+    }
+
+    .split-promo__text {
+      font-size: 0.94rem;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .split-promo__media {
+      min-height: 29rem;
+    }
+
+    .split-promo__copy {
+      width: min(82%, 17.5rem);
+    }
+  }
+</style>

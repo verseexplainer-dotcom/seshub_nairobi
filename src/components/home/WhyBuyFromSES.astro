@@ -1,29 +1,136 @@
 ---
 import { buildWhatsAppLink } from '../../lib/storefront';
 
-const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I want to confirm availability before I buy.');
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I want help choosing the right device.');
+
+const reasons = [
+  {
+    title: 'Warranty support',
+    copy: 'Warranty terms are confirmed before dispatch where the item includes cover.'
+  },
+  {
+    title: 'Countrywide delivery',
+    copy: 'Coordinate Nairobi pickup, same-day options, or delivery across Kenya.'
+  },
+  {
+    title: 'Tested devices',
+    copy: 'Key functions, specs, and condition are checked before a device is recommended.'
+  },
+  {
+    title: 'Flexible payments',
+    copy: 'M-PESA, bank transfer, and pay-on-delivery options where available.'
+  },
+  {
+    title: 'Real support',
+    copy: 'Talk to the team on WhatsApp before buying if you need help comparing options.'
+  }
+];
 ---
 
-<section class="home-section why-ses" aria-labelledby="why-ses-title">
-  <div class="home-container why-ses__inner">
-    <div class="why-ses__copy">
-      <p class="home-kicker">Before you buy</p>
-      <h2 id="why-ses-title">We can help you confirm the right item.</h2>
-      <p>
-        Tell us your budget, the work you need to do, and the specs you prefer. One of our team will assist you on WhatsApp.
-      </p>
-      <a class="home-button home-button--whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">
-        Confirm on WhatsApp
-      </a>
+<section class="why-buy" aria-labelledby="why-buy-title">
+  <div class="why-buy__inner">
+    <div class="why-buy__head">
+      <p>Why choose us</p>
+      <h2 id="why-buy-title">Clear help before and after you buy.</h2>
+      <a href={whatsappHref} target="_blank" rel="noreferrer">Ask on WhatsApp</a>
     </div>
-    <div class="why-ses__panel" aria-label="SES ICT HUB support checklist">
-      <span>What we can confirm</span>
-      <ul>
-        <li>Current stock and final price</li>
-        <li>Warranty terms for the item</li>
-        <li>Delivery or pickup timing</li>
-        <li>Accessories you may need</li>
-      </ul>
+
+    <div class="why-buy__grid">
+      {reasons.map((reason) => (
+        <article>
+          <h3>{reason.title}</h3>
+          <p>{reason.copy}</p>
+        </article>
+      ))}
     </div>
   </div>
 </section>
+
+<style>
+  .why-buy {
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+    background: #ffffff;
+  }
+
+  .why-buy__inner {
+    display: grid;
+    gap: clamp(1.6rem, 4vw, 2.5rem);
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .why-buy__head {
+    display: grid;
+    gap: 0.7rem;
+    max-width: 46rem;
+  }
+
+  .why-buy__head > p {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .why-buy__head h2 {
+    color: #0b1220;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 0.98;
+  }
+
+  .why-buy__head a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 3rem;
+    margin-top: 0.3rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: 999px;
+    background: #25d366;
+    color: #ffffff;
+    font-weight: 900;
+  }
+
+  .why-buy__grid {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .why-buy__grid article {
+    display: grid;
+    gap: 0.45rem;
+    padding: 1.15rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 0.85rem;
+    background: #f8fafc;
+  }
+
+  .why-buy__grid h3 {
+    color: #0b1220;
+    font-size: 1.05rem;
+  }
+
+  .why-buy__grid p {
+    color: #64748b;
+    font-size: 0.94rem;
+  }
+
+  @media (min-width: 760px) {
+    .why-buy__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .why-buy__inner {
+      grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+      align-items: start;
+    }
+
+    .why-buy__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

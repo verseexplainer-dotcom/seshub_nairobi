@@ -8,6 +8,30 @@ export interface HomeTestimonial {
   quote: string;
 }
 
+export const homepageTestimonials: HomeTestimonial[] = [
+  {
+    id: 'brian-omondi',
+    name: 'Brian Omondi',
+    persona: 'Student',
+    rating: 5,
+    quote: 'The laptop specs matched the listing, and delivery to my hostel was quick.'
+  },
+  {
+    id: 'sarah-wambui',
+    name: 'Sarah Wambui',
+    persona: 'Business buyer',
+    rating: 5,
+    quote: 'SES ICT HUB helped us choose a clean workstation with clear warranty terms.'
+  },
+  {
+    id: 'kevin-mutua',
+    name: 'Kevin Mutua',
+    persona: 'Cyber owner',
+    rating: 5,
+    quote: 'The printer and monitor recommendations were practical for our day-to-day work.'
+  }
+];
+
 export interface BlogSection {
   heading: string;
   paragraphs: string[];

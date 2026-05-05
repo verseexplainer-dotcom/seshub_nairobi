@@ -1,75 +1,157 @@
 ---
-const products = [
-  {
-    title: 'HP EliteBook Core i5',
-    specs: '8GB RAM / 256GB SSD',
-    price: 'KSh 32,000',
-    image: '/site-assets/hero-image-1.webp',
-    badge: 'Tested'
-  },
-  {
-    title: 'Epson Ink Tank Printer',
-    specs: 'For home and office printing',
-    price: 'KSh 24,500',
-    image: '/site-assets/Printers-category-card.webp',
-    badge: 'Office pick'
-  },
-  {
-    title: 'Dell Desktop Set',
-    specs: 'Monitor, keyboard, and mouse',
-    price: 'KSh 28,000',
-    image: '/site-assets/desktop-category-card.webp',
-    badge: 'Good value'
-  },
-  {
-    title: 'Laptop Accessories Pack',
-    specs: 'Bag, mouse, and charger options',
-    price: 'From KSh 1,500',
-    image: '/site-assets/accessories-category-card.webp',
-    badge: 'Useful add-ons'
-  }
-];
+import type { CatalogProduct } from '../../types/catalog';
+import ProductCard from '../ui/ProductCard.astro';
 
-const filters = ['i5', 'i7', '8GB', '16GB', 'SSD', 'Printers', 'Desktops'];
+interface ProductGroup {
+  id: string;
+  kicker: string;
+  title: string;
+  description: string;
+  href: string;
+  products: CatalogProduct[];
+}
+
+interface Props {
+  groups: ProductGroup[];
+  publicSupabaseUrl?: string | undefined;
+}
+
+const { groups, publicSupabaseUrl } = Astro.props as Props;
+const visibleGroups = groups.filter((group) => group.products.length > 0);
 ---
 
-<section class="home-section product-showcase" aria-labelledby="product-showcase-title">
-  <div class="home-container">
-    <div class="home-section__head home-section__head--split">
-      <div>
-        <p class="home-kicker">Featured products</p>
-        <h2 id="product-showcase-title">Popular picks customers ask for.</h2>
+{visibleGroups.length > 0 && (
+  <section class="real-products" aria-labelledby="real-products-title">
+    <div class="real-products__inner">
+      <div class="real-products__intro">
+        <p>Featured products</p>
+        <h2 id="real-products-title">Real picks from current stock.</h2>
       </div>
-      <a href="/shop" class="home-text-link">View all products</a>
-    </div>
 
-    <div class="product-grid">
-      {products.map((product) => (
-        <article class="product-tile">
-          <div class="product-tile__media">
-            <img src={product.image} alt={`${product.title} at SES ICT HUB`} width="640" height="480" loading="lazy" decoding="async" />
-            <span>{product.badge}</span>
-          </div>
-          <div class="product-tile__body">
-            <h3>{product.title}</h3>
-            <p>{product.specs}</p>
-            <strong>{product.price}</strong>
-            <a href="/shop" class="home-button home-button--small">View details</a>
-          </div>
-        </article>
-      ))}
-    </div>
+      <div class="real-products__stack">
+        {visibleGroups.map((group) => (
+          <section class="real-products__group" aria-labelledby={`${group.id}-title`}>
+            <div class="real-products__head">
+              <div>
+                <p>{group.kicker}</p>
+                <h3 id={`${group.id}-title`}>{group.title}</h3>
+                <span>{group.description}</span>
+              </div>
+              <a href={group.href}>View all</a>
+            </div>
 
-    <div class="search-band" aria-labelledby="search-band-title">
-      <div>
-        <p class="home-kicker">Quick search</p>
-        <h2 id="search-band-title">Find stock by the specs you already know.</h2>
-      </div>
-      <div class="search-band__filters" aria-label="Popular search filters">
-        {filters.map((filter) => (
-          <a href={`/search?q=${encodeURIComponent(filter)}`}>{filter}</a>
+            <div class="real-products__grid">
+              {group.products.map((product) => (
+                <ProductCard product={product} publicSupabaseUrl={publicSupabaseUrl} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </div>
-  </div>
-</section>
+  </section>
+)}
+
+<style>
+  .real-products {
+    background: #ffffff;
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+  }
+
+  .real-products__inner {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .real-products__intro {
+    display: grid;
+    gap: 0.45rem;
+    max-width: 48rem;
+  }
+
+  .real-products__intro p,
+  .real-products__head p {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .real-products__intro h2 {
+    color: #0b1220;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 0.98;
+  }
+
+  .real-products__stack {
+    display: grid;
+    gap: clamp(2.25rem, 6vw, 4rem);
+  }
+
+  .real-products__group {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .real-products__head {
+    display: grid;
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .real-products__head div {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .real-products__head h3 {
+    color: #0b1220;
+    font-size: clamp(1.55rem, 4vw, 2.45rem);
+    line-height: 1;
+  }
+
+  .real-products__head span {
+    max-width: 42rem;
+    color: #64748b;
+  }
+
+  .real-products__head a {
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    border-radius: 999px;
+    color: #0b1220;
+    font-weight: 900;
+  }
+
+  .real-products__grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 720px) {
+    .real-products__head {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .real-products__head a {
+      justify-self: end;
+    }
+
+    .real-products__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1120px) {
+    .real-products__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -1,122 +1,448 @@
 ---
+import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
 import { buildWhatsAppLink } from '../../lib/storefront';
 
-const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help confirming availability before I buy.');
+const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
+const finalFallbackImage = '/product-placeholder.svg';
+const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I want to confirm today’s homepage offer.');
 
-const sideProducts = [
+const slides = [
   {
-    label: 'Laptops',
-    title: 'HP ProBook Core i5',
-    price: 'KSh 36,000',
-    image: '/site-assets/laptop-category-card.webp',
-    href: '/category/laptops'
+    id: 'laptops',
+    eyebrow: 'Laptop deals',
+    badge: 'Business-ready picks',
+    title: 'Upgrade your work laptop today.',
+    copy: 'Clean Core i5 and Core i7 laptops with SSD storage, warranty support, and Nairobi pickup options.',
+    href: '/category/laptops?sort=featured&in_stock=1',
+    cta: 'Shop laptops',
+    image: siteAssets.homeHero.laptops,
+    fallback: siteAssets.homeHero.laptopsAlt.fallback,
+    alt: 'Business laptops available from SES ICT HUB',
+    focal: '66% center'
   },
   {
-    label: 'Accessories',
-    title: 'Storage and chargers',
-    price: 'From KSh 1,500',
-    image: '/site-assets/accessories-category-card.webp',
-    href: '/search?category=accessories'
+    id: 'desktops',
+    eyebrow: 'Desktop setups',
+    badge: 'Office-ready bundles',
+    title: 'Build a faster desk setup.',
+    copy: 'Desktops and workstation options for counters, offices, schools, and teams that need reliable daily machines.',
+    href: '/category/desktops?sort=featured&in_stock=1',
+    cta: 'Shop desktops',
+    image: siteAssets.homeHero.desktops,
+    fallback: siteAssets.homeHero.desktopsAlt.fallback,
+    alt: 'Desktop computers and office setups available from SES ICT HUB',
+    focal: '62% center'
   },
   {
-    label: 'Printers',
-    title: 'Epson ink tank printer',
-    price: 'KSh 24,500',
-    image: '/site-assets/Printers-category-card.webp',
-    href: '/category/printers'
+    id: 'printers',
+    eyebrow: 'Printer offers',
+    badge: 'Home and office printing',
+    title: 'Print, scan, and copy without guesswork.',
+    copy: 'Compare laser, ink tank, and multifunction printers with setup help before you order.',
+    href: '/category/printers?sort=featured&in_stock=1',
+    cta: 'Shop printers',
+    image: siteAssets.homeHero.printers,
+    fallback: siteAssets.productPlaceholder.src,
+    alt: 'Office printers available from SES ICT HUB',
+    focal: '66% center'
   }
 ];
 ---
 
-<section class="home-hero" aria-labelledby="home-hero-title">
-  <div class="home-hero__inner">
-    <div class="home-hero__copy">
-      <p class="home-pill">Affordable tech, ready to order</p>
-      <h1 id="home-hero-title">
-        Affordable <em>laptops,</em> printers, phones, and desktops in Kenya.
-      </h1>
-      <p class="home-hero__text">
-        Compare clear specs, fair prices, and warranty-backed options from SES ICT HUB.
-      </p>
-
-      <form class="hero-filter" action="/search" method="get">
-        <label>
-          <span>Category</span>
-          <select name="category">
-            <option value="">All</option>
-            <option value="laptops">Laptops</option>
-            <option value="printers">Printers</option>
-            <option value="desktops">Desktops</option>
-            <option value="accessories">Accessories</option>
-          </select>
-        </label>
-        <label>
-          <span>Condition</span>
-          <select name="condition">
-            <option value="">All</option>
-            <option value="brand_new">Brand New</option>
-            <option value="refurbished">Refurbished</option>
-          </select>
-        </label>
-        <label>
-          <span>Price (KES)</span>
-          <select name="price">
-            <option value="">All</option>
-            <option value="0-50000">Under 50K</option>
-            <option value="50000-100000">50K-100K</option>
-            <option value="100000-200000">100K-200K</option>
-          </select>
-        </label>
-        <button type="submit">Shop Laptops</button>
-        <a href={whatsappHref} target="_blank" rel="noreferrer">Chat on WhatsApp</a>
-      </form>
-
-      <div class="home-hero__stats" aria-label="Store stats">
-        <span><strong>225</strong>Live products</span>
-        <span><strong>17</strong>Active brands</span>
-      </div>
-    </div>
-
-    <article class="hero-product-card">
-      <div class="hero-product-card__top">
-        <span>Available now</span>
-        <span>Top pick</span>
-      </div>
+<section class="commerce-hero" aria-labelledby="home-hero-title" data-home-hero>
+  {slides.map((slide, index) => (
+    <article
+      class={`commerce-hero__slide ${index === 0 ? 'is-active' : ''}`}
+      data-hero-slide={slide.id}
+      aria-hidden={index === 0 ? 'false' : 'true'}
+      style={`--hero-focal:${slide.focal};`}
+    >
       <img
-        src="/site-assets/hero-image-1.webp"
-        alt="Dell Precision laptop available at SES ICT HUB"
-        width="760"
-        height="560"
-        loading="eager"
+        class="commerce-hero__image"
+        src={slide.image.src}
+        alt={slide.alt}
+        width="1920"
+        height="1080"
+        loading={index === 0 ? 'eager' : 'lazy'}
         decoding="async"
+        fetchpriority={index === 0 ? 'high' : 'auto'}
+        onerror={buildImageOnError(slide.fallback, finalFallbackImage)}
       />
-      <div class="hero-product-card__body">
-        <p><span>Refurbished</span><span>Live stock</span></p>
-        <h2>Dell Precision 3551 Intel Core i7 32GB RAM 512GB SSD...</h2>
-        <div class="hero-product-card__specs">
-          <span>Intel Core i7</span>
-          <span>32GB RAM</span>
-          <span>512GB SSD</span>
-        </div>
-        <div class="hero-product-card__price">
-          <span>KSh 40,000</span>
-          <strong>KSh 36,000</strong>
-          <em>Save KSh 4,000</em>
+      <div class="commerce-hero__shade" aria-hidden="true"></div>
+
+      <div class="commerce-hero__content">
+        <div class="commerce-hero__copy">
+          <p class="commerce-hero__eyebrow">{slide.eyebrow}</p>
+          <h1 id={index === 0 ? 'home-hero-title' : undefined}>{slide.title}</h1>
+          <p class="commerce-hero__text">{slide.copy}</p>
+
+          <div class="commerce-hero__offer" aria-label="Current offer window">
+            <span>{slide.badge}</span>
+            <div class="commerce-hero__countdown" data-home-countdown>
+              <strong data-countdown-hours>00</strong>
+              <em>h</em>
+              <strong data-countdown-minutes>00</strong>
+              <em>m</em>
+              <strong data-countdown-seconds>00</strong>
+              <em>s</em>
+            </div>
+          </div>
+
+          <div class="commerce-hero__actions">
+            <a href={slide.href} class="commerce-hero__button primary">{slide.cta}</a>
+            <a href={whatsappHref} class="commerce-hero__button ghost" target="_blank" rel="noreferrer">
+              Confirm on WhatsApp
+            </a>
+          </div>
         </div>
       </div>
     </article>
+  ))}
 
-    <div class="hero-side-list" aria-label="More products">
-      {sideProducts.map((product) => (
-        <a href={product.href} class="hero-side-card">
-          <img src={product.image} alt={`${product.title} at SES ICT HUB`} width="96" height="96" loading="lazy" decoding="async" />
-          <span>
-            <small>{product.label}</small>
-            <strong>{product.title}</strong>
-            <em>{product.price}</em>
-          </span>
-        </a>
-      ))}
-    </div>
+  <div class="commerce-hero__controls" aria-label="Homepage hero slides">
+    {slides.map((slide, index) => (
+      <button
+        type="button"
+        class={index === 0 ? 'is-active' : ''}
+        data-hero-control={index}
+        aria-label={`Show ${slide.eyebrow}`}
+        aria-current={index === 0 ? 'true' : 'false'}
+      >
+        <span>{slide.eyebrow}</span>
+      </button>
+    ))}
   </div>
+
+  <script>
+    document.querySelectorAll('[data-home-hero]').forEach((root) => {
+      const slides = Array.from(root.querySelectorAll('[data-hero-slide]'));
+      const controls = Array.from(root.querySelectorAll('[data-hero-control]'));
+      const countdowns = Array.from(root.querySelectorAll('[data-home-countdown]'));
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let currentIndex = 0;
+      let carouselTimer: number | undefined;
+
+      const activateSlide = (nextIndex: number) => {
+        currentIndex = (nextIndex + slides.length) % slides.length;
+
+        slides.forEach((slide, index) => {
+          const isActive = index === currentIndex;
+          slide.classList.toggle('is-active', isActive);
+          slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        });
+
+        controls.forEach((control, index) => {
+          const isActive = index === currentIndex;
+          control.classList.toggle('is-active', isActive);
+          control.setAttribute('aria-current', isActive ? 'true' : 'false');
+        });
+      };
+
+      const startCarousel = () => {
+        if (reducedMotion || carouselTimer || slides.length < 2) {
+          return;
+        }
+
+        carouselTimer = window.setInterval(() => activateSlide(currentIndex + 1), 6500);
+      };
+
+      const stopCarousel = () => {
+        if (carouselTimer) {
+          window.clearInterval(carouselTimer);
+          carouselTimer = undefined;
+        }
+      };
+
+      controls.forEach((control) => {
+        control.addEventListener('click', () => {
+          stopCarousel();
+          activateSlide(Number(control.getAttribute('data-hero-control') || 0));
+          startCarousel();
+        });
+      });
+
+      root.addEventListener('mouseenter', stopCarousel);
+      root.addEventListener('mouseleave', startCarousel);
+      root.addEventListener('focusin', stopCarousel);
+      root.addEventListener('focusout', startCarousel);
+
+      const getNextDeadline = () => {
+        const now = new Date();
+        const deadline = new Date(now);
+        deadline.setHours(20, 0, 0, 0);
+
+        if (deadline.getTime() <= now.getTime()) {
+          deadline.setDate(deadline.getDate() + 1);
+        }
+
+        return deadline;
+      };
+
+      const updateCountdowns = () => {
+        const remaining = Math.max(0, getNextDeadline().getTime() - Date.now());
+        const totalSeconds = Math.floor(remaining / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        countdowns.forEach((countdown) => {
+          const hoursEl = countdown.querySelector('[data-countdown-hours]');
+          const minutesEl = countdown.querySelector('[data-countdown-minutes]');
+          const secondsEl = countdown.querySelector('[data-countdown-seconds]');
+
+          if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+          if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+          if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+        });
+      };
+
+      updateCountdowns();
+      window.setInterval(updateCountdowns, 1000);
+      startCarousel();
+    });
+  </script>
 </section>
+
+<style>
+  .commerce-hero {
+    position: relative;
+    min-height: min(760px, calc(100svh - 5rem));
+    overflow: hidden;
+    background: #050b16;
+    color: #ffffff;
+    isolation: isolate;
+  }
+
+  .commerce-hero__slide {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    min-height: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 580ms ease;
+  }
+
+  .commerce-hero__slide.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .commerce-hero__image,
+  .commerce-hero__shade {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .commerce-hero__image {
+    object-fit: cover;
+    object-position: var(--hero-focal, 66% center);
+    transform: scale(1.02);
+  }
+
+  .commerce-hero__shade {
+    background:
+      linear-gradient(90deg, rgba(5, 11, 22, 0.9) 0%, rgba(5, 11, 22, 0.76) 35%, rgba(5, 11, 22, 0.22) 70%, rgba(5, 11, 22, 0.08) 100%),
+      linear-gradient(180deg, rgba(5, 11, 22, 0.24), rgba(5, 11, 22, 0.72));
+  }
+
+  .commerce-hero__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    align-items: center;
+    width: min(100% - 2rem, 1180px);
+    min-height: inherit;
+    margin-inline: auto;
+    padding-block: clamp(3rem, 9vw, 6rem);
+  }
+
+  .commerce-hero__copy {
+    display: grid;
+    gap: 1rem;
+    max-width: 38rem;
+  }
+
+  .commerce-hero__eyebrow {
+    width: fit-content;
+    color: #b6f5d4;
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .commerce-hero h1 {
+    color: #ffffff;
+    font-size: clamp(3rem, 8vw, 5.7rem);
+    line-height: 0.94;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  .commerce-hero__text {
+    max-width: 34rem;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(1rem, 2vw, 1.14rem);
+  }
+
+  .commerce-hero__offer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .commerce-hero__offer > span,
+  .commerce-hero__countdown {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .commerce-hero__offer > span {
+    padding: 0.55rem 0.9rem;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 850;
+  }
+
+  .commerce-hero__countdown {
+    gap: 0.2rem;
+    padding: 0.5rem 0.8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .commerce-hero__countdown strong {
+    color: #ffffff;
+    font-size: 0.96rem;
+  }
+
+  .commerce-hero__countdown em {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.75rem;
+    font-style: normal;
+    font-weight: 800;
+  }
+
+  .commerce-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .commerce-hero__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.2rem;
+    padding: 0.9rem 1.25rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-weight: 900;
+    transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  }
+
+  .commerce-hero__button:hover {
+    transform: translateY(-1px);
+  }
+
+  .commerce-hero__button.primary {
+    background: #ffffff;
+    color: #061633;
+  }
+
+  .commerce-hero__button.ghost {
+    border-color: rgba(255, 255, 255, 0.26);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .commerce-hero__controls {
+    position: absolute;
+    z-index: 2;
+    right: max(1rem, calc((100vw - 1180px) / 2));
+    bottom: clamp(1rem, 3vw, 2rem);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: calc(100% - 2rem);
+  }
+
+  .commerce-hero__controls button {
+    min-height: 2.35rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(18px);
+    font-size: 0.74rem;
+    font-weight: 900;
+  }
+
+  .commerce-hero__controls button.is-active {
+    background: #ffffff;
+    color: #061633;
+  }
+
+  @media (max-width: 720px) {
+    .commerce-hero {
+      min-height: 680px;
+    }
+
+    .commerce-hero__image {
+      object-position: var(--hero-focal, 62% center);
+    }
+
+    .commerce-hero__shade {
+      background:
+        linear-gradient(180deg, rgba(5, 11, 22, 0.1) 0%, rgba(5, 11, 22, 0.52) 42%, rgba(5, 11, 22, 0.94) 100%),
+        linear-gradient(90deg, rgba(5, 11, 22, 0.42), rgba(5, 11, 22, 0.14));
+    }
+
+    .commerce-hero__content {
+      align-items: end;
+      padding-block: 16rem 6.5rem;
+    }
+
+    .commerce-hero h1 {
+      font-size: clamp(2.65rem, 14vw, 4.2rem);
+    }
+
+    .commerce-hero__button {
+      width: 100%;
+    }
+
+    .commerce-hero__controls {
+      right: auto;
+      left: 1rem;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      scrollbar-width: none;
+    }
+
+    .commerce-hero__controls::-webkit-scrollbar {
+      display: none;
+    }
+
+    .commerce-hero__controls button {
+      flex: 0 0 auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .commerce-hero__slide,
+    .commerce-hero__button,
+    .commerce-hero__controls button {
+      transition: none;
+    }
+  }
+</style>

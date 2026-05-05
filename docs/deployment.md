@@ -20,6 +20,49 @@ export CLOUDFLARE_API_TOKEN='<your-token>'
 Project npm scripts now load `.env` and `.env.local` automatically for Wrangler commands.
 `.env.local` takes precedence if both files exist.
 
+## GitHub Actions CI
+
+The current GitHub Actions workflow validates the storefront only. It does not deploy
+and does not require real secret values.
+
+`npm run validate` includes `npm run config:check`, a non-mutating repository check
+that verifies:
+
+- manual deploy scripts are still wired through `scripts/deploy-worker.sh`
+- Astro remains configured for Cloudflare Worker server output
+- `wrangler.jsonc` still points at the locked Cloudflare account, Worker output, assets, `SESSION` KV binding, and apex route
+- `.env.example` and deployment docs list the expected environment keys
+
+Do not add `npm run env:check` to pull-request CI unless the workflow has access to
+protected secrets. Forked pull requests will not receive repository secrets.
+
+## Environment Keys
+
+Current CI config check requires these names to stay documented, but not populated:
+
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `PUBLIC_FALLBACK_IMAGE_URL`
+- `PUBLIC_TURNSTILE_SITE_KEY`
+- `TURNSTILE_SECRET_KEY`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+
+Manual deploy requires:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID` unset or exactly `e1d8076a3dc603837814ca828736561f`
+
+Production Worker runtime requires:
+
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `PUBLIC_FALLBACK_IMAGE_URL`
+- `PUBLIC_TURNSTILE_SITE_KEY`
+- `TURNSTILE_SECRET_KEY`
+
 ## Verify Account Context
 
 ```bash
@@ -36,6 +79,8 @@ Set these in Worker environment variables:
 - `PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `PUBLIC_FALLBACK_IMAGE_URL` (recommended)
+- `PUBLIC_TURNSTILE_SITE_KEY`
+- `TURNSTILE_SECRET_KEY`
 
 ## One Deployment Command
 

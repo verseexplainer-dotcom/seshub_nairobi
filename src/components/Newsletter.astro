@@ -6,10 +6,10 @@ import TurnstileWidget from './TurnstileWidget.astro';
   <div class="container">
     <div class="newsletter-shell">
       <div class="newsletter-copy">
-        <p class="section-kicker">Newsletter</p>
-        <h2 id="newsletter-title" class="section-title">Get stock alerts, deal drops, and practical buying advice first</h2>
+        <p class="section-kicker">Deal alerts</p>
+        <h2 id="newsletter-title" class="section-title">Get restock and offer alerts.</h2>
         <p class="section-copy">
-          This stays validation-ready and API-friendly, while the visual treatment now feels closer to a polished ecommerce campaign card.
+          Join the list for laptop deals, printer restocks, and useful buying updates.
         </p>
       </div>
 
@@ -20,17 +20,17 @@ import TurnstileWidget from './TurnstileWidget.astro';
             type="email"
             id="newsletter-email"
             name="email"
-            placeholder="Enter your email address"
+            placeholder="Email address"
             required
             autocomplete="email"
             inputmode="email"
           />
-          <button type="submit" class="pill-button primary">Join the list</button>
+          <button type="submit" class="pill-button primary">Get alerts</button>
         </div>
 
         <label class="newsletter-consent">
           <input type="checkbox" name="consent" required />
-          <span>I agree to receive promotions, restock alerts, and useful tech-buying updates.</span>
+          <span>I agree to receive promotions, restock alerts, and useful buying updates.</span>
         </label>
 
         <TurnstileWidget widgetId="newsletter-turnstile" action="newsletter_signup" />
@@ -46,31 +46,31 @@ import TurnstileWidget from './TurnstileWidget.astro';
     display: grid;
     gap: 1.5rem;
     padding: clamp(1.4rem, 3vw, 2rem);
-    border: 1px solid rgba(96, 165, 250, 0.2);
-    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
     overflow: hidden;
-    background:
-      radial-gradient(circle at top left, rgba(96, 165, 250, 0.22), transparent 30%),
-      radial-gradient(circle at bottom right, rgba(37, 211, 102, 0.16), transparent 28%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
-    box-shadow: var(--shadow-md);
-  }
-
-  .newsletter-shell::after {
-    content: "";
-    position: absolute;
-    inset: auto -8% -35% auto;
-    width: 14rem;
-    height: 14rem;
-    border-radius: 50%;
-    background: rgba(37, 99, 235, 0.12);
-    filter: blur(38px);
+    background: linear-gradient(135deg, #061633, #0b1220);
+    color: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
   }
 
   .newsletter-copy,
   .newsletter-form {
     position: relative;
     z-index: 1;
+  }
+
+  .newsletter-copy :global(.section-title) {
+    color: #ffffff;
+  }
+
+  .newsletter-copy :global(.section-kicker) {
+    color: #b6f5d4;
+  }
+
+  .newsletter-copy :global(.section-copy),
+  .newsletter-consent {
+    color: rgba(255, 255, 255, 0.76);
   }
 
   .newsletter-copy .section-intro {
@@ -92,15 +92,14 @@ import TurnstileWidget from './TurnstileWidget.astro';
     min-height: 3.5rem;
     padding: 0.9rem 1rem;
     border: 1px solid rgba(229, 231, 235, 0.92);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.94);
   }
 
   .newsletter-consent {
     display: flex;
     align-items: start;
     gap: 0.65rem;
-    color: var(--color-text-muted);
     font-size: 0.9rem;
   }
 
