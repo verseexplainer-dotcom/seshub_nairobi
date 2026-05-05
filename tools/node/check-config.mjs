@@ -51,6 +51,7 @@ assert(astroConfig.includes("output: 'server'"), 'astro.config.mjs must keep ser
 assert(astroConfig.includes("@astrojs/cloudflare"), 'astro.config.mjs must use the Cloudflare adapter', issues);
 assert(astroConfig.includes("site: 'https://sesicthub.co.ke'"), 'astro.config.mjs must keep the production site URL', issues);
 assert(astroConfig.includes("assets: '_assets'"), 'astro.config.mjs must keep the configured asset directory', issues);
+assert(astroConfig.includes("configPath: './wrangler.build.jsonc'"), 'astro.config.mjs must use the build-time Wrangler config', issues);
 
 const wranglerConfig = parseJson(await readText('wrangler.jsonc'), 'wrangler.jsonc', issues);
 assert(wranglerConfig.account_id === expectedAccountId, 'wrangler.jsonc account_id must match the locked Cloudflare account', issues);
@@ -58,6 +59,12 @@ assert(wranglerConfig.main === 'dist/_worker.js/index.js', 'wrangler.jsonc main 
 assert(wranglerConfig.assets?.directory === 'dist', 'wrangler.jsonc assets.directory must point at dist', issues);
 assert(wranglerConfig.kv_namespaces?.some((namespace) => namespace.binding === 'SESSION'), 'wrangler.jsonc must define the SESSION KV binding', issues);
 assert(wranglerConfig.routes?.some((route) => route.pattern === 'sesicthub.co.ke' && route.custom_domain === true), 'wrangler.jsonc must keep the apex custom domain route', issues);
+
+const wranglerBuildConfig = parseJson(await readText('wrangler.build.jsonc'), 'wrangler.build.jsonc', issues);
+assert(wranglerBuildConfig.account_id === expectedAccountId, 'wrangler.build.jsonc account_id must match the locked Cloudflare account', issues);
+assert(!('main' in wranglerBuildConfig), 'wrangler.build.jsonc must not point at generated dist worker output', issues);
+assert(!('assets' in wranglerBuildConfig), 'wrangler.build.jsonc must not point at generated dist assets', issues);
+assert(wranglerBuildConfig.kv_namespaces?.some((namespace) => namespace.binding === 'SESSION'), 'wrangler.build.jsonc must define the SESSION KV binding', issues);
 
 const envExample = await readText('.env.example');
 assert(includesAll(envExample, requiredEnvKeys), '.env.example must list all required CI/deploy environment keys', issues);

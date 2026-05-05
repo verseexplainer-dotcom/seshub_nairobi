@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ses-hub-superbase-stack-app",
+  "account_id": "e1d8076a3dc603837814ca828736561f",
+  "workers_dev": false,
+  "compatibility_date": "2026-03-06",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "855da47786b843709e951dcef310b455",
+      "preview_id": "bccf2071bd4b43a183df8c896f240b15"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ export default defineConfig({
     site: 'https://sesicthub.co.ke',
     output: 'server',
     adapter: cloudflare({
+        configPath: './wrangler.build.jsonc',
         imageService: 'compile'
     }),
     session: {
