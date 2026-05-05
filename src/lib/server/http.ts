@@ -1,3 +1,5 @@
+import { env as cloudflareEnv } from 'cloudflare:workers';
+
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
 export type ApiErrorPayload = {
@@ -38,10 +40,8 @@ export function errorResponse(
 }
 
 export function getRuntimeEnv(locals: unknown) {
-  return ((locals as { runtime?: { env?: Record<string, string | undefined> } })?.runtime?.env ?? {}) as Record<
-    string,
-    string | undefined
-  >;
+  void locals;
+  return cloudflareEnv as Record<string, string | undefined>;
 }
 
 export function getPublicEnvValue(locals: unknown, key: string) {

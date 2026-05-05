@@ -1,3 +1,4 @@
+import { env as cloudflareEnv } from 'cloudflare:workers';
 import type { RuntimeEnv, SessionLocals } from './app-types';
 
 type RuntimeSource = {
@@ -33,15 +34,8 @@ export function getBuildRuntimeEnv(): RuntimeEnv {
 }
 
 export function getRuntimeEnv(source?: RuntimeSource): RuntimeEnv {
-  let locals: SessionLocals | undefined;
-
-  if (source && 'locals' in source) {
-    locals = source.locals ?? undefined;
-  } else {
-    locals = source as SessionLocals | undefined;
-  }
-
-  const env = locals?.runtime?.env;
+  void source;
+  const env = cloudflareEnv as Partial<RuntimeEnv>;
   const buildEnv = getBuildRuntimeEnv();
 
   return {
