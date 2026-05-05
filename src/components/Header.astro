@@ -89,10 +89,23 @@ const megaMenuLinks = [
         ))}
       </div>
 
-      <a href="/search" class="header-search-link" aria-label="Search products">
-        <span aria-hidden="true">⌕</span>
-        Search
-      </a>
+      <form class="header-search-form" action="/search" role="search">
+        <label class="sr-only" for="header-search-input">Search products</label>
+        <span aria-hidden="true" class="header-search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+          </svg>
+        </span>
+        <input
+          id="header-search-input"
+          type="search"
+          name="q"
+          placeholder="Search products"
+          autocomplete="off"
+        />
+        <button type="submit">Search</button>
+      </form>
 
       <a href="/cart" class="cart-link" aria-label="View cart">
         <span class="cart-icon" aria-hidden="true">
@@ -127,6 +140,17 @@ const megaMenuLinks = [
     <div class="container mobile-menu-inner">
       <div class="mobile-menu-block">
         <p class="mobile-menu-title">Shop</p>
+        <form class="mobile-search-form" action="/search" role="search">
+          <label class="sr-only" for="mobile-search-input">Search products</label>
+          <input
+            id="mobile-search-input"
+            type="search"
+            name="q"
+            placeholder="Search products"
+            autocomplete="off"
+          />
+          <button type="submit">Search</button>
+        </form>
         <ul class="mobile-menu-list" role="list">
           {mobileLinks.map((link) => (
             <li><a href={link.href} class="mobile-menu-link">{link.label}</a></li>
@@ -361,19 +385,54 @@ const megaMenuLinks = [
     gap: 1rem;
   }
 
-  .header-search-link {
+  .header-search-form {
     display: none;
     align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
+    gap: 0.45rem;
+    width: clamp(12rem, 16vw, 17.5rem);
     min-height: 2.6rem;
-    padding: 0.72rem 1rem;
+    padding: 0.26rem 0.35rem 0.26rem 0.75rem;
+    border: 1px solid rgba(203, 213, 225, 0.92);
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.96);
+    color: var(--color-text);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  }
+
+  .header-search-icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    color: #64748b;
+    flex: 0 0 auto;
+  }
+
+  .header-search-form input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.84rem;
+    font-weight: 700;
+    outline: 0;
+  }
+
+  .header-search-form input::placeholder {
+    color: #64748b;
+  }
+
+  .header-search-form button {
+    flex: 0 0 auto;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    border: 0;
     border-radius: 999px;
     background: var(--color-primary);
     color: #ffffff;
     font-size: 0.82rem;
     font-weight: 850;
-    box-shadow: 0 14px 24px rgba(21, 93, 252, 0.22);
+    cursor: pointer;
   }
 
   .cart-link,
@@ -408,14 +467,29 @@ const megaMenuLinks = [
 
   .cart-badge {
     position: absolute;
-    width: 1px;
-    height: 1px;
+    top: -0.35rem;
+    right: -0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.3rem;
+    height: 1.3rem;
     padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 10px 18px rgba(220, 38, 38, 0.22);
+    transform: scale(0);
+    transform-origin: center;
+    transition: transform 0.18s ease;
+  }
+
+  .cart-badge[data-has-items="true"] {
+    transform: scale(1);
   }
 
   .mobile-menu-toggle {
@@ -450,6 +524,36 @@ const megaMenuLinks = [
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+  }
+
+  .mobile-search-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .mobile-search-form input {
+    min-width: 0;
+    min-height: 2.85rem;
+    padding: 0 0.95rem;
+    border: 1px solid rgba(203, 213, 225, 0.92);
+    border-radius: 999px;
+    background: #f8fafc;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-weight: 700;
+    outline: 0;
+  }
+
+  .mobile-search-form button {
+    min-height: 2.85rem;
+    padding: 0 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #ffffff;
+    font-weight: 850;
   }
 
   .mobile-menu-list {
@@ -535,7 +639,7 @@ const megaMenuLinks = [
       display: flex;
     }
 
-    .header-search-link {
+    .header-search-form {
       display: inline-flex;
     }
 
@@ -545,6 +649,29 @@ const megaMenuLinks = [
 
     .mobile-menu[hidden] {
       display: none;
+    }
+  }
+
+  @media (min-width: 1080px) and (max-width: 1199px) {
+    .header-search-form {
+      width: 12rem;
+    }
+
+    .header-search-form button {
+      width: 2rem;
+      padding: 0;
+      overflow: hidden;
+      color: transparent;
+      position: relative;
+    }
+
+    .header-search-form button::before {
+      content: "→";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
     }
   }
 </style>
@@ -566,6 +693,7 @@ const megaMenuLinks = [
     if (badge) {
       const quantity = cart.reduce((total, item) => total + Number(item.qty || 0), 0);
       badge.textContent = String(quantity);
+      badge.dataset.hasItems = quantity > 0 ? 'true' : 'false';
     }
   }
 

@@ -82,6 +82,14 @@ const faviconVersion = '20260322';
       <slot />
     </main>
     <Footer />
+    <div class="cart-toast" id="cart-toast" role="status" aria-live="polite" aria-atomic="true" hidden>
+      <span class="cart-toast-icon" aria-hidden="true">✓</span>
+      <span class="cart-toast-copy">
+        <strong id="cart-toast-title">Added to cart</strong>
+        <span id="cart-toast-detail">Item added successfully.</span>
+      </span>
+      <a href="/cart">View cart</a>
+    </div>
     
     <script>
       if (!localStorage.getItem('ses_session_id')) {
@@ -127,10 +135,34 @@ const faviconVersion = '20260322';
           const originalText = button.dataset.originalLabel || button.textContent || 'Add to cart';
           button.dataset.originalLabel = originalText;
           button.textContent = 'Added';
+          button.setAttribute('aria-label', `${item.title} added to cart`);
           button.style.backgroundColor = '#047857';
+
+          const toast = document.getElementById('cart-toast');
+          const toastTitle = document.getElementById('cart-toast-title');
+          const toastDetail = document.getElementById('cart-toast-detail');
+
+          if (toast) {
+            if (toastTitle) toastTitle.textContent = existing ? 'Quantity updated' : 'Added to cart';
+            if (toastDetail) toastDetail.textContent = item.title;
+            toast.hidden = false;
+            toast.dataset.visible = 'true';
+
+            const cartToastWindow = window as Window & { __sesCartToastTimer?: number };
+            window.clearTimeout(cartToastWindow.__sesCartToastTimer);
+            cartToastWindow.__sesCartToastTimer = window.setTimeout(() => {
+              toast.dataset.visible = 'false';
+              window.setTimeout(() => {
+                if (toast.dataset.visible === 'false') {
+                  toast.hidden = true;
+                }
+              }, 220);
+            }, 6000);
+          }
 
           window.setTimeout(() => {
             button.textContent = originalText;
+            button.removeAttribute('aria-label');
             button.style.backgroundColor = '';
           }, 1400);
         });
@@ -142,5 +174,97 @@ const faviconVersion = '20260322';
 <style is:global>
   main {
     min-height: 60vh;
+  }
+
+  .cart-toast {
+    position: fixed;
+    right: clamp(1rem, 3vw, 2rem);
+    bottom: clamp(1rem, 3vw, 2rem);
+    z-index: 120;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.8rem;
+    width: min(26rem, calc(100vw - 2rem));
+    padding: 0.85rem 0.95rem;
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.98);
+    color: #0f172a;
+    box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
+    opacity: 0;
+    transform: translateY(0.75rem);
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .cart-toast[hidden] {
+    display: none;
+  }
+
+  .cart-toast[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .cart-toast-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 999px;
+    background: #047857;
+    color: #ffffff;
+    font-weight: 900;
+  }
+
+  .cart-toast-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.12rem;
+  }
+
+  .cart-toast-copy strong,
+  .cart-toast-copy span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cart-toast-copy strong {
+    font-size: 0.92rem;
+    font-weight: 900;
+  }
+
+  .cart-toast-copy span {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .cart-toast a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 520px) {
+    .cart-toast {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .cart-toast a {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
   }
 </style>
