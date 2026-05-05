@@ -55,8 +55,10 @@ assert(astroConfig.includes("configPath: './wrangler.build.jsonc'"), 'astro.conf
 
 const wranglerConfig = parseJson(await readText('wrangler.jsonc'), 'wrangler.jsonc', issues);
 assert(wranglerConfig.account_id === expectedAccountId, 'wrangler.jsonc account_id must match the locked Cloudflare account', issues);
-assert(wranglerConfig.main === 'dist/_worker.js/index.js', 'wrangler.jsonc main must point at Astro Cloudflare worker output', issues);
-assert(wranglerConfig.assets?.directory === 'dist', 'wrangler.jsonc assets.directory must point at dist', issues);
+assert(wranglerConfig.main === 'dist/server/entry.mjs', 'wrangler.jsonc main must point at Astro Cloudflare worker output', issues);
+assert(wranglerConfig.assets?.directory === 'dist/client', 'wrangler.jsonc assets.directory must point at Astro client assets', issues);
+assert(wranglerConfig.no_bundle === true, 'wrangler.jsonc must deploy Astro output without rebundling', issues);
+assert(wranglerConfig.rules?.some((rule) => rule.type === 'ESModule' && rule.globs?.includes('**/*.mjs')), 'wrangler.jsonc must treat generated Astro modules as ES modules', issues);
 assert(wranglerConfig.kv_namespaces?.some((namespace) => namespace.binding === 'SESSION'), 'wrangler.jsonc must define the SESSION KV binding', issues);
 assert(wranglerConfig.routes?.some((route) => route.pattern === 'sesicthub.co.ke' && route.custom_domain === true), 'wrangler.jsonc must keep the apex custom domain route', issues);
 

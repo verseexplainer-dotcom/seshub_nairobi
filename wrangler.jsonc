@@ -2,12 +2,22 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ses-hub-superbase-stack-app",
   "account_id": "e1d8076a3dc603837814ca828736561f",
-  "main": "dist/_worker.js/index.js",
+  "main": "dist/server/entry.mjs",
   "workers_dev": false,
   "compatibility_date": "2026-03-06",
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": [
+        "**/*.js",
+        "**/*.mjs"
+      ]
+    }
+  ],
+  "no_bundle": true,
   "observability": {
     "enabled": true
   },
@@ -20,7 +30,7 @@
   ],
   "assets": {
     "binding": "ASSETS",
-    "directory": "dist"
+    "directory": "dist/client"
   },
   "routes": [
     {
