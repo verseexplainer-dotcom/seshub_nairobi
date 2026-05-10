@@ -1,4 +1,3 @@
-import { env as cloudflareEnv } from 'cloudflare:workers';
 import type { RuntimeEnv, SessionLocals } from './app-types';
 
 type RuntimeSource = {
@@ -10,6 +9,22 @@ type PublicSupabaseEnvSource = Partial<RuntimeEnv> | null | undefined;
 function trimEnvValue(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function readRuntimeEnv(source?: RuntimeSource) {
+  if (!source) {
+    return {};
+  }
+
+  try {
+    if ('locals' in source) {
+      return source.locals?.runtime?.env ?? {};
+    }
+
+    return (source as SessionLocals).runtime?.env ?? {};
+  } catch {
+    return {};
+  }
 }
 
 export function resolvePublicSupabaseUrl(env: PublicSupabaseEnvSource) {
@@ -28,14 +43,21 @@ export function getBuildRuntimeEnv(): RuntimeEnv {
     PUBLIC_SUPABASE_ANON_KEY: resolvePublicSupabaseAnonKey(env),
     PUBLIC_FALLBACK_IMAGE_URL: trimEnvValue(env.PUBLIC_FALLBACK_IMAGE_URL),
     PUBLIC_TURNSTILE_SITE_KEY: trimEnvValue(env.PUBLIC_TURNSTILE_SITE_KEY),
+    PUBLIC_META_PIXEL_ID: trimEnvValue(env.PUBLIC_META_PIXEL_ID),
+    META_PIXEL_ID: trimEnvValue(env.META_PIXEL_ID),
+    META_CAPI_TOKEN: trimEnvValue(env.META_CAPI_TOKEN),
+    MESSENGER_VERIFY_TOKEN: trimEnvValue(env.MESSENGER_VERIFY_TOKEN),
+    MESSENGER_PAGE_ACCESS_TOKEN: trimEnvValue(env.MESSENGER_PAGE_ACCESS_TOKEN),
+    FACEBOOK_APP_ID: trimEnvValue(env.FACEBOOK_APP_ID),
+    FACEBOOK_APP_SECRET: trimEnvValue(env.FACEBOOK_APP_SECRET),
+    WHATSAPP_TOKEN: trimEnvValue(env.WHATSAPP_TOKEN),
     SUPABASE_SERVICE_ROLE_KEY: trimEnvValue(env.SUPABASE_SERVICE_ROLE_KEY),
     TURNSTILE_SECRET_KEY: trimEnvValue(env.TURNSTILE_SECRET_KEY)
   };
 }
 
 export function getRuntimeEnv(source?: RuntimeSource): RuntimeEnv {
-  void source;
-  const env = cloudflareEnv as Partial<RuntimeEnv>;
+  const env = readRuntimeEnv(source) as Partial<RuntimeEnv>;
   const buildEnv = getBuildRuntimeEnv();
 
   return {
@@ -43,6 +65,14 @@ export function getRuntimeEnv(source?: RuntimeSource): RuntimeEnv {
     PUBLIC_SUPABASE_ANON_KEY: resolvePublicSupabaseAnonKey(env) ?? buildEnv.PUBLIC_SUPABASE_ANON_KEY,
     PUBLIC_FALLBACK_IMAGE_URL: trimEnvValue(env?.PUBLIC_FALLBACK_IMAGE_URL) ?? buildEnv.PUBLIC_FALLBACK_IMAGE_URL,
     PUBLIC_TURNSTILE_SITE_KEY: trimEnvValue(env?.PUBLIC_TURNSTILE_SITE_KEY) ?? buildEnv.PUBLIC_TURNSTILE_SITE_KEY,
+    PUBLIC_META_PIXEL_ID: trimEnvValue(env?.PUBLIC_META_PIXEL_ID) ?? buildEnv.PUBLIC_META_PIXEL_ID,
+    META_PIXEL_ID: trimEnvValue(env?.META_PIXEL_ID) ?? buildEnv.META_PIXEL_ID,
+    META_CAPI_TOKEN: trimEnvValue(env?.META_CAPI_TOKEN) ?? buildEnv.META_CAPI_TOKEN,
+    MESSENGER_VERIFY_TOKEN: trimEnvValue(env?.MESSENGER_VERIFY_TOKEN) ?? buildEnv.MESSENGER_VERIFY_TOKEN,
+    MESSENGER_PAGE_ACCESS_TOKEN: trimEnvValue(env?.MESSENGER_PAGE_ACCESS_TOKEN) ?? buildEnv.MESSENGER_PAGE_ACCESS_TOKEN,
+    FACEBOOK_APP_ID: trimEnvValue(env?.FACEBOOK_APP_ID) ?? buildEnv.FACEBOOK_APP_ID,
+    FACEBOOK_APP_SECRET: trimEnvValue(env?.FACEBOOK_APP_SECRET) ?? buildEnv.FACEBOOK_APP_SECRET,
+    WHATSAPP_TOKEN: trimEnvValue(env?.WHATSAPP_TOKEN) ?? buildEnv.WHATSAPP_TOKEN,
     SUPABASE_SERVICE_ROLE_KEY: trimEnvValue(env?.SUPABASE_SERVICE_ROLE_KEY) ?? buildEnv.SUPABASE_SERVICE_ROLE_KEY,
     TURNSTILE_SECRET_KEY: trimEnvValue(env?.TURNSTILE_SECRET_KEY) ?? buildEnv.TURNSTILE_SECRET_KEY
   };

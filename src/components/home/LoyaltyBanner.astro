@@ -1,0 +1,116 @@
+---
+import { buildWhatsAppLink } from '../../lib/storefront';
+
+const monthlyHref = buildWhatsAppLink('Hi SES ICT HUB, I want details about the SES Plus monthly plan.');
+const annualHref = buildWhatsAppLink('Hi SES ICT HUB, I want details about the SES Plus annual plan.');
+
+const perks = ['Priority support', 'Member-only discounts', 'Delivery credits', 'Early deal alerts'];
+---
+
+<section class="loyalty-band" aria-labelledby="loyalty-title">
+  <div class="loyalty-band__inner">
+    <div class="loyalty-band__copy">
+      <p>Membership</p>
+      <h2 id="loyalty-title">Join SES Plus - save more, get priority support.</h2>
+    </div>
+
+    <div class="loyalty-band__details">
+      <div class="loyalty-band__perks" aria-label="SES Plus perks">
+        {perks.map((perk) => <span>{perk}</span>)}
+      </div>
+
+      <div class="loyalty-band__actions">
+        <a href={monthlyHref} target="_blank" rel="noreferrer">Join monthly</a>
+        <a href={annualHref} target="_blank" rel="noreferrer">Join annual</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .loyalty-band {
+    padding-block: clamp(2.5rem, 6vw, 4rem);
+    background: #061633;
+    color: #ffffff;
+  }
+
+  .loyalty-band__inner {
+    display: grid;
+    gap: 1.4rem;
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .loyalty-band__copy {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .loyalty-band__copy p {
+    color: #b6f5d4;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .loyalty-band__copy h2 {
+    max-width: 48rem;
+    color: #ffffff;
+    font-size: clamp(2rem, 5vw, 3.45rem);
+    line-height: 0.98;
+  }
+
+  .loyalty-band__details {
+    display: grid;
+    gap: 1rem;
+    align-content: end;
+  }
+
+  .loyalty-band__perks,
+  .loyalty-band__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .loyalty-band__perks span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.35rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.84rem;
+    font-weight: 850;
+  }
+
+  .loyalty-band__actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.82rem 1.05rem;
+    border-radius: 999px;
+    font-weight: 900;
+  }
+
+  .loyalty-band__actions a:first-child {
+    background: #ffffff;
+    color: #061633;
+  }
+
+  .loyalty-band__actions a:last-child {
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+  }
+
+  @media (min-width: 920px) {
+    .loyalty-band__inner {
+      grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.65fr);
+      align-items: end;
+    }
+  }
+</style>

@@ -1,15 +1,16 @@
 ---
 const trustItems = [
-  'Nairobi’s Most Preferred Laptop Store',
-  'Delivery Across All 47 Counties',
-  'Join 1000+ customers'
+  { icon: '✓', label: 'Certified refurbished & new stock' },
+  { icon: '↗', label: 'Fast delivery across Nairobi & Coast' },
+  { icon: '◌', label: 'Warranty & return support' },
+  { icon: 'KES', label: 'Flexible payments' }
 ];
 ---
 
 <section class="home-trust-bar" aria-label="SES ICT HUB trust highlights">
   <div class="home-trust-bar__inner">
     {trustItems.map((item) => (
-      <p>{item}</p>
+      <p><span>{item.icon}</span>{item.label}</p>
     ))}
   </div>
 </section>
@@ -32,8 +33,23 @@ const trustItems = [
   }
 
   .home-trust-bar p {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
     color: #111827;
     font-size: clamp(0.88rem, 1.8vw, 1rem);
+    font-weight: 900;
+  }
+
+  .home-trust-bar span {
+    display: inline-grid;
+    place-items: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 999px;
+    background: rgba(21, 93, 252, 0.1);
+    color: var(--color-primary);
+    font-size: 0.7rem;
     font-weight: 900;
   }
 </style>

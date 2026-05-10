@@ -3,25 +3,41 @@ import '../styles/home.css';
 import Layout from '../layouts/Layout.astro';
 import HomeHero from '../components/home/HomeHero.astro';
 import FeaturedCategories from '../components/home/FeaturedCategories.astro';
+import FeaturedDeals from '../components/home/FeaturedDeals.astro';
 import ProductShowcase from '../components/home/ProductShowcase.astro';
 import TrustBar from '../components/home/TrustBar.astro';
 import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
+import LoyaltyBanner from '../components/home/LoyaltyBanner.astro';
 import BrandStrip from '../components/home/BrandStrip.astro';
 import SplitPromoBanners from '../components/home/SplitPromoBanners.astro';
 import LifestyleBanner from '../components/home/LifestyleBanner.astro';
+import HomeFaq from '../components/home/HomeFaq.astro';
 import Testimonials from '../components/Testimonials.astro';
 import Newsletter from '../components/Newsletter.astro';
 import { buildCategoryFilterHref, buildListingHref } from '../lib/filters';
 import { getCatalogCategoryKey, getHomepageProducts } from '../lib/catalog';
 import { homepageTestimonials } from '../lib/homepageContent';
 import { selectBestValueProducts, selectDealsProducts, selectFeaturedProducts } from '../lib/homepage';
+import type { CatalogProduct } from '../types/catalog';
 
 const publicSupabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const catalogProducts = await getHomepageProducts(Astro.locals);
 const laptopProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops');
+const smartphoneProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'smartphones');
+const printerProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'printers');
 const topLaptopDeals = selectBestValueProducts(laptopProducts, 4);
 const hotOffers = selectDealsProducts(catalogProducts, 4);
 const bestPicks = selectFeaturedProducts(catalogProducts, 8);
+const featuredDealSeeds = [
+  ...selectBestValueProducts(laptopProducts, 4),
+  ...selectBestValueProducts(smartphoneProducts, 1),
+  ...selectBestValueProducts(printerProducts, 1)
+];
+const fallbackFeaturedDeals = [
+  ...selectDealsProducts(catalogProducts, 8),
+  ...selectFeaturedProducts(catalogProducts, 8)
+];
+const featuredDeals = pickUniqueProducts([...featuredDealSeeds, ...fallbackFeaturedDeals], 6);
 const productGroups = [
   {
     id: 'top-laptop-deals',
@@ -48,6 +64,26 @@ const productGroups = [
     products: bestPicks.slice(0, 8)
   }
 ];
+
+function pickUniqueProducts(products: CatalogProduct[], limit: number) {
+  const seen = new Set<string>();
+  const picked: CatalogProduct[] = [];
+
+  for (const product of products) {
+    const key = product.slug || product.id || product.title;
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    picked.push(product);
+    if (picked.length === limit) {
+      break;
+    }
+  }
+
+  return picked;
+}
 ---
 
 <Layout
@@ -59,13 +95,16 @@ const productGroups = [
   <div class="home-page">
     <HomeHero />
     <TrustBar />
+    <FeaturedDeals products={featuredDeals} publicSupabaseUrl={publicSupabaseUrl} />
     <FeaturedCategories />
     <BrandStrip />
     <ProductShowcase groups={productGroups} publicSupabaseUrl={publicSupabaseUrl} />
+    <LoyaltyBanner />
     <SplitPromoBanners />
     <LifestyleBanner />
     <WhyBuyFromSES />
     <Testimonials items={homepageTestimonials} />
+    <HomeFaq />
     <Newsletter />
   </div>
 </Layout>

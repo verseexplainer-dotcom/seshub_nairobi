@@ -25,6 +25,14 @@ export interface RuntimeEnv {
   PUBLIC_SUPABASE_ANON_KEY: string | undefined;
   PUBLIC_FALLBACK_IMAGE_URL?: string | undefined;
   PUBLIC_TURNSTILE_SITE_KEY?: string | undefined;
+  PUBLIC_META_PIXEL_ID?: string | undefined;
+  META_PIXEL_ID?: string | undefined;
+  META_CAPI_TOKEN?: string | undefined;
+  MESSENGER_VERIFY_TOKEN?: string | undefined;
+  MESSENGER_PAGE_ACCESS_TOKEN?: string | undefined;
+  FACEBOOK_APP_ID?: string | undefined;
+  FACEBOOK_APP_SECRET?: string | undefined;
+  WHATSAPP_TOKEN?: string | undefined;
   SUPABASE_SERVICE_ROLE_KEY: string | undefined;
   TURNSTILE_SECRET_KEY?: string | undefined;
 }

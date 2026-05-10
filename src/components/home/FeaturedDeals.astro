@@ -1,0 +1,130 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import ProductCard from '../ui/ProductCard.astro';
+
+interface Props {
+  products: CatalogProduct[];
+  publicSupabaseUrl?: string | undefined;
+}
+
+const { products, publicSupabaseUrl } = Astro.props as Props;
+const visibleProducts = products.slice(0, 6);
+const labels = ['Best seller', 'Best seller', 'Best seller', 'New arrival', 'Phone pick', 'Printer deal'];
+---
+
+{visibleProducts.length > 0 && (
+  <section class="featured-deals" aria-labelledby="featured-deals-title">
+    <div class="featured-deals__inner">
+      <div class="featured-deals__head">
+        <div>
+          <p>Featured deals</p>
+          <h2 id="featured-deals-title">Six quick picks worth checking now.</h2>
+        </div>
+        <a href="/shop?sort=featured&in_stock=1">View all deals</a>
+      </div>
+
+      <div class="featured-deals__grid">
+        {visibleProducts.map((product, index) => (
+          <div class="featured-deals__item">
+            <span>{labels[index] || 'Featured'}</span>
+            <ProductCard product={product} publicSupabaseUrl={publicSupabaseUrl} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .featured-deals {
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+    background: #ffffff;
+  }
+
+  .featured-deals__inner {
+    display: grid;
+    gap: clamp(1.4rem, 4vw, 2.25rem);
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .featured-deals__head {
+    display: grid;
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .featured-deals__head p {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .featured-deals__head h2 {
+    max-width: 48rem;
+    color: #0b1220;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    line-height: 0.98;
+  }
+
+  .featured-deals__head a {
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    border-radius: 999px;
+    color: #0b1220;
+    font-weight: 900;
+  }
+
+  .featured-deals__grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .featured-deals__item {
+    display: grid;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+
+  .featured-deals__item > span {
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    min-height: 1.85rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    background: #061633;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (min-width: 680px) {
+    .featured-deals__head {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .featured-deals__head a {
+      justify-self: end;
+    }
+
+    .featured-deals__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1080px) {
+    .featured-deals__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

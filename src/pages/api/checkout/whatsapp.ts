@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { buildWhatsAppLink } from '../../../lib/storefront';
 import { getAllProducts } from '../../../lib/products';
 import { recordServerEvent } from '../../../lib/server/analytics';
+import { recordMetaServerEvent } from '../../../lib/server/meta';
 import { verifyTurnstileToken } from '../../../lib/server/turnstile';
 import { asTrimmedString, errorResponse, getClientIp, getPublicEnvValue, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
 
@@ -349,6 +350,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
         order_id: orderId,
         order_number: orderRef,
         source_page: sourcePage ?? 'cart'
+      }
+    });
+
+    await recordMetaServerEvent(locals, {
+      eventName: 'Lead',
+      eventSourceUrl: sourcePage ? new URL(sourcePage, request.url).toString() : request.url,
+      actionSource: 'business_messaging',
+      eventId: orderId,
+      customData: {
+        currency: 'KES',
+        value: computedTotalKes,
+        content_type: 'product',
+        num_items: cart.reduce((sum, item) => sum + item.qty, 0),
+        order_id: orderRef
       }
     });
 

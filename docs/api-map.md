@@ -8,6 +8,8 @@ All project API routes live under `src/pages/api/*`.
 - `POST /api/newsletter` records newsletter signup intent through the server route.
 - `POST /api/events` is intentionally locked down and does not accept browser analytics writes.
 - `GET /api/search/suggest?q=...` returns product search suggestions.
+- `GET|POST /api/data-deletion` returns customer data deletion instructions for Meta and support workflows.
+- `GET|POST /api/meta/webhook` verifies and acknowledges Meta Messenger/Instagram webhook requests.
 
 ## Auth API Routes
 
@@ -35,4 +37,3 @@ All project API routes live under `src/pages/api/*`.
 - Validate request bodies before using them.
 - Return short human-readable errors where users may see them.
 - Keep service-role Supabase operations server-side.
-

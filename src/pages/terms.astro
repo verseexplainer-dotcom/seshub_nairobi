@@ -1,0 +1,74 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { storefrontDetails } from '../lib/storefront';
+---
+
+<Layout
+  title="Terms"
+  description="SES ICT HUB store terms for product information, pricing, refurbished devices, delivery, payments, warranty, and support."
+  canonical="/terms"
+>
+  <section class="legal-page">
+    <div class="container legal-shell">
+      <p class="eyebrow">Terms</p>
+      <h1>Store terms for shopping with SES ICT HUB</h1>
+      <p class="lead">These terms explain how we present products, handle orders, and support customers buying electronics from SES ICT HUB in Kenya.</p>
+
+      <article>
+        <h2>Product information</h2>
+        <p>We work to keep titles, specifications, photos, stock status, and descriptions accurate. Product details may be updated when stock changes or when a specification needs correction. Please confirm any critical requirement before payment or dispatch.</p>
+      </article>
+
+      <article>
+        <h2>Pricing and availability</h2>
+        <p>Prices are listed in Kenya shillings and may change based on stock, supplier cost, promotions, or correction of an error. A product shown online is not reserved until our team confirms the order and payment or delivery arrangement.</p>
+      </article>
+
+      <article>
+        <h2>Brand-new, refurbished, and ex-UK devices</h2>
+        <p>Some devices are brand-new. Others are refurbished, ex-UK, or locally tested pre-owned stock. Product pages may show condition, grade, warranty, charger status, or cosmetic notes where available. Ask our team for current photos or condition confirmation before buying if this matters to your decision.</p>
+      </article>
+
+      <article>
+        <h2>Delivery and pickup</h2>
+        <p>Pickup is available at {storefrontDetails.fullLocation}. Nairobi delivery and countrywide courier options depend on item size, location, timing, and payment arrangement. Delivery costs and timelines are confirmed before dispatch.</p>
+      </article>
+
+      <article>
+        <h2>Payments</h2>
+        <p>Payment options may include M-PESA, bank transfer, card-supported arrangements, and pay on delivery where applicable. Outside Nairobi, payment before dispatch may be required. Customers are responsible for providing correct payment, contact, and delivery details.</p>
+      </article>
+
+      <article>
+        <h2>Warranty and returns</h2>
+        <p>Warranty support depends on the item and is confirmed before purchase. The FAQ currently notes a 7-day return or exchange window for undisclosed functional defects. Returns do not usually cover disclosed cosmetic condition, misuse, liquid damage, software changes, or accessories not included in the sale.</p>
+      </article>
+
+      <article>
+        <h2>Customer responsibilities</h2>
+        <p>Customers should review product details, confirm compatibility, keep receipts or order references, inspect items on delivery or pickup where possible, and contact us quickly if a support issue arises.</p>
+      </article>
+
+      <article>
+        <h2>Intellectual property and liability</h2>
+        <p>SES ICT HUB content, site layout, product copy, and brand materials may not be copied for misleading or competing use. We are not liable for indirect losses, third-party platform outages, courier delays, or compatibility issues that were not confirmed before purchase.</p>
+      </article>
+
+      <article>
+        <h2>Support</h2>
+        <p>For questions, contact <a href={`mailto:${storefrontDetails.email}`}>{storefrontDetails.email}</a>, call {storefrontDetails.phone}, or visit the <a href="/contact">contact page</a>.</p>
+      </article>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .legal-page { padding: clamp(2rem, 5vw, 4rem) 0; }
+  .legal-shell { max-width: 880px; display: grid; gap: 1.2rem; }
+  h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; }
+  .lead { font-size: 1.08rem; color: var(--text-muted); line-height: 1.75; }
+  article { display: grid; gap: 0.45rem; padding-block: 0.35rem; }
+  article h2 { font-size: 1.18rem; color: var(--primary); }
+  article p { color: var(--text-muted); line-height: 1.72; }
+  a { color: var(--primary); font-weight: 800; }
+</style>

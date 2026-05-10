@@ -14,6 +14,14 @@ const recommendedKeys = [
   'PUBLIC_FALLBACK_IMAGE_URL',
   'PUBLIC_TURNSTILE_SITE_KEY',
   'TURNSTILE_SECRET_KEY',
+  'PUBLIC_META_PIXEL_ID',
+  'META_PIXEL_ID',
+  'META_CAPI_TOKEN',
+  'MESSENGER_VERIFY_TOKEN',
+  'MESSENGER_PAGE_ACCESS_TOKEN',
+  'FACEBOOK_APP_ID',
+  'FACEBOOK_APP_SECRET',
+  'WHATSAPP_TOKEN',
   'CLOUDFLARE_API_TOKEN'
 ];
 
@@ -90,4 +98,3 @@ if (missingRequired.length > 0) {
 }
 
 console.log('check-env: required runtime keys are present');
-

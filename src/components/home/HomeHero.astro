@@ -395,35 +395,84 @@ const slides = [
 
   @media (max-width: 720px) {
     .commerce-hero {
-      min-height: 680px;
+      min-height: clamp(760px, calc(100svh - 2rem), 820px);
     }
 
     .commerce-hero__image {
-      object-position: var(--hero-focal, 62% center);
+      height: 48%;
+      object-position: var(--hero-focal, 58% center);
     }
 
     .commerce-hero__shade {
       background:
-        linear-gradient(180deg, rgba(5, 11, 22, 0.1) 0%, rgba(5, 11, 22, 0.52) 42%, rgba(5, 11, 22, 0.94) 100%),
-        linear-gradient(90deg, rgba(5, 11, 22, 0.42), rgba(5, 11, 22, 0.14));
+        linear-gradient(180deg, rgba(5, 11, 22, 0.08) 0%, rgba(5, 11, 22, 0.3) 30%, rgba(5, 11, 22, 0.9) 52%, rgba(5, 11, 22, 0.98) 100%),
+        linear-gradient(90deg, rgba(5, 11, 22, 0.3), rgba(5, 11, 22, 0.1));
     }
 
     .commerce-hero__content {
       align-items: end;
-      padding-block: 16rem 6.5rem;
+      width: min(100% - 2rem, 1180px);
+      padding-block: 18rem 8.75rem;
+    }
+
+    .commerce-hero__copy {
+      gap: 0.72rem;
+      max-width: 100%;
+    }
+
+    .commerce-hero__eyebrow {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
     }
 
     .commerce-hero h1 {
-      font-size: clamp(2.65rem, 14vw, 4.2rem);
+      max-width: 10.5ch;
+      font-size: clamp(2.25rem, 11.2vw, 3.15rem);
+      line-height: 0.98;
+      overflow-wrap: anywhere;
+    }
+
+    .commerce-hero__text {
+      max-width: 21rem;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .commerce-hero__offer {
+      gap: 0.5rem;
+    }
+
+    .commerce-hero__offer > span,
+    .commerce-hero__countdown {
+      min-height: 2.25rem;
+    }
+
+    .commerce-hero__offer > span {
+      max-width: 100%;
+      padding: 0.48rem 0.72rem;
+      font-size: 0.76rem;
+    }
+
+    .commerce-hero__countdown {
+      padding: 0.45rem 0.68rem;
+    }
+
+    .commerce-hero__actions {
+      gap: 0.55rem;
     }
 
     .commerce-hero__button {
       width: 100%;
+      min-height: 2.9rem;
+      padding: 0.78rem 1rem;
+      font-size: 0.9rem;
     }
 
     .commerce-hero__controls {
       right: auto;
       left: 1rem;
+      bottom: 1.25rem;
+      width: calc(100% - 2rem);
       overflow-x: auto;
       flex-wrap: nowrap;
       scrollbar-width: none;
@@ -435,6 +484,23 @@ const slides = [
 
     .commerce-hero__controls button {
       flex: 0 0 auto;
+      min-height: 2.2rem;
+      padding: 0.42rem 0.68rem;
+      font-size: 0.7rem;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .commerce-hero {
+      min-height: 780px;
+    }
+
+    .commerce-hero__content {
+      padding-block: 17rem 8.6rem;
+    }
+
+    .commerce-hero h1 {
+      font-size: clamp(2.05rem, 10.8vw, 2.8rem);
     }
   }
 

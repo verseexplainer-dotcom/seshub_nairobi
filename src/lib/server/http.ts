@@ -1,5 +1,3 @@
-import { env as cloudflareEnv } from 'cloudflare:workers';
-
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
 export type ApiErrorPayload = {
@@ -40,8 +38,18 @@ export function errorResponse(
 }
 
 export function getRuntimeEnv(locals: unknown) {
-  void locals;
-  return cloudflareEnv as Record<string, string | undefined>;
+  let runtimeEnv: Record<string, string | undefined> = {};
+  try {
+    runtimeEnv = (locals as { runtime?: { env?: Record<string, string | undefined> } } | null)?.runtime?.env ?? {};
+  } catch {
+    runtimeEnv = {};
+  }
+  const buildEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
+
+  return {
+    ...buildEnv,
+    ...runtimeEnv
+  };
 }
 
 export function getPublicEnvValue(locals: unknown, key: string) {
