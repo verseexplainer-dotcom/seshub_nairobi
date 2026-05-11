@@ -63,6 +63,24 @@ Production Worker runtime requires:
 - `PUBLIC_TURNSTILE_SITE_KEY`
 - `TURNSTILE_SECRET_KEY`
 
+Optional Meta/WhatsApp runtime keys:
+
+- `PUBLIC_META_PIXEL_ID`
+- `META_PIXEL_ID`
+- `META_CAPI_TOKEN`
+- `MESSENGER_VERIFY_TOKEN`
+- `MESSENGER_PAGE_ACCESS_TOKEN`
+- `FACEBOOK_APP_ID`
+- `FACEBOOK_APP_SECRET`
+- `WHATSAPP_TOKEN`
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_NOTIFY_TO`
+
+For WhatsApp checkout notifications, set `WHATSAPP_TOKEN`,
+`WHATSAPP_PHONE_NUMBER_ID`, and `WHATSAPP_NOTIFY_TO` in the Cloudflare Worker
+environment. Notifications are best-effort; checkout still succeeds if Meta
+rejects the alert.
+
 ## Verify Account Context
 
 ```bash

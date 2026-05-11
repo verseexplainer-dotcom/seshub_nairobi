@@ -33,6 +33,8 @@ export interface RuntimeEnv {
   FACEBOOK_APP_ID?: string | undefined;
   FACEBOOK_APP_SECRET?: string | undefined;
   WHATSAPP_TOKEN?: string | undefined;
+  WHATSAPP_PHONE_NUMBER_ID?: string | undefined;
+  WHATSAPP_NOTIFY_TO?: string | undefined;
   SUPABASE_SERVICE_ROLE_KEY: string | undefined;
   TURNSTILE_SECRET_KEY?: string | undefined;
 }

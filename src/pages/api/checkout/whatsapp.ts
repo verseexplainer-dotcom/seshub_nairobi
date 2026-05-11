@@ -4,6 +4,7 @@ import { getAllProducts } from '../../../lib/products';
 import { recordServerEvent } from '../../../lib/server/analytics';
 import { recordMetaServerEvent } from '../../../lib/server/meta';
 import { verifyTurnstileToken } from '../../../lib/server/turnstile';
+import { sendWhatsAppOrderNotification } from '../../../lib/server/whatsapp';
 import { asTrimmedString, errorResponse, getClientIp, getPublicEnvValue, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
 
 export const prerender = false;
@@ -367,10 +368,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     });
 
+    const whatsappNotificationSent = await sendWhatsAppOrderNotification(locals, {
+      orderRef,
+      customerName,
+      customerPhone: normalizedPhone,
+      location,
+      totalKes: computedTotalKes,
+      items: cart
+    });
+
     return jsonResponse({
       ok: true,
       order_id: orderId,
       order_number: orderRef,
+      whatsapp_notification_sent: whatsappNotificationSent,
       whatsapp_url: whatsappUrl,
       url: whatsappUrl
     });

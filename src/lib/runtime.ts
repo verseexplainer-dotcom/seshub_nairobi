@@ -51,6 +51,8 @@ export function getBuildRuntimeEnv(): RuntimeEnv {
     FACEBOOK_APP_ID: trimEnvValue(env.FACEBOOK_APP_ID),
     FACEBOOK_APP_SECRET: trimEnvValue(env.FACEBOOK_APP_SECRET),
     WHATSAPP_TOKEN: trimEnvValue(env.WHATSAPP_TOKEN),
+    WHATSAPP_PHONE_NUMBER_ID: trimEnvValue(env.WHATSAPP_PHONE_NUMBER_ID),
+    WHATSAPP_NOTIFY_TO: trimEnvValue(env.WHATSAPP_NOTIFY_TO),
     SUPABASE_SERVICE_ROLE_KEY: trimEnvValue(env.SUPABASE_SERVICE_ROLE_KEY),
     TURNSTILE_SECRET_KEY: trimEnvValue(env.TURNSTILE_SECRET_KEY)
   };
@@ -73,6 +75,8 @@ export function getRuntimeEnv(source?: RuntimeSource): RuntimeEnv {
     FACEBOOK_APP_ID: trimEnvValue(env?.FACEBOOK_APP_ID) ?? buildEnv.FACEBOOK_APP_ID,
     FACEBOOK_APP_SECRET: trimEnvValue(env?.FACEBOOK_APP_SECRET) ?? buildEnv.FACEBOOK_APP_SECRET,
     WHATSAPP_TOKEN: trimEnvValue(env?.WHATSAPP_TOKEN) ?? buildEnv.WHATSAPP_TOKEN,
+    WHATSAPP_PHONE_NUMBER_ID: trimEnvValue(env?.WHATSAPP_PHONE_NUMBER_ID) ?? buildEnv.WHATSAPP_PHONE_NUMBER_ID,
+    WHATSAPP_NOTIFY_TO: trimEnvValue(env?.WHATSAPP_NOTIFY_TO) ?? buildEnv.WHATSAPP_NOTIFY_TO,
     SUPABASE_SERVICE_ROLE_KEY: trimEnvValue(env?.SUPABASE_SERVICE_ROLE_KEY) ?? buildEnv.SUPABASE_SERVICE_ROLE_KEY,
     TURNSTILE_SECRET_KEY: trimEnvValue(env?.TURNSTILE_SECRET_KEY) ?? buildEnv.TURNSTILE_SECRET_KEY
   };

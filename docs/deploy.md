@@ -53,6 +53,26 @@ For production runtime, configure the Supabase and Turnstile keys in the Cloudfl
 Worker environment so API routes can authenticate users, write trusted records, and
 verify checkout/newsletter Turnstile tokens.
 
+Optional Meta/WhatsApp runtime keys for checkout notifications:
+
+```bash
+PUBLIC_META_PIXEL_ID=
+META_PIXEL_ID=
+META_CAPI_TOKEN=
+MESSENGER_VERIFY_TOKEN=
+MESSENGER_PAGE_ACCESS_TOKEN=
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+WHATSAPP_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_NOTIFY_TO=
+```
+
+`WHATSAPP_PHONE_NUMBER_ID` is the Meta WhatsApp Cloud API phone-number ID used as
+the sender. `WHATSAPP_NOTIFY_TO` is the recipient phone number for internal order
+alerts, in international format without spaces where possible, for example
+`2547XXXXXXXX`.
+
 ## Cloudflare Guardrails
 
 - Use `wrangler.jsonc` as the source of truth for Worker config.

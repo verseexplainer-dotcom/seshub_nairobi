@@ -85,6 +85,16 @@ SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 PUBLIC_FALLBACK_IMAGE_URL=https://<project>.supabase.co/storage/v1/object/public/site-assets/product-placeholder.webp
 PUBLIC_TURNSTILE_SITE_KEY=<turnstile-site-key>
 TURNSTILE_SECRET_KEY=<turnstile-secret-key>
+PUBLIC_META_PIXEL_ID=<meta-pixel-id>
+META_PIXEL_ID=<meta-pixel-id>
+META_CAPI_TOKEN=<meta-conversions-api-token>
+MESSENGER_VERIFY_TOKEN=<messenger-webhook-verify-token>
+MESSENGER_PAGE_ACCESS_TOKEN=<messenger-page-access-token>
+FACEBOOK_APP_ID=<facebook-app-id>
+FACEBOOK_APP_SECRET=<facebook-app-secret>
+WHATSAPP_TOKEN=<whatsapp-cloud-api-token>
+WHATSAPP_PHONE_NUMBER_ID=<whatsapp-phone-number-id>
+WHATSAPP_NOTIFY_TO=<internal-alert-recipient-phone>
 CLOUDFLARE_API_TOKEN=<deploy-token>
 ```
 
