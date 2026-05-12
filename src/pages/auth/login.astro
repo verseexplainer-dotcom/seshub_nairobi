@@ -1,5 +1,6 @@
 ---
 import AlertBanner from '../../components/AlertBanner.astro';
+import AuthProviderButtons from '../../components/AuthProviderButtons.astro';
 import AuthShell from '../../components/AuthShell.astro';
 import Layout from '../../layouts/Layout.astro';
 import { getSafeRedirectPath } from '../../lib/auth-utils';
@@ -78,6 +79,8 @@ const features = [
 
         <button type="submit" class="pill-button primary auth-submit">Sign In</button>
       </form>
+
+      <AuthProviderButtons next={next} />
 
       <div class="auth-card-footer">
         <div class="auth-inline-note">

@@ -111,6 +111,11 @@ Supabase Auth redirect allowlists must include:
 - `https://<your-domain>/api/auth/callback`
 - `http://127.0.0.1:<port>/api/auth/callback` for local auth testing
 
+Google and Facebook login use Supabase OAuth providers. After adding the provider
+client IDs/secrets in Supabase, set each provider callback/redirect URL to the
+Supabase callback URL shown in the Supabase provider settings, and keep the
+storefront callback URLs above in the Supabase Auth redirect allowlist.
+
 ## Local Development
 ```bash
 npm install

@@ -36,6 +36,10 @@ const { productSlug = null } = Astro.props;
       gap: 0.45rem;
     }
 
+    :global(body:has(.commerce-hero) .floating-chat) {
+      bottom: 4.1rem;
+    }
+
     .floating-chat :global(strong) {
       display: none;
     }

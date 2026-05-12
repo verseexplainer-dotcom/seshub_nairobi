@@ -8,8 +8,21 @@ interface Props {
 }
 
 const { products, publicSupabaseUrl } = Astro.props as Props;
-const visibleProducts = products.slice(0, 6);
-const labels = ['Best seller', 'Best seller', 'Best seller', 'New arrival', 'Phone pick', 'Printer deal'];
+const visibleProducts = products.slice(0, 12);
+const labels = [
+  'Deal pick',
+  'Best value',
+  'Laptop deal',
+  'New arrival',
+  'Phone pick',
+  'Printer deal',
+  'Office pick',
+  'Fast mover',
+  'Best seller',
+  'Work pick',
+  'Budget pick',
+  'Featured'
+];
 ---
 
 {visibleProducts.length > 0 && (
@@ -18,7 +31,8 @@ const labels = ['Best seller', 'Best seller', 'Best seller', 'New arrival', 'Pho
       <div class="featured-deals__head">
         <div>
           <p>Featured deals</p>
-          <h2 id="featured-deals-title">Six quick picks worth checking now.</h2>
+          <h2 id="featured-deals-title">Deals worth checking now.</h2>
+          <span>Current laptops, phones, printers, and office picks from live stock.</span>
         </div>
         <a href="/shop?sort=featured&in_stock=1">View all deals</a>
       </div>
@@ -67,6 +81,14 @@ const labels = ['Best seller', 'Best seller', 'Best seller', 'New arrival', 'Pho
     color: #0b1220;
     font-size: clamp(2rem, 5vw, 3.4rem);
     line-height: 0.98;
+  }
+
+  .featured-deals__head span {
+    display: block;
+    max-width: 34rem;
+    margin-top: 0.55rem;
+    color: #64748b;
+    font-size: 1rem;
   }
 
   .featured-deals__head a {
@@ -124,7 +146,7 @@ const labels = ['Best seller', 'Best seller', 'Best seller', 'New arrival', 'Pho
 
   @media (min-width: 1080px) {
     .featured-deals__grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 </style>

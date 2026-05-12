@@ -206,7 +206,7 @@ const slides = [
 <style>
   .commerce-hero {
     position: relative;
-    min-height: min(760px, calc(100svh - 5rem));
+    min-height: min(720px, calc(100svh - 5rem));
     overflow: hidden;
     background: #050b16;
     color: #ffffff;
@@ -220,12 +220,14 @@ const slides = [
     min-height: inherit;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 580ms ease;
+    transform: scale(1.01);
+    transition: opacity 760ms ease, transform 900ms ease;
   }
 
   .commerce-hero__slide.is-active {
     opacity: 1;
     pointer-events: auto;
+    transform: scale(1);
   }
 
   .commerce-hero__image,
@@ -263,6 +265,7 @@ const slides = [
     display: grid;
     gap: 1rem;
     max-width: 38rem;
+    animation: heroCopyIn 680ms ease both;
   }
 
   .commerce-hero__eyebrow {
@@ -395,29 +398,33 @@ const slides = [
 
   @media (max-width: 720px) {
     .commerce-hero {
-      min-height: clamp(760px, calc(100svh - 2rem), 820px);
+      min-height: clamp(600px, calc(100svh - 4rem), 720px);
     }
 
     .commerce-hero__image {
-      height: 48%;
+      height: 100%;
       object-position: var(--hero-focal, 58% center);
     }
 
     .commerce-hero__shade {
       background:
-        linear-gradient(180deg, rgba(5, 11, 22, 0.08) 0%, rgba(5, 11, 22, 0.3) 30%, rgba(5, 11, 22, 0.9) 52%, rgba(5, 11, 22, 0.98) 100%),
-        linear-gradient(90deg, rgba(5, 11, 22, 0.3), rgba(5, 11, 22, 0.1));
+        linear-gradient(180deg, rgba(5, 11, 22, 0.2) 0%, rgba(5, 11, 22, 0.42) 32%, rgba(5, 11, 22, 0.78) 68%, rgba(5, 11, 22, 0.88) 100%),
+        linear-gradient(90deg, rgba(5, 11, 22, 0.32), rgba(5, 11, 22, 0.18));
     }
 
     .commerce-hero__content {
-      align-items: end;
+      align-items: center;
       width: min(100% - 2rem, 1180px);
-      padding-block: 18rem 8.75rem;
+      padding-block: 5.2rem 6.4rem;
+      text-align: center;
     }
 
     .commerce-hero__copy {
+      justify-items: center;
       gap: 0.72rem;
+      width: min(100%, 23rem);
       max-width: 100%;
+      margin-inline: auto;
     }
 
     .commerce-hero__eyebrow {
@@ -426,19 +433,21 @@ const slides = [
     }
 
     .commerce-hero h1 {
-      max-width: 10.5ch;
-      font-size: clamp(2.25rem, 11.2vw, 3.15rem);
+      max-width: 11.5ch;
+      font-size: clamp(2.15rem, 10.6vw, 3rem);
       line-height: 0.98;
       overflow-wrap: anywhere;
     }
 
     .commerce-hero__text {
       max-width: 21rem;
+      color: rgba(255, 255, 255, 0.88);
       font-size: 0.95rem;
       line-height: 1.45;
     }
 
     .commerce-hero__offer {
+      justify-content: center;
       gap: 0.5rem;
     }
 
@@ -458,6 +467,8 @@ const slides = [
     }
 
     .commerce-hero__actions {
+      width: min(100%, 20rem);
+      justify-content: center;
       gap: 0.55rem;
     }
 
@@ -471,11 +482,12 @@ const slides = [
     .commerce-hero__controls {
       right: auto;
       left: 1rem;
-      bottom: 1.25rem;
+      bottom: 1rem;
       width: calc(100% - 2rem);
       overflow-x: auto;
       flex-wrap: nowrap;
       scrollbar-width: none;
+      justify-content: center;
     }
 
     .commerce-hero__controls::-webkit-scrollbar {
@@ -492,11 +504,11 @@ const slides = [
 
   @media (max-width: 380px) {
     .commerce-hero {
-      min-height: 780px;
+      min-height: 640px;
     }
 
     .commerce-hero__content {
-      padding-block: 17rem 8.6rem;
+      padding-block: 4.8rem 6.2rem;
     }
 
     .commerce-hero h1 {
@@ -509,6 +521,19 @@ const slides = [
     .commerce-hero__button,
     .commerce-hero__controls button {
       transition: none;
+      animation: none;
+    }
+  }
+
+  @keyframes heroCopyIn {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 </style>

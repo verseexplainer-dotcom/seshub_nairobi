@@ -4,17 +4,11 @@ import Layout from '../layouts/Layout.astro';
 import HomeHero from '../components/home/HomeHero.astro';
 import FeaturedCategories from '../components/home/FeaturedCategories.astro';
 import FeaturedDeals from '../components/home/FeaturedDeals.astro';
-import ProductShowcase from '../components/home/ProductShowcase.astro';
-import TrustBar from '../components/home/TrustBar.astro';
 import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
-import LoyaltyBanner from '../components/home/LoyaltyBanner.astro';
 import BrandStrip from '../components/home/BrandStrip.astro';
 import SplitPromoBanners from '../components/home/SplitPromoBanners.astro';
-import LifestyleBanner from '../components/home/LifestyleBanner.astro';
-import HomeFaq from '../components/home/HomeFaq.astro';
 import Testimonials from '../components/Testimonials.astro';
 import Newsletter from '../components/Newsletter.astro';
-import { buildCategoryFilterHref, buildListingHref } from '../lib/filters';
 import { getCatalogCategoryKey, getHomepageProducts } from '../lib/catalog';
 import { homepageTestimonials } from '../lib/homepageContent';
 import { selectBestValueProducts, selectDealsProducts, selectFeaturedProducts } from '../lib/homepage';
@@ -25,45 +19,16 @@ const catalogProducts = await getHomepageProducts(Astro.locals);
 const laptopProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops');
 const smartphoneProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'smartphones');
 const printerProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'printers');
-const topLaptopDeals = selectBestValueProducts(laptopProducts, 4);
-const hotOffers = selectDealsProducts(catalogProducts, 4);
-const bestPicks = selectFeaturedProducts(catalogProducts, 8);
 const featuredDealSeeds = [
-  ...selectBestValueProducts(laptopProducts, 4),
-  ...selectBestValueProducts(smartphoneProducts, 1),
-  ...selectBestValueProducts(printerProducts, 1)
+  ...selectDealsProducts(catalogProducts, 12),
+  ...selectBestValueProducts(laptopProducts, 6),
+  ...selectBestValueProducts(smartphoneProducts, 3),
+  ...selectBestValueProducts(printerProducts, 3)
 ];
 const fallbackFeaturedDeals = [
-  ...selectDealsProducts(catalogProducts, 8),
-  ...selectFeaturedProducts(catalogProducts, 8)
+  ...selectFeaturedProducts(catalogProducts, 16)
 ];
-const featuredDeals = pickUniqueProducts([...featuredDealSeeds, ...fallbackFeaturedDeals], 6);
-const productGroups = [
-  {
-    id: 'top-laptop-deals',
-    kicker: 'Top laptop deals',
-    title: 'Laptops worth checking first.',
-    description: 'Selected from current laptop stock with images, clear pricing, and practical specs.',
-    href: buildCategoryFilterHref('laptops', { sort: 'featured', in_stock: 1 }),
-    products: topLaptopDeals
-  },
-  {
-    id: 'hot-offers',
-    kicker: 'Hot offers',
-    title: 'Current savings from live stock.',
-    description: 'Deal cards appear only when the catalog has a valid compare-at price above the selling price.',
-    href: buildListingHref({ sort: 'featured', in_stock: 1 }),
-    products: hotOffers
-  },
-  {
-    id: 'best-picks',
-    kicker: 'Best picks',
-    title: 'Reliable picks across the shop.',
-    description: 'Balanced selections across laptops, desktops, printers, and phones from the current catalog.',
-    href: buildListingHref({ sort: 'featured', in_stock: 1 }),
-    products: bestPicks.slice(0, 8)
-  }
-];
+const featuredDeals = pickUniqueProducts([...featuredDealSeeds, ...fallbackFeaturedDeals], 12);
 
 function pickUniqueProducts(products: CatalogProduct[], limit: number) {
   const seen = new Set<string>();
@@ -94,17 +59,12 @@ function pickUniqueProducts(products: CatalogProduct[], limit: number) {
 >
   <div class="home-page">
     <HomeHero />
-    <TrustBar />
-    <FeaturedDeals products={featuredDeals} publicSupabaseUrl={publicSupabaseUrl} />
     <FeaturedCategories />
-    <BrandStrip />
-    <ProductShowcase groups={productGroups} publicSupabaseUrl={publicSupabaseUrl} />
-    <LoyaltyBanner />
-    <SplitPromoBanners />
-    <LifestyleBanner />
     <WhyBuyFromSES />
+    <FeaturedDeals products={featuredDeals} publicSupabaseUrl={publicSupabaseUrl} />
+    <BrandStrip />
+    <SplitPromoBanners />
     <Testimonials items={homepageTestimonials} />
-    <HomeFaq />
     <Newsletter />
   </div>
 </Layout>

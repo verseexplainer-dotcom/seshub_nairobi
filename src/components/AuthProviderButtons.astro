@@ -1,0 +1,39 @@
+---
+interface Props {
+  next: string;
+}
+
+const { next } = Astro.props;
+
+const providers = [
+  {
+    id: 'google',
+    label: 'Continue with Google',
+    icon: 'G'
+  },
+  {
+    id: 'facebook',
+    label: 'Continue with Facebook',
+    icon: 'f'
+  }
+];
+---
+
+<div class="auth-provider-panel" aria-label="Social sign-in options">
+  <div class="auth-provider-divider">
+    <span>or</span>
+  </div>
+
+  <div class="auth-provider-buttons">
+    {providers.map((provider) => (
+      <form method="POST" action="/api/auth/oauth">
+        <input type="hidden" name="provider" value={provider.id} />
+        <input type="hidden" name="next" value={next} />
+        <button type="submit" class={`auth-provider-button ${provider.id}`}>
+          <span aria-hidden="true">{provider.icon}</span>
+          {provider.label}
+        </button>
+      </form>
+    ))}
+  </div>
+</div>

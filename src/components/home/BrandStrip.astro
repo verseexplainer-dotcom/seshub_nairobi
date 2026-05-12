@@ -3,7 +3,7 @@ import { buildBrandFilterHref } from '../../lib/filters';
 import { getBrandLogoSource } from '../../lib/siteAssets';
 
 const publicSupabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const brands = ['HP', 'Dell', 'Lenovo', 'Asus', 'Apple', 'Samsung', 'Canon', 'Epson', 'Google Pixel'];
+const brands = ['HP', 'Dell', 'Lenovo', 'Asus', 'Apple', 'Samsung', 'Canon', 'Epson', 'Google Pixel', 'Tecno'];
 const brandItems = brands.map((brand) => ({
   label: brand,
   href: buildBrandFilterHref(brand, { sort: 'featured', in_stock: 1 }),
