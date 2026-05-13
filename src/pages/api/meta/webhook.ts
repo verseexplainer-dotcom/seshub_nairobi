@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env as cloudflareEnv } from 'cloudflare:workers';
 import { errorResponse, getRuntimeEnv, isRecord, jsonResponse } from '../../../lib/server/http';
 
 export const prerender = false;
@@ -9,7 +10,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const mode = url.searchParams.get('hub.mode');
   const token = url.searchParams.get('hub.verify_token');
   const challenge = url.searchParams.get('hub.challenge');
-  const expectedToken = getRuntimeEnv(locals).MESSENGER_VERIFY_TOKEN?.trim();
+  const expectedToken =
+    String((cloudflareEnv as Record<string, unknown>).MESSENGER_VERIFY_TOKEN || '').trim() ||
+    getRuntimeEnv(locals).MESSENGER_VERIFY_TOKEN?.trim();
 
   if (!expectedToken) {
     return errorResponse(503, 'META_WEBHOOK_NOT_CONFIGURED', 'Meta webhook verification is not configured.');
