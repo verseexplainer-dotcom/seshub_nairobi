@@ -11,7 +11,7 @@ const deletionPayload = {
   deletion_url: 'https://sesicthub.co.ke/data-deletion',
   instructions: [
     `Email ${storefrontDetails.email} with the subject "Data deletion request".`,
-    'Include the email address or phone number used on the website, and mention if the request relates to Facebook Login, Messenger, Instagram, or WhatsApp.',
+    'Include the email address or phone number used on the website, and mention if the request relates to Messenger, Instagram, or WhatsApp.',
     'SES ICT HUB will review the request and confirm the outcome by email or phone.'
   ],
   expected_processing_time: 'Within 7 business days after identity and account details are confirmed.',
