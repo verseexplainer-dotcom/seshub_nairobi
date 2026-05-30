@@ -123,6 +123,7 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like help findin
 
   .product-showcase-grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
 
@@ -148,12 +149,6 @@ const whatsappHref = buildWhatsAppLink(`Hi SES ICT HUB, I would like help findin
 
   .product-showcase-empty.contrast p {
     color: rgba(226, 232, 240, 0.74);
-  }
-
-  @media (min-width: 760px) {
-    .product-showcase-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 
   @media (min-width: 1080px) {

@@ -212,13 +212,20 @@ test('expanded storefront categories resolve by slug and database value', () => 
   assert.equal(getStoreCategoryByValue('Accessories')?.slug, 'accessories');
   assert.equal(getStoreCategoryByValue('storage')?.slug, 'accessories');
   assert.equal(getStoreCategoryByValue('laptops')?.slug, 'laptops');
+  assert.equal(getStoreCategoryByValue('gaming_laptops')?.slug, 'gaming-laptops');
+  assert.equal(getStoreCategoryByValue('Gaming Laptops')?.slug, 'gaming-laptops');
+  assert.equal(getStoreCategoryByValue('Projectors')?.slug, 'projectors');
+  assert.equal(getStoreCategoryByValue('UPS')?.slug, 'ups');
 });
 
 test('store category query values include canonical and imported lowercase forms', () => {
-  assert.deepEqual(getStoreCategoryQueryValues('laptops'), ['Laptops', 'laptops']);
-  assert.deepEqual(getStoreCategoryQueryValues('accessories'), ['Accessories', 'accessories', 'storage']);
+  assert.deepEqual(getStoreCategoryQueryValues('laptops'), ['laptops']);
+  assert.deepEqual(getStoreCategoryQueryValues('accessories'), ['accessories', 'storage']);
+  assert.deepEqual(getStoreCategoryQueryValues('gaming-laptops'), ['gaming_laptops', 'gaming-laptops', 'gaming laptops']);
   assert.equal(matchesStoreCategoryValue('Laptops', 'laptops'), true);
   assert.equal(matchesStoreCategoryValue('laptops', 'laptops'), true);
+  assert.equal(matchesStoreCategoryValue('gaming_laptops', 'gaming-laptops'), true);
+  assert.equal(matchesStoreCategoryValue('Gaming Laptops', 'gaming-laptops'), true);
   assert.equal(matchesStoreCategoryValue('storage', 'accessories'), true);
   assert.equal(matchesStoreCategoryValue('desktops', 'laptops'), false);
 });

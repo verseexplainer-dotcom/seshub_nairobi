@@ -103,6 +103,9 @@ NORMALIZED_FIELDNAMES = [
 CATEGORY_MAP = {
     "laptop": "laptops",
     "laptops": "laptops",
+    "gaming laptop": "gaming_laptops",
+    "gaming laptops": "gaming_laptops",
+    "gaming_laptops": "gaming_laptops",
     "smartphone": "smartphones",
     "smartphones": "smartphones",
     "printer": "printers",
@@ -111,6 +114,18 @@ CATEGORY_MAP = {
     "desktops": "desktops",
     "accessory": "accessories",
     "accessories": "accessories",
+    "monitor": "monitors",
+    "monitors": "monitors",
+    "projector": "projectors",
+    "projectors": "projectors",
+    "tablet": "tablets",
+    "tablets": "tablets",
+    "software": "software",
+    "software box": "software",
+    "software_box": "software",
+    "ups": "ups",
+    "network": "networking",
+    "networking": "networking",
     "storage": "accessories",
 }
 

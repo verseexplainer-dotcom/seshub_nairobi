@@ -1,53 +1,91 @@
-# Meta Setup Guide for SES ICT HUB
+# Meta Setup Guide (SES ICT HUB)
 
-## App Setup
+This guide maps current code routes and env usage to Meta dashboard setup.
 
-1. Create or open the SES ICT HUB Meta app at <https://developers.facebook.com/apps/>.
-2. Set the app domain to `sesicthub.co.ke`.
-3. Add these URLs:
-   - Privacy Policy URL: `https://sesicthub.co.ke/privacy-policy`
-   - Terms URL: `https://sesicthub.co.ke/terms`
-   - User Data Deletion URL: `https://sesicthub.co.ke/data-deletion`
-   - User Data Deletion Callback URL: `https://sesicthub.co.ke/api/data-deletion`
-4. Add products as needed:
-   - Facebook Login for customer sign-in through Supabase.
-   - Messenger for Page messaging.
-   - Instagram Graph API or Instagram messaging if the Instagram account is connected to the Page.
-   - WhatsApp Business if SES ICT HUB will use the WhatsApp Cloud API.
-   - Meta Pixel and Conversions API for measurement.
+## 1) Create/Configure Meta App
 
-## Facebook Login
+1. Open <https://developers.facebook.com/apps/>.
+2. Create (or reuse) the SES ICT HUB app.
+3. Set app domain to `sesicthub.co.ke`.
+4. Add policy/compliance URLs:
+   - Privacy Policy: `https://sesicthub.co.ke/privacy-policy`
+   - Terms: `https://sesicthub.co.ke/terms`
+   - Data Deletion Instructions: `https://sesicthub.co.ke/data-deletion`
+   - Data Deletion Callback/Reference: `https://sesicthub.co.ke/api/data-deletion`
 
-1. In Meta, enable Facebook Login.
-2. In Supabase, enable Facebook as an OAuth provider.
-3. Use the Supabase callback URL shown in the Supabase dashboard as the OAuth redirect URI in Meta.
-4. Keep this site callback available for normal Supabase auth: `https://sesicthub.co.ke/api/auth/callback`.
-5. Request only the minimum scopes needed for sign-in, normally public profile and email.
+## 2) Facebook Login + Supabase
 
-## Messenger and Instagram Messaging
+Code endpoints:
 
-1. Connect the SES ICT HUB Facebook Page to the Meta app.
-2. Generate a Page access token and store it as `MESSENGER_PAGE_ACCESS_TOKEN`.
-3. Set webhook callback URL to `https://sesicthub.co.ke/api/meta/webhook`.
-4. Set verify token to the same private value stored in `MESSENGER_VERIFY_TOKEN`.
-5. Subscribe to only the required message events for the Page and Instagram account.
-6. Test webhook verification from the Meta dashboard.
+- Start OAuth: `GET /api/auth/facebook?next=/account`
+- Callback: `GET /api/auth/callback`
 
-## Pixel and Conversions API
+Steps:
 
-1. Create or select the SES ICT HUB Pixel in Events Manager.
-2. Store the browser-safe Pixel ID as `PUBLIC_META_PIXEL_ID`.
-3. Store the same Pixel ID server-side as `META_PIXEL_ID`.
-4. Generate a Conversions API access token and store it as `META_CAPI_TOKEN`.
-5. Use Events Manager Test Events to confirm PageView and Lead events.
+1. In Supabase Auth providers, enable Facebook provider.
+2. Copy Facebook App ID + App Secret from Meta to Supabase provider settings.
+3. In Meta Facebook Login product, add Supabase callback URI exactly as shown by Supabase.
+4. Set Worker env:
+   - `FACEBOOK_APP_ID`
+   - `FACEBOOK_APP_SECRET`
+5. Validate:
+   - `/auth/login` and `/auth/sign-up` should show “Continue with Facebook” when `FACEBOOK_APP_ID` is set.
 
-## Production Rollout Checklist
+## 3) Messenger + Instagram Webhooks
 
-- Deploy the code to Cloudflare Worker.
-- Add the required Worker secrets through Wrangler or the Cloudflare dashboard.
-- Confirm `/privacy-policy`, `/terms`, and `/data-deletion` return 200 over HTTPS.
-- Confirm `/api/data-deletion` returns JSON over HTTPS.
-- Verify `/api/meta/webhook` in the Meta dashboard.
-- Confirm Pixel PageView fires only when `PUBLIC_META_PIXEL_ID` is configured.
-- Confirm checkout WhatsApp handoff still creates orders.
-- Confirm CAPI Lead events appear in Meta Events Manager after `META_CAPI_TOKEN` is configured.
+Code endpoint:
+
+- Webhook URL: `https://sesicthub.co.ke/api/meta/webhook`
+- Verification: `GET` with `hub.*` params
+- Events: `POST` with optional signature validation (required when `FACEBOOK_APP_SECRET` is set)
+
+Steps:
+
+1. Add Messenger product to Meta app.
+2. Connect SES ICT HUB Facebook Page.
+3. Set callback URL to `https://sesicthub.co.ke/api/meta/webhook`.
+4. Set verify token to match `MESSENGER_VERIFY_TOKEN`.
+5. Subscribe required fields only.
+6. If using Instagram messaging, connect Instagram business account to the same Page/app and subscribe relevant Instagram fields.
+
+## 4) Pixel + Conversions API
+
+Code behavior:
+
+- Pixel loads only when `PUBLIC_META_PIXEL_ID` exists.
+- Server CAPI checkout Lead events use `META_PIXEL_ID` + `META_CAPI_TOKEN`.
+
+Steps:
+
+1. In Events Manager, create/select Pixel.
+2. Set:
+   - `PUBLIC_META_PIXEL_ID` (browser)
+   - `META_PIXEL_ID` (server)
+   - `META_CAPI_TOKEN` (server secret)
+3. Test flows:
+   - Page load triggers Pixel `PageView`
+   - WhatsApp checkout flow triggers server `Lead` event
+
+## 5) Messenger/WhatsApp Deep Link Setup
+
+1. Set `PUBLIC_MESSENGER_PAGE` to page username/ID (for `m.me` links).
+2. Keep existing `storefrontDetails.whatsappNumber` and WhatsApp checkout flow.
+3. Confirm floating chat/buttons render and open correct targets.
+
+## 6) Domain Verification
+
+If Meta requires domain verification:
+
+1. Place verification token in `PUBLIC_META_DOMAIN_VERIFICATION`.
+2. Deploy.
+3. Verify domain from Meta dashboard.
+
+## 7) Production Rollout Checklist
+
+1. Deploy to Cloudflare Worker.
+2. Confirm all legal pages return HTTP 200.
+3. Confirm `/api/data-deletion` returns JSON.
+4. Verify webhook in Meta dashboard.
+5. Check Pixel in browser only when configured.
+6. Run a test checkout and confirm CAPI Lead appears in Events Manager.
+7. Confirm Facebook OAuth redirect works end-to-end.

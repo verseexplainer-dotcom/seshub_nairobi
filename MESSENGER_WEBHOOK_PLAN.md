@@ -1,46 +1,51 @@
-# Messenger and Instagram Webhook Plan
+# Messenger / Instagram Webhook Plan
 
-## Current Endpoint
+## Current Endpoint Contract
 
-- Callback URL: `https://sesicthub.co.ke/api/meta/webhook`
-- Verify route: `GET /api/meta/webhook`
-- Event route: `POST /api/meta/webhook`
-- Verify token env var: `MESSENGER_VERIFY_TOKEN`
+- URL: `https://sesicthub.co.ke/api/meta/webhook`
+- `GET`:
+  - Validates `hub.mode`, `hub.verify_token`, `hub.challenge`
+  - Compares against `MESSENGER_VERIFY_TOKEN`
+- `POST`:
+  - Enforces payload size limit
+  - Parses JSON payload
+  - Logs object + entry count
+  - Returns `{ ok: true }`
 
-The endpoint verifies Meta setup and acknowledges incoming payloads. It does not yet store messages or send automated replies.
+## Security Behavior
 
-## Required Meta Dashboard Permissions
+1. Verification token check on `GET`.
+2. Optional signature validation on `POST`:
+   - If `FACEBOOK_APP_SECRET` is configured, endpoint requires `X-Hub-Signature-256`.
+   - Signature is validated as HMAC SHA-256 over raw body.
+   - Missing or invalid signature is rejected.
+3. If `FACEBOOK_APP_SECRET` is not configured, endpoint still accepts `POST` for readiness/testing.
 
-Request only what is needed for the production support flow:
+## Required Env
 
-- Messenger Page messaging permissions for receiving Page messages.
-- Instagram messaging permissions only if the Instagram Business account is connected and support will happen there.
-- Page access token for future reply sending.
+- `MESSENGER_VERIFY_TOKEN` (required for dashboard verify step)
+- `FACEBOOK_APP_SECRET` (recommended in production for signature verification)
+- `MESSENGER_PAGE_ACCESS_TOKEN` (reserved for future outbound message support)
 
-Exact permissions can change in Meta review, so confirm the current permission names in the dashboard at setup time.
+## Meta Dashboard Setup
+
+1. In app Webhooks product:
+   - Callback URL: `https://sesicthub.co.ke/api/meta/webhook`
+   - Verify token: same as `MESSENGER_VERIFY_TOKEN`
+2. Subscribe Page and/or Instagram fields needed for support workflow.
+3. Connect the correct Facebook Page and Instagram Business account.
 
 ## Testing Flow
 
-1. Deploy to Cloudflare.
-2. Set `MESSENGER_VERIFY_TOKEN`.
-3. In Meta dashboard, set callback URL to `https://sesicthub.co.ke/api/meta/webhook`.
-4. Enter the same verify token.
-5. Click Verify and Save.
-6. Send a test message to the connected Page.
-7. Check Cloudflare Worker logs for `meta webhook received`.
+1. Deploy worker with env variables.
+2. Verify webhook from Meta dashboard.
+3. Send test message to page/IG inbox.
+4. Check Cloudflare logs for `meta webhook received`.
 
-## Future Production Processing
+## Planned Next Step (Future, Not Implemented Here)
 
-When SES ICT HUB is ready to handle messages inside the admin system:
-
-- Validate Meta request signatures before trusting webhook payloads.
-- Store message metadata in Supabase with minimal customer data.
-- Link messages to orders or products only when a user explicitly provides an order reference or product link.
-- Add staff assignment, response status, and retention controls.
-- Send replies through Meta Graph API using `MESSENGER_PAGE_ACCESS_TOKEN`.
-
-## Rollout Notes
-
-- Keep the webhook simple until the support workflow is defined.
-- Avoid storing full message text unless there is a clear support and retention policy.
-- Do not automate replies for pricing, warranty, or stock until the catalog source of truth is confirmed.
+1. Persist minimal webhook event metadata in Supabase.
+2. Add idempotency key handling per event/message ID.
+3. Introduce admin triage status and assignment.
+4. Add outbound replies via Graph API using `MESSENGER_PAGE_ACCESS_TOKEN`.
+5. Define retention limits aligned with privacy policy.

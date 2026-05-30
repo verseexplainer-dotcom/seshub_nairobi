@@ -1,46 +1,113 @@
 # SES ICT HUB Meta Readiness Audit
 
-Date: 2026-05-10
+Date: 2026-05-15  
+Project: Astro storefront + Cloudflare Worker + Supabase
+
+## Scope Checked
+
+1. Public pages and legal routes
+2. API route structure and webhook readiness
+3. Auth system and callback URLs
+4. Environment variable handling and secret boundaries
+5. SEO/Open Graph/canonical setup
+6. Footer/legal/contact/chat surfaces
+7. Tracking stack (Pixel/CAPI/server analytics)
+8. Product schema readiness for future catalog sync
+9. Account deletion and support flow
 
 ## What Exists
 
-- Public pages: home, shop, search, cart, product, category, blog, contact, FAQ, track order, auth, account, and admin pages exist under `src/pages`.
-- API routes: checkout WhatsApp handoff, newsletter signup, search suggestions, Supabase auth, account profile, admin order/user actions, and a disabled browser analytics endpoint exist under `src/pages/api`.
-- Auth system: Supabase email/password authentication is implemented with `/api/auth/callback`, account pages, admin gates, role checks, and session-aware middleware.
-- Environment handling: Supabase, Turnstile, fallback image, and Cloudflare deployment variables are documented in `.env.example`; runtime server code reads Cloudflare Worker bindings without exposing service-role keys.
-- SEO/meta setup: shared `Layout.astro` provides canonical URLs, descriptions, Open Graph, Twitter cards, and product pages provide Product and Breadcrumb JSON-LD.
-- Footer/legal links: footer includes shop, support, contact, FAQ, track order, cart, and sign-in links. Legal links were missing before this readiness pass.
-- Analytics/tracking: browser `/api/events` writes are intentionally disabled. Server-side analytics records newsletter signup intent and WhatsApp checkout redirects to Supabase.
-- Chat/contact buttons: WhatsApp links exist across header, footer, contact, homepage, product, checkout, blog, and admin order follow-up surfaces.
-- Product schema: catalog products include id, slug, title, category, brand, price, condition, warranty, stock, SKU, images, specs, SEO title, and meta description. Product pages output JSON-LD.
-- Account deletion/support flow: contact support exists, but there was no dedicated data deletion page or deletion API endpoint before this pass.
+### 1) Public Pages
 
-## Missing Before Implementation
+- Storefront/content pages: `/`, `/shop`, `/search`, `/cart`, `/contact`, `/track`, `/faq`, `/blog`, `/blog/[slug]`, `/category/[slug]`, `/product/[slug]`
+- Auth/account pages: `/auth/login`, `/auth/sign-up`, `/auth/reset-password`, `/account/*`
+- Admin pages: `/admin/*`
+- Legal/compliance pages: `/privacy-policy`, `/terms`, `/data-deletion`
 
-- Privacy policy, terms, and data deletion pages.
-- Machine-readable data deletion endpoint for Meta app review.
-- Meta Pixel loading and chat Lead tracking.
-- Conversions API server utility and checkout Lead event.
-- Meta webhook verification endpoint for Messenger/Instagram.
-- Messenger reusable button and floating chat UI.
-- Meta-specific environment documentation.
-- Meta dashboard setup guide, webhook plan, and rollout checklist.
-- Facebook Login readiness documentation for Supabase OAuth configuration.
+### 2) API Routes
+
+- Auth: `/api/auth/login`, `/api/auth/sign-up`, `/api/auth/logout`, `/api/auth/reset-password`, `/api/auth/update-password`, `/api/auth/callback`, `/api/auth/facebook`
+- Commerce/support: `/api/checkout/whatsapp`, `/api/newsletter`, `/api/search/suggest`, `/api/account/profile`
+- Meta/data deletion: `/api/meta/webhook`, `/api/data-deletion`
+- Admin operations: `/api/admin/orders/*`, `/api/admin/users/*`
+- Browser analytics write endpoint intentionally disabled: `/api/events` returns `410`
+
+### 3) Auth System
+
+- Supabase email/password auth is active
+- Session and role enforcement in `src/middleware.ts` (customer vs staff/admin)
+- Secure redirect guards via `getSafeRedirectPath`
+- Callback flow implemented at `/api/auth/callback`
+- Facebook OAuth bootstrap route now available at `/api/auth/facebook` (graceful fallback when not configured)
+
+### 4) Environment Variables and Secret Handling
+
+- Public vs private split exists and is respected:
+  - Public: `PUBLIC_*` values only
+  - Private: tokens/secrets kept server-side
+- Runtime env resolution supports local build env plus Cloudflare Worker runtime bindings
+- Meta-related envs present in code and `.env.example`
+
+### 5) SEO/Meta
+
+- `astro.config.mjs` sets `site: https://sesicthub.co.ke`
+- Shared layout provides canonical URL, OG, Twitter card metadata
+- Product page includes Product + Breadcrumb JSON-LD
+- Meta domain verification tag support added via `PUBLIC_META_DOMAIN_VERIFICATION`
+
+### 6) Footer/Legal/Contact
+
+- Footer links include privacy policy, terms, and data deletion
+- Dedicated contact page exists
+- WhatsApp CTA present broadly; Messenger CTA present through reusable component and floating chat
+
+### 7) Tracking and Analytics
+
+- Pixel script in layout uses `PUBLIC_META_PIXEL_ID` only when configured
+- Client-side click hooks emit `Lead` events on contact/chat CTAs
+- Server-side Conversions API helper exists and is used on WhatsApp checkout handoff
+- Server-side event records stored to Supabase for selected funnels
+
+### 8) Chat and Messaging Readiness
+
+- Reusable components exist:
+  - `src/components/WhatsAppButton.astro`
+  - `src/components/MessengerButton.astro`
+  - `src/components/FloatingChat.astro`
+- Messenger deep links follow `https://m.me/{page}?ref={product_slug}` when `PUBLIC_MESSENGER_PAGE` is set
+- WhatsApp deep links follow `https://wa.me/{number}?text=...`
+
+### 9) Product Schema (Catalog Sync Readiness)
+
+- Catalog model includes product identity, pricing, stock, condition, specs, media, SEO fields
+- Deterministic loaders/normalizers exist in `src/lib/products.ts` and `src/lib/catalog.ts`
+- Suitable baseline for later Meta catalog feed/export implementation
+
+## Gaps / Missing Items
+
+1. Cookie consent UI is not implemented (privacy policy mentions cookies/local storage, but no explicit banner/preferences control is present).
+2. Messenger webhook processing is currently verification + acknowledgment only (no persistence, routing, or automated reply behavior yet).
+3. Instagram messaging handling is not implemented beyond shared Meta webhook readiness.
+4. Facebook Login also requires manual Supabase dashboard provider config and Meta dashboard OAuth setup; code alone is not sufficient.
+5. `MESSENGER_PAGE_ACCESS_TOKEN` is stored for readiness but not yet used for outbound API replies.
+6. Future catalog sync is not implemented yet (no feed endpoint/export job currently).
 
 ## Risks
 
-- Meta dashboard setup still requires manual values: app ID, app secret, Pixel ID, CAPI token, page access token, webhook verify token, and WhatsApp token.
-- Messenger links require a real Facebook Page username or ID; the code currently falls back to `/contact` until configured.
-- Webhook POST is readiness-only. It acknowledges payloads but does not yet persist messages or automate replies.
-- CAPI events will not send until `META_PIXEL_ID` and `META_CAPI_TOKEN` are configured in Cloudflare.
-- Formal legal review has not been performed. The policy pages are practical operational copy, not legal certification.
-- Facebook Login through Supabase requires configuration in both Meta and Supabase dashboards.
+1. If Meta secrets are missing or mismatched across Cloudflare and Meta dashboard, webhook verification and/or CAPI events will fail.
+2. Enabling Pixel/CAPI without consent policy enforcement may create compliance risk depending on legal interpretation and campaign geography.
+3. Messaging workflows (Messenger/Instagram/WhatsApp) currently depend on manual staff handling and do not yet provide structured SLA/state tracking.
+4. Data deletion is support-driven (email + endpoint instructions), not self-service account deletion; operational follow-through is required.
 
 ## Recommendations
 
-- Configure all Meta secrets as Cloudflare Worker secrets, not public variables, except `PUBLIC_META_PIXEL_ID`.
-- Add the new policy URLs to the Meta app dashboard before requesting app review.
-- Use `https://sesicthub.co.ke/api/meta/webhook` as the Messenger/Instagram webhook callback URL.
-- Subscribe only to webhook fields needed for production support workflows.
-- Keep webhook processing minimal until there is a defined customer service workflow for message storage, assignment, and replies.
-- Add product catalog sync later as a separate implementation using the existing catalog schema and deterministic product presentation utilities.
+1. Configure all private Meta values as Cloudflare Worker secrets; keep only `PUBLIC_META_PIXEL_ID`, `PUBLIC_META_DOMAIN_VERIFICATION`, and optional `PUBLIC_MESSENGER_PAGE` public.
+2. In Meta App settings, set:
+   - Privacy Policy URL: `https://sesicthub.co.ke/privacy-policy`
+   - Terms URL: `https://sesicthub.co.ke/terms`
+   - Data Deletion URL: `https://sesicthub.co.ke/data-deletion`
+   - Deletion callback/reference endpoint: `https://sesicthub.co.ke/api/data-deletion`
+3. Keep webhook callback at `https://sesicthub.co.ke/api/meta/webhook` and use the same verify token in dashboard and env.
+4. Add webhook signature validation secret (`FACEBOOK_APP_SECRET`) in production before enabling subscribed events (now supported in code).
+5. Add a dedicated catalog sync phase later (feed endpoint + scheduler + mapping rules) rather than coupling it to this compliance rollout.
+6. Add a lightweight cookie notice if required by policy/legal guidance.

@@ -35,7 +35,6 @@ const safeDescription =
   'SES ICT HUB - Brand-new and certified refurbished electronics in Kenya. Laptops, desktops, printers, smartphones, and accessories with clear pricing and stock status.';
 const canonicalImage = new URL(image, Astro.site || canonicalURL).toString();
 const faviconVersion = '20260322';
-const metaPixelId = (import.meta.env.PUBLIC_META_PIXEL_ID || '951065250890386').trim();
 ---
 
 <!DOCTYPE html>
@@ -72,29 +71,6 @@ const metaPixelId = (import.meta.env.PUBLIC_META_PIXEL_ID || '951065250890386').
     <meta property="twitter:description" content={safeDescription} />
     <meta property="twitter:image" content={canonicalImage} />
 
-    {metaPixelId && (
-      <>
-        <script is:inline define:vars={{ metaPixelId }}>
-          !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-          n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-          (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', metaPixelId);
-          fbq('track', 'PageView');
-        </script>
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style="display:none"
-            src={`https://www.facebook.com/tr?id=${encodeURIComponent(metaPixelId)}&ev=PageView&noscript=1`}
-            alt=""
-          />
-        </noscript>
-      </>
-    )}
-
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -120,20 +96,6 @@ const metaPixelId = (import.meta.env.PUBLIC_META_PIXEL_ID || '951065250890386').
     <script>
       if (!localStorage.getItem('ses_session_id')) {
         localStorage.setItem('ses_session_id', crypto.randomUUID());
-      }
-
-      if (!window.__sesMetaLeadHandlerBound) {
-        window.__sesMetaLeadHandlerBound = true;
-        document.addEventListener('click', (event) => {
-          const link = event.target instanceof Element ? event.target.closest('[data-meta-lead]') : null;
-          if (!link || typeof window.fbq !== 'function') return;
-          const channel = link.getAttribute('data-meta-lead') || 'contact';
-          const productRef = link.getAttribute('data-product-ref') || undefined;
-          window.fbq('track', 'Lead', {
-            content_category: channel,
-            content_name: productRef
-          });
-        });
       }
 
       if (!window.__sesCartHandlerBound) {

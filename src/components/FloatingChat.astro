@@ -1,5 +1,4 @@
 ---
-import MessengerButton from './MessengerButton.astro';
 import WhatsAppButton from './WhatsAppButton.astro';
 
 interface Props {
@@ -15,7 +14,6 @@ const { productSlug = null } = Astro.props;
     message="Hi SES ICT HUB, I need help with this product or order."
     productSlug={productSlug}
   />
-  <MessengerButton label="Messenger" ref={productSlug} />
 </aside>
 
 <style>

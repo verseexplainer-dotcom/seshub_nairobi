@@ -3,7 +3,6 @@ import { STOREFRONT_CATEGORIES, getCategoryPath } from './productPresentation';
 export const storefrontDetails = {
   brandName: 'SES ICT HUB',
   whatsappNumber: '254720480475',
-  messengerPage: '',
   phone: '+254716253365',
   email: 'sales@sesicthub.co.ke',
   shortLocation: 'Moi Avenue Shop',
@@ -39,14 +38,4 @@ export const supportLinks = [
 
 export function buildWhatsAppLink(message: string) {
   return `https://wa.me/${storefrontDetails.whatsappNumber}?text=${encodeURIComponent(message)}`;
-}
-
-export function buildMessengerLink(ref?: string | null) {
-  const page = storefrontDetails.messengerPage.trim();
-  if (!page) {
-    return null;
-  }
-
-  const suffix = ref?.trim() ? `?ref=${encodeURIComponent(ref.trim())}` : '';
-  return `https://m.me/${page}${suffix}`;
 }

@@ -175,6 +175,7 @@ const tabs = [
 
   .products-grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
 
@@ -193,10 +194,6 @@ const tabs = [
 
     .tab-row {
       justify-content: flex-end;
-    }
-
-    .products-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 

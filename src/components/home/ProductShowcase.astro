@@ -132,6 +132,7 @@ const visibleGroups = groups.filter((group) => group.products.length > 0);
 
   .real-products__grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
 
@@ -142,10 +143,6 @@ const visibleGroups = groups.filter((group) => group.products.length > 0);
 
     .real-products__head a {
       justify-self: end;
-    }
-
-    .real-products__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 

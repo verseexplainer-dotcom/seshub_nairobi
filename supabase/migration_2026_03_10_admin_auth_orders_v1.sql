@@ -107,7 +107,22 @@ $$;
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_category_check
-  CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories'));
+  CHECK (
+    lower(category) IN (
+      'laptops',
+      'gaming_laptops',
+      'desktops',
+      'printers',
+      'smartphones',
+      'accessories',
+      'monitors',
+      'projectors',
+      'tablets',
+      'software',
+      'ups',
+      'networking'
+    )
+  );
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_condition_check

@@ -57,6 +57,13 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
     accent: '#155dfc'
   },
   {
+    key: 'gaming-laptops',
+    label: 'Gaming Laptops',
+    description: 'Dedicated graphics and high-performance laptop options.',
+    href: '/category/gaming-laptops',
+    accent: '#7c3aed'
+  },
+  {
     key: 'smartphones',
     label: 'Smartphones',
     description: 'Daily-use phones with clear condition and stock updates.',
@@ -76,6 +83,48 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
     description: 'Desk-ready machines for business and office work.',
     href: '/category/desktops',
     accent: '#4f46e5'
+  },
+  {
+    key: 'monitors',
+    label: 'Monitors',
+    description: 'Display upgrades for desks, schools, and offices.',
+    href: '/category/monitors',
+    accent: '#0891b2'
+  },
+  {
+    key: 'projectors',
+    label: 'Projectors',
+    description: 'Presentation-ready projectors for office and learning spaces.',
+    href: '/category/projectors',
+    accent: '#9333ea'
+  },
+  {
+    key: 'ups',
+    label: 'UPS',
+    description: 'Backup power options for devices and office setups.',
+    href: '/category/ups',
+    accent: '#16a34a'
+  },
+  {
+    key: 'tablets',
+    label: 'Tablets',
+    description: 'Portable tablets and detachable devices.',
+    href: '/category/tablets',
+    accent: '#2563eb'
+  },
+  {
+    key: 'software',
+    label: 'Software',
+    description: 'Security and productivity software packages.',
+    href: '/category/software',
+    accent: '#dc2626'
+  },
+  {
+    key: 'networking',
+    label: 'Networking',
+    description: 'Connectivity devices for home and office networks.',
+    href: '/category/networking',
+    accent: '#0d9488'
   }
 ];
 

@@ -1,6 +1,18 @@
 import { getProductGallery, resolveProductImage } from './images';
 
-export type StoreCategorySlug = 'laptops' | 'smartphones' | 'printers' | 'desktops' | 'accessories';
+export type StoreCategorySlug =
+  | 'laptops'
+  | 'gaming-laptops'
+  | 'smartphones'
+  | 'printers'
+  | 'desktops'
+  | 'accessories'
+  | 'monitors'
+  | 'projectors'
+  | 'tablets'
+  | 'software'
+  | 'ups'
+  | 'networking';
 export type CatalogCategorySlug = StoreCategorySlug | 'all';
 
 export interface StoreCategoryMeta {
@@ -23,7 +35,7 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'laptops',
     label: 'Laptops',
-    dbValue: 'Laptops',
+    dbValue: 'laptops',
     intro: 'Laptops for work, school, and everyday use, with clear specs and honest stock updates.',
     heroEyebrow: 'Portable performance',
     heroDescription:
@@ -31,9 +43,19 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
     highlights: ['CPU and RAM filters', 'Warranty shown when available', 'Reach out on WhatsApp if you need help']
   },
   {
+    slug: 'gaming-laptops',
+    label: 'Gaming Laptops',
+    dbValue: 'gaming_laptops',
+    intro: 'Gaming laptops with dedicated graphics, high-refresh displays, and clear stock updates.',
+    heroEyebrow: 'Performance laptops',
+    heroDescription:
+      'Compare gaming laptops by CPU, GPU, RAM, storage, display, warranty, and price.',
+    highlights: ['GPU details surfaced', 'Performance specs shown clearly', 'Ask us about gaming needs']
+  },
+  {
     slug: 'desktops',
     label: 'Desktops',
-    dbValue: 'Desktops',
+    dbValue: 'desktops',
     intro: 'Desktops for office setups, business counters, school labs, and dependable everyday work.',
     heroEyebrow: 'Desk-ready performance',
     heroDescription:
@@ -43,7 +65,7 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'smartphones',
     label: 'Smartphones',
-    dbValue: 'Smartphones',
+    dbValue: 'smartphones',
     intro: 'Smartphones with fair pricing, honest condition labels, and trusted Kenya delivery and pickup options.',
     heroEyebrow: 'Everyday mobility',
     heroDescription:
@@ -53,7 +75,7 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'printers',
     label: 'Printers',
-    dbValue: 'Printers',
+    dbValue: 'printers',
     intro: 'Printers for school, office, and business use with clear prices and honest stock updates.',
     heroEyebrow: 'Reliable print output',
     heroDescription:
@@ -63,12 +85,66 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'accessories',
     label: 'Accessories',
-    dbValue: 'Accessories',
+    dbValue: 'accessories',
     intro: 'Accessories and storage add-ons with clear pricing and straightforward stock updates.',
     heroEyebrow: 'Useful add-ons',
     heroDescription:
       "Browse accessories by brand and price, then message us on WhatsApp if you need help checking compatibility.",
     highlights: ['Good for storage and peripherals', 'Brand and price filters', 'Ask us about compatibility']
+  },
+  {
+    slug: 'monitors',
+    label: 'Monitors',
+    dbValue: 'monitors',
+    intro: 'Monitors for office, school, and home setups with clear size and price details.',
+    heroEyebrow: 'Display upgrades',
+    heroDescription: 'Compare monitors by brand, screen size, price, and stock availability.',
+    highlights: ['Screen details shown', 'Brand and price filters', 'Ask us about setup compatibility']
+  },
+  {
+    slug: 'projectors',
+    label: 'Projectors',
+    dbValue: 'projectors',
+    intro: 'Projectors for classrooms, offices, churches, and presentation spaces.',
+    heroEyebrow: 'Presentation-ready',
+    heroDescription: 'Compare projectors by brightness, resolution, brand, and price.',
+    highlights: ['Resolution and lamp details', 'Office and school options', 'Ask us about installation needs']
+  },
+  {
+    slug: 'tablets',
+    label: 'Tablets',
+    dbValue: 'tablets',
+    intro: 'Tablets and detachable devices for mobility, school, and light productivity.',
+    heroEyebrow: 'Portable screens',
+    heroDescription: 'Compare tablets by brand, storage, connectivity, condition, and price.',
+    highlights: ['Portable options', 'Connectivity details', 'Ask us about accessories']
+  },
+  {
+    slug: 'software',
+    label: 'Software',
+    dbValue: 'software',
+    intro: 'Software licenses and security products with clear device-count details.',
+    heroEyebrow: 'Licensed software',
+    heroDescription: 'Compare software packages by brand, device count, and license type.',
+    highlights: ['License details', 'Device counts shown', 'Ask us about activation support']
+  },
+  {
+    slug: 'ups',
+    label: 'UPS',
+    dbValue: 'ups',
+    intro: 'UPS backup power options for computers, offices, routers, and small business equipment.',
+    heroEyebrow: 'Backup power',
+    heroDescription: 'Compare UPS options by VA rating, brand, price, and availability.',
+    highlights: ['Capacity details', 'Office power backup', 'Ask us about compatibility']
+  },
+  {
+    slug: 'networking',
+    label: 'Networking',
+    dbValue: 'networking',
+    intro: 'Networking devices and connectivity equipment for home and office setups.',
+    heroEyebrow: 'Connectivity gear',
+    heroDescription: 'Compare networking products by brand, use case, price, and availability.',
+    highlights: ['Connectivity options', 'Setup-focused support', 'Ask us about compatibility']
   }
 ];
 
@@ -80,7 +156,18 @@ const CATEGORY_BY_VALUE = new Map(
   ])
 );
 const CATEGORY_VALUE_ALIASES = new Map<string, StoreCategorySlug>([
-  ['storage', 'accessories']
+  ['storage', 'accessories'],
+  ['gaming laptops', 'gaming-laptops'],
+  ['gaming_laptops', 'gaming-laptops'],
+  ['gaming-laptops', 'gaming-laptops'],
+  ['monitor', 'monitors'],
+  ['projector', 'projectors'],
+  ['tablet', 'tablets'],
+  ['software box', 'software'],
+  ['software_box', 'software'],
+  ['ups', 'ups'],
+  ['network', 'networking'],
+  ['networking', 'networking']
 ]);
 
 export function normalizeText(value: unknown) {
@@ -166,7 +253,9 @@ export function getStoreCategoryQueryValues(value: unknown) {
         category.dbValue,
         category.dbValue.toLowerCase(),
         category.slug,
-        ...(category.slug === 'accessories' ? ['storage'] : [])
+        ...(category.slug === 'accessories' ? ['storage'] : []),
+        ...(category.slug === 'gaming-laptops' ? ['gaming laptops'] : []),
+        ...(category.slug === 'software' ? ['software box', 'software_box'] : [])
       ]
         .map((entry) => normalizeText(entry))
         .filter(Boolean)

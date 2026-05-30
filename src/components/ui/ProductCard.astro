@@ -10,8 +10,7 @@ import { getPrimaryImage } from '../../lib/images';
 import { buildWhatsAppLink } from '../../lib/storefront';
 import { getRuntimeEnv } from '../../lib/runtime';
 import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
-import { formatKES, getSavingsAmount, hasDiscount } from '../../lib/pricing';
-import { getWarrantyLabel } from '../../lib/productPresentation';
+import { getWarrantyLabel, getCategoryLabel, getStockMeta } from '../../lib/productPresentation';
 
 interface Props {
   product: CatalogProduct;
@@ -30,22 +29,20 @@ const imageSource = getPrimaryImage(product, {
 });
 const imageOnError = buildImageOnError(fallbackImage, finalFallback);
 const imageWidth = 640;
-const imageHeight = 480;
+const imageHeight = 640;
 const productHref = `/product/${product.slug}`;
 const conditionLabel = getConditionLabel(product);
 const warrantyLabel = getWarrantyLabel(product.warranty_months);
+const categoryLabel = getCategoryLabel(product.category);
+const stock = getStockMeta(product);
 const whatsappHref = buildWhatsAppLink(
   `Hi SES ICT HUB, I need help with ${product.title} - https://sesicthub.co.ke${productHref}`
 );
-const savingsAmount = getSavingsAmount(product);
-const discounted = hasDiscount(product);
 const overlayConditionLabel = conditionLabel === 'Brand New'
   ? 'New'
   : conditionLabel === 'Refurbished'
     ? 'Refurb'
     : conditionLabel;
-const overlayStockLabel = product.in_stock ? 'Stock' : 'Out';
-const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
 ---
 
 <article class="product-card">
@@ -60,25 +57,20 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
       onerror={imageOnError}
     />
     <div class="top-row">
+      <Badge tone="neutral">{categoryLabel}</Badge>
       {conditionLabel && (
         <Badge tone={conditionLabel === 'Brand New' ? 'primary' : 'warning'}>
           {overlayConditionLabel}
         </Badge>
       )}
-      <StockBadge product={product} badgeLabel={overlayStockLabel} />
+      <StockBadge product={product} />
     </div>
-    {discounted && savingsAmount > 0 && (
-      <div class="deal-chip">
-        <Badge tone="dark">{savingsLabel}</Badge>
-      </div>
-    )}
   </a>
 
   <div class="product-body">
     <div class="copy-stack">
-      <p class="eyebrow">
-        {product.brand || 'SES ICT HUB'} / {product.category}
-      </p>
+      <p class="eyebrow">{product.brand || 'SES ICT HUB'}</p>
+      <p class="category-line">{categoryLabel}</p>
       <h3><a href={productHref}>{product.title}</a></h3>
       <SpecChips product={product} />
     </div>
@@ -89,6 +81,11 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
       </div>
 
       <PriceBlock product={product} compact />
+
+      <p class={`stock-line ${stock.tone}`}>
+        <span class="stock-dot"></span>
+        {stock.detail}
+      </p>
 
       {product.in_stock ? (
         <Button
@@ -106,7 +103,7 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
         </Button>
       ) : (
         <Button href={whatsappHref} target="_blank" rel="noreferrer" variant="whatsapp" fullWidth>
-          WhatsApp Inquiry
+          Ask on WhatsApp
         </Button>
       )}
     </div>
@@ -142,12 +139,12 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 4 / 3;
-    padding: 0.85rem;
+    aspect-ratio: 1 / 1;
+    padding: 1rem;
     overflow: hidden;
     background:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 30%),
-      linear-gradient(180deg, rgba(239, 246, 255, 0.94), rgba(241, 245, 249, 0.96));
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 30%),
+      linear-gradient(180deg, rgba(247, 250, 252, 0.98), rgba(241, 245, 249, 0.97));
   }
 
   .media-link img {
@@ -175,6 +172,7 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
     left: 0.85rem;
     right: 0.85rem;
     display: flex;
+    flex-wrap: wrap;
     gap: 0.45rem;
     align-items: center;
   }
@@ -182,10 +180,6 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
   .top-row {
     top: 0.85rem;
     justify-content: space-between;
-  }
-
-  .deal-chip {
-    bottom: 0.85rem;
   }
 
   .product-body {
@@ -209,10 +203,17 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
     text-transform: uppercase;
   }
 
+  .category-line {
+    color: var(--color-primary);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
   .copy-stack h3 {
     font-size: 1.08rem;
     line-height: 1.35;
-    letter-spacing: -0.04em;
   }
 
   .copy-stack h3 a {
@@ -238,9 +239,38 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
     gap: 0.45rem;
   }
 
+  .stock-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .stock-line.in {
+    color: #166534;
+  }
+
+  .stock-line.low {
+    color: #854d0e;
+  }
+
+  .stock-line.out {
+    color: #991b1b;
+  }
+
+  .stock-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: currentColor;
+    flex: none;
+  }
+
   @media (max-width: 560px) {
     .media-link {
-      padding: 0.55rem;
+      padding: 0.65rem;
     }
 
     .top-row,
@@ -252,10 +282,6 @@ const savingsLabel = `Save ${formatKES(savingsAmount).replace(/^KSh\s*/, '')}`;
     .top-row {
       top: 0.45rem;
       gap: 0.3rem;
-    }
-
-    .deal-chip {
-      bottom: 0.45rem;
     }
 
     .top-row :global(.ui-badge),

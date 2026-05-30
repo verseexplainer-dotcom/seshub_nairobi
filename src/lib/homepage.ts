@@ -66,10 +66,17 @@ export function countExplicitBrands(products: Array<Record<string, unknown>>) {
 }
 
 const CATEGORY_PRIORITY: Record<string, number> = {
-  laptops: 5,
-  smartphones: 4,
-  printers: 3,
-  desktops: 2,
+  laptops: 8,
+  'gaming-laptops': 7,
+  smartphones: 6,
+  printers: 5,
+  desktops: 4,
+  monitors: 3,
+  projectors: 3,
+  ups: 3,
+  tablets: 2,
+  software: 2,
+  networking: 2,
   accessories: 1
 };
 

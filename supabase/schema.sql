@@ -77,7 +77,22 @@ CREATE TABLE IF NOT EXISTS public.products (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   slug             text        NOT NULL,
   title            text        NOT NULL,
-  category         text        NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
+  category         text        NOT NULL CHECK (
+    lower(category) IN (
+      'laptops',
+      'gaming_laptops',
+      'desktops',
+      'printers',
+      'smartphones',
+      'accessories',
+      'monitors',
+      'projectors',
+      'tablets',
+      'software',
+      'ups',
+      'networking'
+    )
+  ),
   price_kes        numeric     NOT NULL CHECK (price_kes > 0),
   compare_at_kes   numeric,
   in_stock         boolean     NOT NULL DEFAULT true,
