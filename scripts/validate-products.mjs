@@ -26,6 +26,8 @@ function localImagePath(value) {
 
 function getImages(product) {
   return [
+    ...(Array.isArray(product.image_overrides) ? product.image_overrides.map(asText) : []),
+    ...(Array.isArray(product.images) ? product.images.map(asText) : []),
     ...(Array.isArray(product.Images) ? product.Images.map(asText) : []),
     asText(product.image_file),
     ...(Array.isArray(product.image_alternates) ? product.image_alternates.map(asText) : [])
@@ -75,6 +77,15 @@ products.forEach((product, index) => {
   if (images.length === 0) {
     issues.push({ index, field: 'image', product: slug || title || `(row ${index + 1})` });
     return;
+  }
+
+  const category = asText(
+    Array.isArray(product.categories) && product.categories.length > 0
+      ? product.categories[0]
+      : product.Category ?? product.category
+  );
+  if (!category) {
+    issues.push({ index, field: 'category', product: slug || title || `(row ${index + 1})` });
   }
 
   const localCandidates = images

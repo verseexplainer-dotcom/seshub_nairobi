@@ -2,6 +2,7 @@ const SITE_ASSETS_BUCKET_PATH = '/storage/v1/object/public/site-assets';
 const PRODUCT_IMAGES_BUCKET_PATH = '/storage/v1/object/public/product-images';
 const LOCAL_SITE_ASSETS_PATH = '/site-assets';
 const LOCAL_PRODUCT_IMAGES_PATH = '/product-images';
+const PRODUCT_FALLBACK_PLACEHOLDER = 'product_fallback_placeholder.webp';
 
 export interface AssetSource {
   src: string;
@@ -112,6 +113,15 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
   const base = normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${SITE_ASSETS_BUCKET_PATH}` : null;
   const siteAsset = (filename: string) => buildAssetSource(filename, LOCAL_SITE_ASSETS_PATH, base);
   const remoteSiteAsset = (filename: string) => buildAssetSource(filename, LOCAL_SITE_ASSETS_PATH, base, { preferRemote: true });
+  const productPlaceholder = base
+    ? {
+        src: `${base}/${PRODUCT_FALLBACK_PLACEHOLDER}`,
+        fallback: '/product-placeholder.svg'
+      }
+    : {
+        src: '/product-placeholder.svg',
+        fallback: '/product-placeholder.svg'
+      };
   const logo = siteAsset('ses-logo-2500px-by-2500px.svg');
 
   return {
@@ -173,7 +183,7 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
     campaigns: {
       cashOnDelivery: remoteSiteAsset('cash-on-delivery-ses-brand.webp')
     },
-    productPlaceholder: siteAsset('product-placeholder.svg')
+    productPlaceholder
   };
 }
 

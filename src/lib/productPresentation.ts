@@ -156,15 +156,28 @@ const CATEGORY_BY_VALUE = new Map(
   ])
 );
 const CATEGORY_VALUE_ALIASES = new Map<string, StoreCategorySlug>([
+  ['laptop', 'laptops'],
+  ['laptops', 'laptops'],
+  ['smartphone', 'smartphones'],
+  ['smartphones', 'smartphones'],
+  ['printer', 'printers'],
+  ['printers', 'printers'],
+  ['desktop', 'desktops'],
+  ['desktops', 'desktops'],
   ['storage', 'accessories'],
   ['gaming laptops', 'gaming-laptops'],
   ['gaming_laptops', 'gaming-laptops'],
   ['gaming-laptops', 'gaming-laptops'],
+  ['gaming laptop', 'gaming-laptops'],
   ['monitor', 'monitors'],
+  ['monitors', 'monitors'],
   ['projector', 'projectors'],
+  ['projectors', 'projectors'],
   ['tablet', 'tablets'],
+  ['tablets', 'tablets'],
   ['software box', 'software'],
   ['software_box', 'software'],
+  ['software', 'software'],
   ['ups', 'ups'],
   ['network', 'networking'],
   ['networking', 'networking']
@@ -264,14 +277,27 @@ export function getStoreCategoryQueryValues(value: unknown) {
 }
 
 export function matchesStoreCategoryValue(value: unknown, category: unknown) {
-  const normalizedValue = normalizeText(value).toLowerCase();
-  if (!normalizedValue) {
+  const normalizedValues = Array.isArray(value)
+    ? value.map((entry) => normalizeText(entry).toLowerCase())
+    : typeof value === 'object' && value !== null
+      ? [
+          ...(Array.isArray((value as Record<string, unknown>).categories)
+            ? (value as Record<string, unknown>).categories as unknown[]
+            : []),
+          (value as Record<string, unknown>).category,
+          (value as Record<string, unknown>).Category
+        ]
+          .map((entry) => normalizeText(entry).toLowerCase())
+      : [normalizeText(value).toLowerCase()];
+
+  const values = normalizedValues.filter(Boolean);
+  if (values.length === 0) {
     return false;
   }
 
   return getStoreCategoryQueryValues(category)
     .map((entry) => entry.toLowerCase())
-    .includes(normalizedValue);
+    .some((candidate) => values.includes(candidate));
 }
 
 export function getCategorySlug(value: unknown) {

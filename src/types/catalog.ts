@@ -3,6 +3,7 @@ export interface CatalogProduct {
   slug: string;
   title: string;
   category: string;
+  categories?: string[] | null;
   brand?: string | null;
   price_kes: number;
   compare_at_kes?: number | null;

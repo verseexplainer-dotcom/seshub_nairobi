@@ -6,12 +6,12 @@ const originalFetch = globalThis.fetch;
 
 const validCart = [
   {
-    id: 'dell-latitude-7450-core-i5-refurbished',
+    id: 'dell-6430-core-i7-3rd-gen-8gb-500gb',
     qty: 1,
-    slug: 'dell-latitude-7450-core-i5-refurbished'
+    slug: 'dell-6430-core-i7-3rd-gen-8gb-500gb'
   }
 ];
-const validCartTotalKes = 16500;
+const validCartTotalKes = 14000;
 
 function createTurnstileSuccess(action: string) {
   return new Response(JSON.stringify({ success: true, action }), {
@@ -257,7 +257,7 @@ test('checkout sends configured WhatsApp order notification', async (t) => {
   assert.equal(notification?.body?.type, 'text');
   assert.match(notification?.body?.text?.body, /SES-20260319-00003/);
   assert.match(notification?.body?.text?.body, /Jane Doe/);
-  assert.match(notification?.body?.text?.body, /KES 16,500/);
+  assert.match(notification?.body?.text?.body, /KES 14,000/);
 });
 
 test('checkout forwards the signed-in user to order creation', async (t) => {

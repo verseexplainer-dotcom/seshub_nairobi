@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   refurb_grade     text        CHECK (refurb_grade IS NULL OR refurb_grade IN ('grade_a','grade_b','grade_c')),
   short_specs      text,
   description      text,
-  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12)),
+  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12, 24, 36)),
   images           jsonb       NOT NULL DEFAULT '[]'::jsonb,
   featured_home    boolean     NOT NULL DEFAULT false,
   featured_rank    numeric,

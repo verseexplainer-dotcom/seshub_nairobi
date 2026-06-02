@@ -97,7 +97,7 @@ function sortCatalogRows(rows: CatalogProduct[], sort = selectedSort) {
 
 const allCatalogRows = getAllProducts();
 facetRows = activeCategory
-  ? allCatalogRows.filter((product) => matchesStoreCategoryValue(product.category, activeCategory))
+  ? allCatalogRows.filter((product) => matchesStoreCategoryValue(product, activeCategory))
   : allCatalogRows;
 
 const filteredRows = facetRows.filter((product) => {
@@ -220,7 +220,7 @@ const paginationNumbers = Array.from({ length: Math.min(totalPages, 5) }, (_, in
 
 const categoryCounts = STOREFRONT_CATEGORIES.map((category) => ({
   ...category,
-  count: facetRows.filter((row) => matchesStoreCategoryValue(row.category, category)).length
+  count: facetRows.filter((row) => matchesStoreCategoryValue(row, category)).length
 }));
 
 const priceBand = minFacetPrice && maxFacetPrice

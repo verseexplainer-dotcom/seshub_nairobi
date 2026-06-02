@@ -200,9 +200,9 @@ test('missing product images resolve to the storefront fallback image', () => {
   const imageUrl = getPrimaryImage(createProduct());
   const presentation = getProductPresentation(createProduct());
 
-  assert.equal(imageUrl, '/site-assets/product-placeholder.svg');
-  assert.deepEqual(presentation.imageUrls, ['/site-assets/product-placeholder.svg']);
-  assert.equal(presentation.primaryImageUrl, '/site-assets/product-placeholder.svg');
+  assert.equal(imageUrl, '/product-placeholder.svg');
+  assert.deepEqual(presentation.imageUrls, ['/product-placeholder.svg']);
+  assert.equal(presentation.primaryImageUrl, '/product-placeholder.svg');
 });
 
 test('expanded storefront categories resolve by slug and database value', () => {

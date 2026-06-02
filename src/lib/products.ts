@@ -1,6 +1,7 @@
 import rawCatalog from '../data/products_final.json';
 import type { CatalogProduct } from '../types/catalog';
 import {
+  getStoreCategoryByValue,
   getStoreCategoryQueryValues,
   matchesStoreCategoryValue,
   normalizeText,
@@ -26,13 +27,27 @@ const generatedAt = !Array.isArray(catalogFile) && normalizeText(catalogFile.gen
   : new Date().toISOString();
 
 function normalizeCategory(value: unknown) {
-  const normalized = normalizeText(value).toLowerCase();
-  if (normalized === 'laptop' || normalized === 'laptops') return 'Laptops';
-  if (normalized === 'smartphone' || normalized === 'smartphones' || normalized === 'phone') return 'Smartphones';
+  const source = Array.isArray(value) ? value[0] : value;
+  const normalized = normalizeText(source).toLowerCase().replace(/[\s_-]+/g, ' ');
+  const category = getStoreCategoryByValue(source);
+
+  if (category) {
+    return category.label;
+  }
+
+  if (normalized === 'laptop' || normalized === 'laptops' || normalized === 'notebook' || normalized === 'notebooks') return 'Laptops';
+  if (normalized === 'gaming laptop' || normalized === 'gaming laptops') return 'Gaming Laptops';
+  if (normalized === 'smartphone' || normalized === 'smartphones' || normalized === 'phone' || normalized === 'phones') return 'Smartphones';
   if (normalized === 'printer' || normalized === 'printers') return 'Printers';
-  if (normalized === 'desktop' || normalized === 'desktops') return 'Desktops';
+  if (normalized === 'desktop' || normalized === 'desktops' || normalized === 'pc' || normalized === 'pcs') return 'Desktops';
+  if (normalized === 'monitor' || normalized === 'monitors') return 'Monitors';
+  if (normalized === 'projector' || normalized === 'projectors') return 'Projectors';
+  if (normalized === 'tablet' || normalized === 'tablets') return 'Tablets';
+  if (normalized === 'software' || normalized === 'software box') return 'Software';
+  if (normalized === 'ups') return 'UPS';
+  if (normalized === 'network' || normalized === 'networking') return 'Networking';
   if (normalized === 'storage') return 'Accessories';
-  return normalizeText(value) || 'Accessories';
+  return normalizeText(source) || 'Accessories';
 }
 
 function normalizeCondition(value: unknown) {
@@ -67,13 +82,6 @@ function getStorageType(value: unknown) {
   return null;
 }
 
-function splitTags(value: unknown) {
-  return normalizeText(value)
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}
-
 function getArrayValues(value: unknown) {
   if (Array.isArray(value)) return value;
   const text = normalizeText(value);
@@ -101,6 +109,7 @@ function normalizeImagePath(value: unknown) {
 
 function getImageCandidates(row: RawJsonProduct) {
   const candidates = [
+    ...(Array.isArray(row.images) ? row.images.map(normalizeImagePath) : []),
     ...getArrayValues(row.Images).map(normalizeImagePath),
     normalizeImagePath(row.image_file),
     ...(Array.isArray(row.image_alternates) ? row.image_alternates.map(normalizeImagePath) : [])
@@ -110,54 +119,59 @@ function getImageCandidates(row: RawJsonProduct) {
 }
 
 function rawToCatalogRow(row: RawJsonProduct, index: number): Record<string, unknown> {
-  const slug = normalizeText(row['URL Slug']);
-  const title = normalizeText(row['Product Name']) || normalizeText(row.Model) || slug;
-  const price = parsePositiveNumber(row['Price (KES)']) ?? 0;
-  const regularPrice = parsePositiveNumber(row['Regular Price (KES)']);
-  const condition = normalizeCondition(row.Condition);
-  const ramGb = parseGbValue(row.RAM);
-  const storageGb = parseGbValue(row.Storage);
-  const storageType = getStorageType(row.Storage);
+  const slug = normalizeText(row.slug || row['URL Slug']);
+  const title = normalizeText(row.title || row['Product Name']) || normalizeText(row.Model) || slug;
+  const price = parsePositiveNumber(row.price_kes ?? row['Price (KES)'] ?? row.price) ?? 0;
+  const regularPrice = parsePositiveNumber(row.compare_at_kes ?? row['Regular Price (KES)'] ?? row.compare_at_price);
+  const condition = normalizeCondition(row.condition ?? row.Condition);
+  const ramGb = parseGbValue(row.ram_gb ?? row.RAM);
+  const storageGb = parseGbValue(row.storage_gb ?? row.Storage);
+  const storageType = getStorageType(row.storage_type ?? row.Storage);
+  const categories = getArrayValues(row.categories ?? row.category ?? row.Category)
+    .map((entry) => normalizeCategory(entry))
+    .filter(Boolean);
+  const category = normalizeCategory(categories[0] ?? row.category ?? row.Category);
   const shortSpecs = [
-    normalizeText(row.Processor),
+    normalizeText(row.cpu ?? row.Processor),
     ramGb ? `${Math.round(ramGb)}GB RAM` : '',
     storageGb ? `${storageGb >= 1024 && storageGb % 1024 === 0 ? `${storageGb / 1024}TB` : `${Math.round(storageGb)}GB`} ${storageType || ''}`.trim() : '',
-    normalizeText(row['Display Size'])
+    normalizeText(row.screen_in ?? row['Display Size'])
   ].filter(Boolean).join(', ');
 
   return {
     id: slug,
     slug,
     title,
-    category: normalizeCategory(row.Category),
-    brand: normalizeText(row.Brand) || null,
+    category,
+    categories: categories.length > 0 ? categories : null,
+    brand: normalizeText(row.brand ?? row.Brand) || null,
     price_kes: price,
     compare_at_kes: regularPrice !== null && regularPrice > price ? regularPrice : null,
     in_stock: price > 0,
     stock_qty: price > 0 ? 1 : 0,
     condition,
     refurb_grade: condition === 'refurbished' ? 'grade_a' : null,
-    short_specs: shortSpecs || normalizeText(row['Short Description']) || null,
-    short_description: normalizeText(row['Short Description']) || null,
-    description: normalizeText(row['Long Description']) || null,
-    warranty_months: null,
+    short_specs: shortSpecs || normalizeText(row.short_specs ?? row['Short Description']) || null,
+    short_description: normalizeText(row.short_description ?? row['Short Description']) || null,
+    description: normalizeText(row.description ?? row['Long Description']) || null,
+    warranty_months: parsePositiveNumber(row.warranty_months) || null,
     images: getImageCandidates(row),
-    image_overrides: null,
+    image_overrides: Array.isArray(row.image_overrides) ? row.image_overrides : null,
     featured_home: index < 24,
     featured_rank: index + 1,
-    sku: slug,
-    status: price > 0 ? 'active' : 'draft',
-    cpu: normalizeText(row.Processor) || null,
+    sku: normalizeText(row.sku) || slug,
+    status: normalizeText(row.status) || (price > 0 ? 'active' : 'draft'),
+    cpu: normalizeText(row.cpu ?? row.Processor) || null,
     ram_gb: ramGb,
     storage_gb: storageGb,
     storage_type: storageType,
-    screen_in: parseScreenInches(row['Display Size']),
-    collections: [],
-    tags: splitTags(row.Tags),
-    seo_title: normalizeText(row['Meta Title']) || null,
-    meta_description: normalizeText(row['Meta Description']) || null,
-    created_at: generatedAt,
-    updated_at: generatedAt
+    screen_in: parseScreenInches(row.screen_in ?? row['Display Size']),
+    collections: getArrayValues(row.collections).map((entry) => normalizeText(entry)).filter(Boolean),
+    tags: getArrayValues(row.tags ?? row.Tags).map((entry) => normalizeText(entry)).filter(Boolean),
+    seo_title: normalizeText(row.seo_title ?? row['Meta Title']) || null,
+    meta_description: normalizeText(row.meta_description ?? row['Meta Description']) || null,
+    created_at: normalizeText(row.created_at) || generatedAt,
+    updated_at: normalizeText(row.updated_at) || generatedAt
   };
 }
 
@@ -209,10 +223,10 @@ export function getRelatedProducts(product: CatalogProduct, limit = 4) {
       item.slug !== product.slug &&
       normalizeText(item.brand) &&
       normalizeText(item.brand) === normalizeText(product.brand) &&
-      matchesStoreCategoryValue(item.category, product.category)
+      matchesStoreCategoryValue(item, product.category)
   );
   const sameCategory = products.filter(
-    (item) => item.slug !== product.slug && matchesStoreCategoryValue(item.category, product.category)
+    (item) => item.slug !== product.slug && matchesStoreCategoryValue(item, product.category)
   );
   const featured = products.filter((item) => item.slug !== product.slug && item.featured_home);
   const results: CatalogProduct[] = [];
@@ -233,7 +247,7 @@ export function filterProducts(filters: CatalogSearchFilters = {}) {
   return products.filter((product) => {
     const categoryMatches =
       categoryValues.length === 0 ||
-      categoryValues.includes(normalizeText(product.category).toLowerCase());
+      categoryValues.includes(normalizeText(product.categories?.[0] || product.category).toLowerCase());
 
     return (
       categoryMatches &&

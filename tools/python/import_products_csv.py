@@ -77,9 +77,11 @@ OPTIONAL_SUFFIX_FIELDS = [
 ]
 
 NORMALIZED_FIELDNAMES = [
+    "source_id",
     "slug",
     "title",
     "category",
+    "categories",
     "price_kes",
     "compare_at_kes",
     "in_stock",
@@ -91,13 +93,22 @@ NORMALIZED_FIELDNAMES = [
     "description",
     "warranty_months",
     "images",
+    "image_overrides",
+    "featured_home",
+    "featured_rank",
+    "sku",
+    "status",
     "cpu",
     "ram_gb",
     "storage_gb",
     "storage_type",
     "screen_in",
+    "collections",
+    "tags",
     "seo_title",
     "meta_description",
+    "created_at",
+    "updated_at",
 ]
 
 CATEGORY_MAP = {
@@ -132,8 +143,14 @@ CATEGORY_MAP = {
 CONDITION_MAP = {
     "brand new": "brand_new",
     "brand_new": "brand_new",
+    "new": "brand_new",
     "refurbished": "refurbished",
     "refurb": "refurbished",
+    "used": "refurbished",
+    "used / refurbished": "refurbished",
+    "used/refurbished": "refurbished",
+    "ex uk": "refurbished",
+    "ex-uk": "refurbished",
     "unknown": "unknown",
 }
 
@@ -271,8 +288,40 @@ def pick_json_value(row: dict[str, Any], *keys: str) -> Any:
 
 def json_images_value(value: Any) -> str:
     if isinstance(value, list):
-        return ",".join(as_text(entry) for entry in value if as_text(entry))
+        urls: list[str] = []
+        for entry in value:
+            if isinstance(entry, dict):
+                url = as_text(entry.get("url") or entry.get("public_url") or entry.get("src"))
+                storage_path = as_text(entry.get("storage_path"))
+                if url:
+                    urls.append(url)
+                elif storage_path:
+                    urls.append(storage_path)
+                continue
+            text = as_text(entry)
+            if text:
+                urls.append(text)
+        return ",".join(urls)
     return as_text(value)
+
+
+def public_product_image_url_from_local_path(row: dict[str, Any]) -> str:
+    local_path = as_text(row.get("image_local_path"))
+    if not local_path:
+        return ""
+
+    image_url = as_text(row.get("image_url") or row.get("image_public_url_path"))
+    match = re.match(r"^(https?://[^/]+/storage/v1/object/public/product-images)/", image_url)
+    if not match:
+        return ""
+
+    normalized_path = re.sub(r"\.(?:jpg|jpeg|png)$", ".webp", local_path, flags=re.IGNORECASE)
+    folder, _, filename = normalized_path.partition("/")
+    if folder == "laptop" and (
+        filename.startswith("lenovo_") or filename == "hp_zbook_power_15_g9_laptop.webp"
+    ):
+        normalized_path = f"laptops/{filename}"
+    return f"{match.group(1)}/{normalized_path}"
 
 
 def json_text_value(value: Any) -> str:
@@ -281,15 +330,45 @@ def json_text_value(value: Any) -> str:
     return as_text(value)
 
 
+def extract_price_text_from_row(row: dict[str, Any]) -> str:
+    for key in ("meta_description", "description_html", "short_description"):
+        text = as_text(row.get(key))
+        match = re.search(r"\bPrice:\s*KES\s*([\d,]+(?:\.\d+)?)", text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def extract_condition_text_from_row(row: dict[str, Any]) -> str:
+    for key in ("condition", "description_html", "short_description", "title"):
+        text = as_text(row.get(key))
+        if re.search(r"\bUsed\s*/\s*Refurbished\b", text, re.IGNORECASE):
+            return "Used / Refurbished"
+        if re.search(r"\bBrand\s+New\b", text, re.IGNORECASE):
+            return "Brand New"
+        if re.search(r"\bRefurbished\b", text, re.IGNORECASE):
+            return "Refurbished"
+    return ""
+
+
 def normalize_json_source_row(row: dict[str, Any]) -> dict[str, str]:
-    images = pick_json_value(row, "images", "Images", "image_overrides")
+    local_image_url = public_product_image_url_from_local_path(row)
+    images = local_image_url or pick_json_value(row, "image_url", "image_urls", "images", "Images", "image_overrides")
     stock_status = pick_json_value(row, "stock_status", "in_stock")
+    price_kes = pick_json_value(row, "price_kes", "price", "Price (KES)") or extract_price_text_from_row(row)
+    condition = pick_json_value(row, "condition", "Condition") or extract_condition_text_from_row(row)
     return {
+        "source_id": as_text(pick_json_value(row, "source_id", "id")),
+        "status": as_text(pick_json_value(row, "status")),
+        "visibility": as_text(pick_json_value(row, "visibility")),
+        "stock_quantity": as_text(pick_json_value(row, "stock_quantity", "stock_qty")),
+        "sku": as_text(pick_json_value(row, "sku")),
         "title": as_text(pick_json_value(row, "title", "name", "Product Name")),
         "slug": as_text(pick_json_value(row, "slug", "URL Slug")),
         "source_category": as_text(pick_json_value(row, "source_category", "category", "Category")),
+        "subcategory": as_text(pick_json_value(row, "subcategory", "categories")),
         "brand": as_text(pick_json_value(row, "brand", "Brand")),
-        "price_kes": as_text(pick_json_value(row, "price_kes", "price", "Price (KES)")),
+        "price_kes": as_text(price_kes),
         "compare_at_price": as_text(pick_json_value(row, "compare_at_price", "compare_at_kes", "compare_at", "Regular Price (KES)")),
         "short_specs": json_text_value(pick_json_value(row, "short_specs", "specs", "Short Specs")),
         "short_description": as_text(pick_json_value(row, "short_description", "summary", "Short Description")),
@@ -298,11 +377,20 @@ def normalize_json_source_row(row: dict[str, Any]) -> dict[str, str]:
         "meta_description": as_text(pick_json_value(row, "meta_description", "Meta Description")),
         "focus_keyword": as_text(pick_json_value(row, "focus_keyword", "Keywords Primary")),
         "search_keywords": as_text(pick_json_value(row, "search_keywords", "Keywords Secondary", "Tags")),
-        "condition": as_text(pick_json_value(row, "condition", "Condition")),
+        "condition": as_text(condition),
         "warranty": as_text(pick_json_value(row, "warranty", "warranty_months", "Warranty")),
         "stock_status": as_text(stock_status) or "available",
         "primary_image": json_images_value(pick_json_value(row, "primary_image")),
         "images": json_images_value(images),
+        "processor": as_text(pick_json_value(row, "processor", "cpu", "Processor")),
+        "generation": as_text(pick_json_value(row, "generation")),
+        "ram": as_text(pick_json_value(row, "ram", "RAM")),
+        "storage": as_text(pick_json_value(row, "storage", "Storage")),
+        "display_specs": as_text(pick_json_value(row, "display_specs", "screen_in", "Display Size")),
+        "collections": json_text_value(pick_json_value(row, "collections", "source_section")),
+        "tags": json_text_value(pick_json_value(row, "tags", "search_keywords")),
+        "created_at": as_text(pick_json_value(row, "created_at", "generated_at")),
+        "updated_at": as_text(pick_json_value(row, "updated_at", "generated_at")),
     }
 
 
@@ -368,11 +456,11 @@ def parse_warranty_months(value: str) -> float | None:
     if re.fullmatch(r"\d+(?:\.\d+)?", text):
         return float(text)
 
-    match = re.search(r"\b(\d{1,2})\s*(?:yr|year)\b", text)
+    match = re.search(r"\b(\d{1,2})\s*(?:yr|year)", text)
     if match:
         return float(int(match.group(1)) * 12)
 
-    match = re.search(r"\b(\d{1,2})\s*month", text)
+    match = re.search(r"\b(\d{1,2})\s*[- ]?month", text)
     if match:
         return float(int(match.group(1)))
 
@@ -386,7 +474,22 @@ def parse_stock_status(value: str) -> tuple[bool | None, float | None]:
     return None, None
 
 
+def parse_stock_quantity(value: str) -> float | None:
+    parsed = parse_numeric(value)
+    if parsed is None or parsed < 0:
+        return None
+    return parsed
+
+
 def extract_cpu(text: str, brand: str) -> str | None:
+    match = re.search(r"\bcore\s+ultra\s*([3579])\b", text, re.IGNORECASE)
+    if match:
+        return f"Core Ultra {match.group(1)}"
+
+    match = re.search(r"\bcore\s+(i[3579])\b", text, re.IGNORECASE)
+    if match:
+        return f"Core {match.group(1).lower()}"
+
     match = re.search(r"\bintel\s+core\s+ultra\s*([3579])\b", text, re.IGNORECASE)
     if match:
         return f"Intel Core Ultra {match.group(1)}"
@@ -422,7 +525,7 @@ def extract_cpu(text: str, brand: str) -> str | None:
 
 
 def extract_ram_gb(text: str) -> float | None:
-    match = re.search(r"\b(\d{1,3})\s*GB\s*RAM\b", text, re.IGNORECASE)
+    match = re.search(r"\b(\d{1,3})\s*GB(?:\s*RAM)?\b", text, re.IGNORECASE)
     if not match:
         return None
     return float(int(match.group(1)))
@@ -445,7 +548,7 @@ def extract_storage(text: str) -> tuple[float | None, str | None]:
 
 
 def extract_screen_in(text: str) -> float | None:
-    match = re.search(r"\b(\d{1,2}(?:\.\d)?)\s*[- ]?inch(?:es)?\b", text, re.IGNORECASE)
+    match = re.search(r"\b(\d{1,2}(?:\.\d)?)\s*(?:[- ]?inch(?:es)?|\")\b", text, re.IGNORECASE)
     if not match:
         return None
 
@@ -489,6 +592,22 @@ def parse_images(primary_image: str, images: str) -> list[str]:
     return unique_values
 
 
+def parse_text_list(value: str) -> list[str]:
+    text = as_text(value)
+    if not text:
+        return []
+
+    if text.startswith("["):
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, list):
+            return [as_text(entry) for entry in parsed if as_text(entry)]
+
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
 def build_text_blob(source: dict[str, str]) -> str:
     return " ".join(
         part
@@ -499,6 +618,11 @@ def build_text_blob(source: dict[str, str]) -> str:
             source["description_html"],
             source["meta_description"],
             source["search_keywords"],
+            source.get("processor", ""),
+            source.get("generation", ""),
+            source.get("ram", ""),
+            source.get("storage", ""),
+            source.get("display_specs", ""),
         ]
         if part
     )
@@ -541,6 +665,11 @@ def map_source_row(source: dict[str, str]) -> tuple[dict[str, Any] | None, list[
     in_stock, stock_qty = parse_stock_status(source["stock_status"])
     if source["stock_status"] and in_stock is None:
         warnings.append(f"Could not map stock_status '{source['stock_status']}'.")
+    explicit_stock_qty = parse_stock_quantity(source.get("stock_quantity", ""))
+    if explicit_stock_qty is not None:
+        stock_qty = explicit_stock_qty
+        if in_stock is None:
+            in_stock = stock_qty > 0
 
     if category == "accessories" and as_text(source["source_category"]).lower() == "storage":
         warnings.append("Mapped source category 'storage' to schema category 'accessories'.")
@@ -552,11 +681,18 @@ def map_source_row(source: dict[str, str]) -> tuple[dict[str, Any] | None, list[
     screen_in = extract_screen_in(text_blob)
     refurb_grade = infer_refurb_grade(category or "", condition or "", source["description_html"])
     images = parse_images(source.get("primary_image", ""), source.get("images", ""))
+    category_labels = parse_text_list(source.get("subcategory", ""))
+    if source["source_category"] and source["source_category"] not in category_labels:
+        category_labels.insert(0, source["source_category"])
+    tags = parse_text_list(source.get("tags", "")) or parse_text_list(source.get("search_keywords", ""))
+    collections = parse_text_list(source.get("collections", ""))
 
     payload: dict[str, Any] = {
+        "source_id": as_text(source.get("source_id", "")) or None,
         "slug": slug,
         "title": title,
         "category": category,
+        "categories": category_labels or ([source["source_category"]] if source["source_category"] else []),
         "price_kes": price_kes,
         "compare_at_kes": compare_at_kes,
         "brand": as_text(source["brand"]) or None,
@@ -567,9 +703,16 @@ def map_source_row(source: dict[str, str]) -> tuple[dict[str, Any] | None, list[
         "condition": condition,
         "warranty_months": warranty_months,
         "images": images or [],
+        "image_overrides": [],
         "in_stock": in_stock,
         "stock_qty": stock_qty,
         "refurb_grade": refurb_grade,
+        "sku": as_text(source.get("sku", "")) or slug,
+        "status": as_text(source.get("status", "")) or "active",
+        "collections": collections,
+        "tags": tags,
+        "created_at": as_text(source.get("created_at", "")) or None,
+        "updated_at": as_text(source.get("updated_at", "")) or None,
     }
 
     if cpu:

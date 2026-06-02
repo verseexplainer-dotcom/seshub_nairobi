@@ -255,6 +255,9 @@ export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogPr
     slug: normalizeText(row.slug),
     title: normalizeText(row.title),
     category: normalizeText(row.category),
+    categories: Array.isArray(row.categories)
+      ? row.categories.map((entry) => normalizeText(entry)).filter(Boolean)
+      : null,
     brand: toStringOrNull(row.brand),
     price_kes: Math.max(0, toNumberOrNull(row.price_kes) ?? 0),
     compare_at_kes: compareAt,
@@ -336,7 +339,11 @@ export function filterVisibleCatalogProducts(products: CatalogProduct[]) {
 }
 
 export function getCatalogCategoryKey(product: CatalogProduct) {
-  return getCategorySlug(product.category) || normalizeText(product.category).toLowerCase();
+  const categorySource = Array.isArray(product.categories) && product.categories.length > 0
+    ? product.categories[0]
+    : product.category;
+
+  return getCategorySlug(categorySource) || normalizeText(categorySource).toLowerCase();
 }
 
 export function isStorageProduct(product: CatalogProduct) {
