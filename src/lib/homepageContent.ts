@@ -59,14 +59,14 @@ export const blogPosts: BlogPost[] = [
     slug: 'refurbished-laptop-checklist',
     category: 'Buying Guide',
     date: 'March 18, 2026',
-    title: 'What to verify before you buy a refurbished laptop in Nairobi',
+    title: 'What to verify before you buy an Ex-uk Grade A refurb laptop in Nairobi',
     excerpt: 'A practical checklist for buyers comparing grade, battery condition, ports, warranty coverage, and delivery promises.',
     seoDescription:
-      'Use this Nairobi refurbished laptop checklist to compare condition, battery health, ports, warranty, software, and delivery before you pay.',
+      'Use this Nairobi Ex-uk Grade A refurb laptop checklist to compare condition, battery health, ports, warranty, software, and delivery before you pay.',
     readingMinutes: 5,
     href: '/blog/refurbished-laptop-checklist',
     heroSummary:
-      'A refurbished laptop can be excellent value when the condition, battery, ports, and warranty are checked clearly before payment.',
+      'An Ex-uk Grade A refurb laptop can be excellent value when the condition, battery, ports, and warranty are checked clearly before payment.',
     takeaway:
       'Ask for the exact specs, inspect the physical condition, confirm battery behavior, and keep the warranty terms in writing.',
     sections: [
@@ -86,14 +86,14 @@ export const blogPosts: BlogPost[] = [
       {
         heading: 'Check the body, keyboard, ports, and charger',
         paragraphs: [
-          'Cosmetic marks are common on refurbished machines, but broken hinges, missing keys, cracked bezels, or loose charging ports are different issues. Those can affect daily use and repair cost.',
+          'Cosmetic marks are common on Ex-uk Grade A refurb machines, but broken hinges, missing keys, cracked bezels, or loose charging ports are different issues. Those can affect daily use and repair cost.',
           'Test the keyboard, touchpad, webcam, Wi-Fi, USB ports, HDMI, audio jack, and charger connection before leaving the shop or approving delivery.'
         ]
       },
       {
         heading: 'Ask direct questions about battery behavior',
         paragraphs: [
-          'Battery life varies on refurbished laptops. A responsible seller should explain what they have tested and what you should expect under normal use.',
+          'Battery life varies on Ex-uk Grade A refurb laptops. A responsible seller should explain what they have tested and what you should expect under normal use.',
           'If you depend on long unplugged sessions, say that before buying. It helps the team recommend a machine that matches how you actually work.'
         ],
         bullets: [
