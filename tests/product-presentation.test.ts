@@ -41,8 +41,18 @@ function createProduct(overrides: Record<string, unknown> = {}) {
 test('laptop presentation suppresses Grade B and Grade C badges', () => {
   const presentation = getProductPresentation(createProduct({ refurb_grade: 'grade_b' }));
 
-  assert.equal(presentation.condition.label, 'Refurbished');
+  assert.equal(presentation.condition.label, 'Ex-uk Grade A refurb');
   assert.equal(presentation.grade, null);
+  assert.equal(
+    presentation.specRows.some((row) => row.label === 'Refurb grade'),
+    false
+  );
+});
+
+test('Grade A refurb condition does not duplicate the grade in specs', () => {
+  const presentation = getProductPresentation(createProduct());
+
+  assert.equal(presentation.condition.label, 'Ex-uk Grade A refurb');
   assert.equal(
     presentation.specRows.some((row) => row.label === 'Refurb grade'),
     false

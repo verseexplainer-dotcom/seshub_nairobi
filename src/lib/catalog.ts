@@ -324,7 +324,7 @@ export function getConditionLabel(product: CatalogProduct) {
   }
 
   if (normalizeText(product.condition).toLowerCase() === 'refurbished') {
-    return 'Refurbished';
+    return 'Ex-uk Grade A refurb';
   }
 
   return '';

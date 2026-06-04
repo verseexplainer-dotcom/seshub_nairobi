@@ -271,8 +271,8 @@ export function buildUseCaseCollections(products: CatalogProduct[]) {
     },
     {
       id: 'best-refurbished-deals',
-      title: 'Best Refurbished Deals',
-      description: 'Value-focused refurbished machines with tested condition and honest pricing.',
+      title: 'Best Ex-uk Grade A refurb Deals',
+      description: 'Value-focused Ex-uk Grade A refurb machines with tested condition and honest pricing.',
       href: buildConditionFilterHref('refurbished', { sort: 'price_asc', in_stock: 1 }),
       products: sortByScore(refurbishedProducts, scoreBestValueCandidate).slice(0, 3)
     },
@@ -302,6 +302,6 @@ export function getInventorySummary(products: CatalogProduct[]) {
     liveCount: liveProducts.length,
     brandCount: countMerchandisingBrands(products),
     brandNewCount: liveProducts.filter((product) => getConditionLabel(product) === 'Brand New').length,
-    refurbishedCount: liveProducts.filter((product) => getConditionLabel(product) === 'Refurbished').length
+    refurbishedCount: liveProducts.filter((product) => normalizeText(product.condition).toLowerCase() === 'refurbished').length
   };
 }

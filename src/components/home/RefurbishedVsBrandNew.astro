@@ -39,7 +39,7 @@ const { brandNewCount, refurbishedCount } = Astro.props as Props;
 
       <article class="condition-panel refurbished">
         <div class="panel-head">
-          <Badge tone="warning">Refurbished</Badge>
+          <Badge tone="warning">Ex-uk Grade A refurb</Badge>
           <strong>{refurbishedCount}</strong>
         </div>
         <p>Best when you want stronger value, tested stock, and practical performance for less.</p>
@@ -49,7 +49,7 @@ const { brandNewCount, refurbishedCount } = Astro.props as Props;
           <li>Great fit for budget-led shoppers and office setups</li>
         </ul>
         <Button href={buildConditionFilterHref('refurbished', { sort: 'price_asc', in_stock: 1 })}>
-          Browse Refurbished
+          Browse Ex-uk Grade A refurb
         </Button>
       </article>
     </div>

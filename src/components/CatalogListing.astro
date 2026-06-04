@@ -194,7 +194,7 @@ const activeFilterChips = [
   selectedBrand ? { label: `Brand: ${selectedBrand}`, href: buildHref({ brand: null, page: null }) } : null,
   selectedCondition
     ? {
-        label: `Condition: ${selectedCondition === 'brand_new' ? 'Brand New' : 'Refurbished'}`,
+        label: `Condition: ${selectedCondition === 'brand_new' ? 'Brand New' : 'Ex-uk Grade A refurb'}`,
         href: buildHref({ condition: null, page: null })
       }
     : null,
@@ -409,7 +409,7 @@ const breadcrumbData = isShopMode
             <select id="shop-condition" name="condition">
               <option value="">All conditions</option>
               <option value="brand_new" selected={selectedCondition === 'brand_new'}>Brand New</option>
-              <option value="refurbished" selected={selectedCondition === 'refurbished'}>Refurbished</option>
+              <option value="refurbished" selected={selectedCondition === 'refurbished'}>Ex-uk Grade A refurb</option>
             </select>
           </div>
           <div class="filter-block">
@@ -461,7 +461,7 @@ const breadcrumbData = isShopMode
                 <select id="condition-filter" name="condition">
                   <option value="">All conditions</option>
                   <option value="brand_new" selected={selectedCondition === 'brand_new'}>Brand New</option>
-                  <option value="refurbished" selected={selectedCondition === 'refurbished'}>Refurbished</option>
+                  <option value="refurbished" selected={selectedCondition === 'refurbished'}>Ex-uk Grade A refurb</option>
                 </select>
               </div>
 

@@ -371,7 +371,7 @@ export function getConditionMeta(value: unknown) {
   }
 
   if (normalized === 'refurbished') {
-    return { label: 'Refurbished', tone: 'refurbished' as const };
+    return { label: 'Ex-uk Grade A refurb', tone: 'refurbished' as const };
   }
 
   return { label: 'Verified condition', tone: 'verified' as const };
@@ -618,7 +618,7 @@ export function getSpecTableRows(product: Record<string, any>) {
   if (condition.label) {
     rows.push({ label: 'Condition', value: condition.label });
   }
-  if (grade?.label) {
+  if (grade?.label && condition.label !== 'Ex-uk Grade A refurb') {
     rows.push({ label: 'Refurb grade', value: grade.label });
   }
 
@@ -632,7 +632,7 @@ export function stripMarketingWordsFromTitle(value: unknown) {
   }
 
   return raw
-    .replace(/\b(refurbished|brand[\s-]?new)\b/gi, '')
+    .replace(/\b(refurbished|ex[\s-]?uk\s+grade\s+a\s+refurb|brand[\s-]?new)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || raw;
 }
