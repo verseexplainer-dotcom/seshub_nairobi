@@ -17,6 +17,54 @@ function stripProductImagesPrefix(path: string) {
   return path.replace(/^\/?(?:storage\/v1\/object\/public\/)?product-images\//, '');
 }
 
+function getKnownImageFolder(path: string) {
+  const normalizedPath = stripProductImagesPrefix(path)
+    .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/product-images\//i, '')
+    .replace(/^\/+/, '');
+  return normalizedPath.split('/')[0]?.toLowerCase() || '';
+}
+
+function normalizeCategory(value: unknown) {
+  return normalizeText(value).toLowerCase().replace(/[\s_-]+/g, ' ');
+}
+
+function imageFolderMatchesProduct(image: unknown, product: Pick<CatalogProduct, 'category'>) {
+  const source = normalizeText(image);
+  const category = normalizeCategory(product.category);
+  if (!source || !category) {
+    return true;
+  }
+
+  const folder = getKnownImageFolder(source);
+  if (!folder) {
+    return true;
+  }
+
+  const folderCategories: Record<string, string[]> = {
+    laptop: ['laptops', 'gaming laptops'],
+    laptops: ['laptops', 'gaming laptops'],
+    desktop: ['desktops'],
+    desktops: ['desktops'],
+    monitor: ['monitors'],
+    monitors: ['monitors'],
+    networking: ['networking'],
+    printer: ['printers'],
+    printers: ['printers'],
+    projector: ['projectors'],
+    projectors: ['projectors'],
+    smartphone: ['smartphones'],
+    smartphones: ['smartphones'],
+    software: ['software'],
+    software_box: ['software'],
+    tablet: ['tablets'],
+    tablets: ['tablets'],
+    ups: ['ups']
+  };
+
+  const allowedCategories = folderCategories[folder];
+  return !allowedCategories || allowedCategories.includes(category);
+}
+
 function parseImageInput(value: unknown) {
   if (Array.isArray(value)) {
     return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
@@ -105,10 +153,11 @@ export function resolveProductImage(
 }
 
 export function getProductGallery(
-  product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
+  product: Pick<CatalogProduct, 'images' | 'image_overrides'> & Partial<Pick<CatalogProduct, 'category'>>,
   options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
 ) {
-  const candidates = getPrioritizedImageCandidates(product);
+  const candidates = getPrioritizedImageCandidates(product)
+    .filter((image) => !product.category || imageFolderMatchesProduct(image, product as Pick<CatalogProduct, 'category'>));
   const resolvedImages = candidates
     .map((image) => resolveProductImage(image, options.publicSupabaseUrl, options.fallbackImage))
     .filter((image): image is string => typeof image === 'string' && image.length > 0);
@@ -121,7 +170,7 @@ export function getProductGallery(
 }
 
 export function getPrimaryImage(
-  product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
+  product: Pick<CatalogProduct, 'images' | 'image_overrides'> & Partial<Pick<CatalogProduct, 'category'>>,
   options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
 ) {
   return getProductGallery(product, options)[0] || getFallbackProductImage(options.publicSupabaseUrl);

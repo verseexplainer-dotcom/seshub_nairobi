@@ -215,6 +215,20 @@ test('missing product images resolve to the storefront fallback image', () => {
   assert.equal(presentation.primaryImageUrl, '/product-placeholder.svg');
 });
 
+test('category-mismatched product images resolve to the storefront fallback image', () => {
+  const starlinkMini = createProduct({
+    title: 'Starlink mini available',
+    category: 'Networking',
+    brand: 'Starlink',
+    images: [
+      'https://project.supabase.co/storage/v1/object/public/product-images/ups/starlink_mini_available_ups.webp'
+    ]
+  });
+
+  assert.equal(getPrimaryImage(starlinkMini), '/product-placeholder.svg');
+  assert.deepEqual(getProductGallery(starlinkMini), ['/product-placeholder.svg']);
+});
+
 test('expanded storefront categories resolve by slug and database value', () => {
   assert.equal(getStoreCategoryBySlug('desktops')?.label, 'Desktops');
   assert.equal(getStoreCategoryBySlug('accessories')?.label, 'Accessories');
