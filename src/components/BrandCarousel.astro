@@ -32,7 +32,7 @@ const imageOnError = "this.closest('[data-brand-logo]')?.classList.add('logo-mis
     <div class="brand-track">
       {tickerBrands.map((brand, index) => (
         <a href={brand.href} class="brand-logo-pill" aria-label={`Browse ${brand.label} products`} data-brand-order={index} data-brand-logo>
-          {brand.src && <img src={brand.src} alt="" loading="lazy" decoding="async" onerror={imageOnError} />}
+          {brand.src && <img src={brand.src} alt={`${brand.label} logo`} loading="lazy" decoding="async" onerror={imageOnError} />}
           <span>{brand.label}</span>
         </a>
       ))}

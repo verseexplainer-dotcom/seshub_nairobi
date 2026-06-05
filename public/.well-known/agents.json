@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "name": "SES ICT HUB",
+  "description": "SES ICT HUB is a Nairobi electronics shop selling brand-new and Ex-uk Grade A refurb laptops, desktops, printers, smartphones, and accessories with clear pricing, stock status, delivery, pickup, and support.",
+  "url": "https://sesicthub.co.ke/",
+  "capabilities": [
+    "search",
+    "product_catalog",
+    "product_comparison",
+    "contact",
+    "whatsapp_support",
+    "order_support"
+  ],
+  "contact": {
+    "url": "https://sesicthub.co.ke/contact",
+    "email": "sales@sesicthub.co.ke",
+    "phone": "+254716253365",
+    "whatsapp": "https://wa.me/254720480475"
+  },
+  "business": {
+    "location": "Tembo Cooperative House, 3rd Floor, Room 1, Moi Avenue, Opposite Bihi Towers, Nairobi",
+    "hours": [
+      "Mon - Fri: 09:00 - 19:00",
+      "Sat: 09:00 - 17:00",
+      "Sun: Closed"
+    ],
+    "categories": [
+      "laptops",
+      "desktops",
+      "printers",
+      "smartphones",
+      "accessories"
+    ],
+    "conditions": [
+      "Brand New",
+      "Ex-uk Grade A refurb"
+    ]
+  },
+  "resources": {
+    "shop": "https://sesicthub.co.ke/shop",
+    "sitemap": "https://sesicthub.co.ke/sitemap.xml",
+    "product_schema": "https://sesicthub.co.ke/products-jsonld-schema.json"
+  }
+}

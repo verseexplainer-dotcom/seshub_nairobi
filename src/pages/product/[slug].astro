@@ -8,6 +8,7 @@ import { getProductBySlug, getRelatedProducts } from '../../lib/products';
 import { getSiteAssets } from '../../lib/siteAssets';
 import { sanitizeProductDescription } from '../../lib/sanitize';
 import { getProductPresentation, getWarrantyLabel, normalizeText } from '../../lib/productPresentation';
+import { buildProductJsonLd } from '../../lib/structuredData';
 import { buildWhatsAppLink } from '../../lib/storefront';
 import type { CatalogProduct } from '../../types/catalog';
 
@@ -26,6 +27,7 @@ const localPlaceholder = '/product-placeholder.svg';
 const fallbackImage = (import.meta.env.PUBLIC_FALLBACK_IMAGE_URL || siteAssets.productPlaceholder.src || localPlaceholder).trim();
 const imageOnError = `if(this.dataset.fallbackApplied==='1'){this.onerror=null;this.src=${JSON.stringify(localPlaceholder)};}else{this.dataset.fallbackApplied='1';this.src=${JSON.stringify(fallbackImage)};}`;
 const presentation = getProductPresentation(product, {
+  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
   fallbackImage
 });
 const productWhatsappHref = buildWhatsAppLink(
@@ -86,29 +88,11 @@ const breadcrumbData = {
     { '@type': 'ListItem', position: 4, name: presentation.displayTitle, item: productUrl }
   ]
 };
-const structuredItemCondition =
-  product.condition === 'brand_new'
-    ? 'https://schema.org/NewCondition'
-    : product.condition === 'refurbished'
-      ? 'https://schema.org/RefurbishedCondition'
-      : undefined;
-const productStructuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: product.title,
-  description: plainMetaDescription,
-  image: presentation.imageUrls.length > 0 ? presentation.imageUrls : undefined,
-  sku: product.sku || undefined,
-  brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
-  itemCondition: structuredItemCondition,
-  offers: {
-    '@type': 'Offer',
-    url: productUrl,
-    priceCurrency: 'KES',
-    price: presentation.pricing.price,
-    availability: presentation.stock.isInStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
-  }
-};
+const productStructuredData = buildProductJsonLd(product, {
+  siteBase,
+  publicSupabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+  fallbackImage
+});
 ---
 
 <Layout
@@ -164,7 +148,7 @@ const productStructuredData = {
                   data-image-src={imageUrl}
                   aria-pressed={index === 0 ? 'true' : 'false'}
                 >
-                  <img src={imageUrl} alt="" loading="lazy" onerror={imageOnError} />
+                  <img src={imageUrl} alt={`${presentation.displayTitle} image ${index + 1}`} loading="lazy" onerror={imageOnError} />
                 </button>
               ))}
             </div>
@@ -254,7 +238,7 @@ const productStructuredData = {
           <section class="reassurance-grid" aria-label="Delivery, pickup, and payment reassurance">
             {reassuranceCards.map((card) => (
               <article class="reassurance-card">
-                <img src={card.icon} alt="" loading="lazy" class="reassurance-icon" />
+                <img src={card.icon} alt={card.title} loading="lazy" class="reassurance-icon" />
                 <div>
                   <h3>{card.title}</h3>
                   <p>{card.body}</p>

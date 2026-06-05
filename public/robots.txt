@@ -1,3 +1,21 @@
 User-agent: *
 Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+
 Sitemap: https://sesicthub.co.ke/sitemap.xml

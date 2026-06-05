@@ -28,7 +28,7 @@ const escapeHtml = (value: unknown) =>
     .replace(/'/g, '&#39;');
 const addToCartLabel = `Add ${presentation.displayTitle} to cart`;
 const thumbMarkup = presentation.primaryImageUrl
-  ? `<div class="sticky-thumb-shell" data-product-media><img src="${escapeHtml(presentation.primaryImageUrl)}" alt="" class="sticky-thumb" onerror="${escapeHtml(imageOnError)}" /></div>`
+  ? `<div class="sticky-thumb-shell" data-product-media><img src="${escapeHtml(presentation.primaryImageUrl)}" alt="${escapeHtml(presentation.displayTitle)}" class="sticky-thumb" onerror="${escapeHtml(imageOnError)}" /></div>`
   : '<div class="sticky-thumb-shell no-image" data-product-media aria-hidden="true"></div>';
 const actionMarkup = presentation.stock.isInStock
   ? `

@@ -22,7 +22,7 @@ const logoOnError = 'this.remove();';
           {brand.logo && (
             <img
               src={brand.logo.src}
-              alt=""
+              alt={`${brand.label} logo`}
               loading="lazy"
               decoding="async"
               onerror={logoOnError}

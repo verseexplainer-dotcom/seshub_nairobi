@@ -112,11 +112,11 @@ const whatsappHref = buildWhatsAppLink('Hi SES ICT HUB, I need help choosing the
         <div class="hero-support-row" aria-label="Other highlighted products">
           {supportImages.map(({ product, imageSource, label }) => (
             <a href={`/product/${product.slug}`} class="hero-support-card">
-              <span class="support-card-media" aria-hidden="true">
+              <span class="support-card-media">
                 {imageSource ? (
                   <img
                     src={imageSource}
-                    alt=""
+                    alt={product.title}
                     loading="lazy"
                     decoding="async"
                     onerror={imageOnError}

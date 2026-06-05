@@ -14,8 +14,8 @@ const countLabel = count === 0 ? 'currently listed' : count === 1 ? 'product liv
 
 <a href={href} class="category-card" style={`--accent:${accent}`}>
   {imageSrc && (
-    <div class="category-media" aria-hidden="true">
-      <img src={imageSrc} alt="" loading="lazy" decoding="async" />
+    <div class="category-media">
+      <img src={imageSrc} alt={`${title} category at SES ICT HUB`} loading="lazy" decoding="async" />
     </div>
   )}
 

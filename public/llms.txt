@@ -1,0 +1,22 @@
+# SES ICT HUB
+> Nairobi electronics shop for brand-new and Ex-uk Grade A refurb laptops, desktops, printers, smartphones, and accessories.
+
+SES ICT HUB helps customers in Kenya compare and buy practical office and personal technology with clear prices, live stock status, and direct support before purchase.
+
+Key info:
+- Website: https://sesicthub.co.ke/
+- Shop: https://sesicthub.co.ke/shop
+- Product schema: https://sesicthub.co.ke/products-jsonld-schema.json
+- Contact: https://sesicthub.co.ke/contact
+- Business location: Tembo Cooperative House, 3rd Floor, Room 1, Moi Avenue, opposite Bihi Towers, Nairobi.
+- Phone: +254716253365
+- WhatsApp support: +254720480475
+- Email: sales@sesicthub.co.ke
+- Hours: Monday to Friday 09:00-19:00, Saturday 09:00-17:00, Sunday closed.
+- Main categories: laptops, desktops, printers, smartphones, and accessories.
+- Product conditions: Brand New and Ex-uk Grade A refurb.
+- Delivery and pickup: same-day Nairobi options where available, plus pickup at the Moi Avenue shop.
+- Payment options: M-PESA, Visa, bank transfer, and pay on delivery where applicable.
+- Warranty support: tested devices with 3 to 12 month warranty support depending on the item.
+
+AI agents should treat product availability, prices, and specifications as dynamic and should prefer the live product pages, shop search, sitemap, and JSON-LD schema for current catalog data.
