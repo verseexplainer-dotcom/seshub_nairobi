@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
+import ProductDetailsAccordion from '../../components/product/ProductDetailsAccordion.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import StickyATC from '../../components/StickyATC.astro';
 import { setPublicCacheHeaders } from '../../lib/http-cache';
@@ -73,6 +74,20 @@ const buyingHighlights = [
   { title: '7-day defect return window', body: 'Applies to undisclosed functional defects, as outlined in the FAQ.' },
   { title: 'Nairobi CBD delivery from KSh 200', body: 'We will confirm delivery cost with you before you buy.' }
 ].filter(Boolean) as Array<{ title: string; body: string }>;
+const productFaqItems = [
+  {
+    question: 'Can I inspect the item before paying?',
+    answer: 'Yes. You can visit the shop, request a WhatsApp walk-through, or ask us how inspection works before you buy.'
+  },
+  {
+    question: 'How do delivery and pickup work?',
+    answer: 'We offer Nairobi delivery where available and in-store pickup from Moi Avenue. If you are outside Nairobi, message us and we will help arrange delivery.'
+  },
+  {
+    question: 'What payment methods are available?',
+    answer: 'You can pay by M-PESA, and some local orders can be paid on delivery. You can confirm with us before buying.'
+  }
+];
 const breadcrumbData = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
@@ -113,15 +128,6 @@ const productStructuredData = buildProductJsonLd(product, {
         <span aria-current="page">{presentation.displayTitle}</span>
       </nav>
 
-      <section class="product-search-card" aria-label="Search the catalog">
-        <div>
-          <p class="eyebrow">Need another option?</p>
-          <h2>Search the shop without leaving this page.</h2>
-          <p class="product-search-copy">Search for another product or brand, or message us on WhatsApp if you want help comparing.</p>
-        </div>
-        <SearchBar variant="inline" placeholder="Search products or brands..." />
-      </section>
-
       <div class="product-layout">
         <section class="gallery-panel" aria-label="Product image gallery">
           <div class={`main-image-shell ${presentation.primaryImageUrl ? '' : 'no-image'}`} data-product-gallery>
@@ -131,6 +137,10 @@ const productStructuredData = buildProductJsonLd(product, {
                 alt={presentation.displayTitle}
                 id="main-product-image"
                 class="main-image"
+                width="900"
+                height="900"
+                loading="eager"
+                decoding="async"
                 onerror={imageOnError}
               />
             ) : (
@@ -249,58 +259,24 @@ const productStructuredData = buildProductJsonLd(product, {
         </section>
       </div>
 
-      <div class="detail-layout">
-        {presentation.specRows.length > 0 && (
-          <section class="detail-card">
-            <div class="section-head">
-              <p class="eyebrow">Specifications</p>
-              <h2>Product details</h2>
-            </div>
-            <dl class="spec-table">
-              {presentation.specRows.map((row) => (
-                <div class="spec-row">
-                  <dt>{row.label}</dt>
-                  <dd>{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        )}
-
-        <section class="detail-card">
-          <div class="section-head">
-            <p class="eyebrow">Overview</p>
-            <h2>What you’re getting</h2>
-          </div>
-          {normalizeText(product.short_specs) && <p class="summary-copy">{product.short_specs}</p>}
-          {safeDescriptionHtml ? (
-            <div class="description-copy" set:html={safeDescriptionHtml} />
-          ) : (
-            <p class="summary-copy">Message us on WhatsApp and we'll confirm the details for you.</p>
-          )}
-        </section>
-      </div>
-
-      <section class="support-section detail-card">
-        <div class="section-head">
-          <p class="eyebrow">Support</p>
-          <h2>Questions buyers usually ask</h2>
+      <section class="product-search-card" aria-label="Search the catalog">
+        <div>
+          <p class="eyebrow">Need another option?</p>
+          <h2>Search the shop without leaving this page.</h2>
+          <p class="product-search-copy">Search for another product or brand, or message us on WhatsApp if you want help comparing.</p>
         </div>
-        <div class="faq-list">
-          <details>
-            <summary>Can I inspect the item before paying?</summary>
-            <p>Yes. You can visit the shop, request a WhatsApp walk-through, or ask us how inspection works before you buy.</p>
-          </details>
-          <details>
-            <summary>How do delivery and pickup work?</summary>
-            <p>We offer Nairobi delivery where available and in-store pickup from Moi Avenue. If you are outside Nairobi, message us and we will help arrange delivery.</p>
-          </details>
-          <details>
-            <summary>What payment methods are available?</summary>
-            <p>You can pay by M-PESA, and some local orders can be paid on delivery. You can confirm with us before buying.</p>
-          </details>
-        </div>
+        <SearchBar variant="inline" placeholder="Search products or brands..." />
       </section>
+
+      <div class="product-detail-accordion-shell">
+        <ProductDetailsAccordion
+          highlights={presentation.summarySpecs}
+          specifications={presentation.specRows}
+          descriptionHtml={safeDescriptionHtml}
+          warranty={warrantyLongLabel}
+          faq={productFaqItems}
+        />
+      </div>
 
       {related.length > 0 && (
         <section class="related-section">
@@ -365,8 +341,7 @@ const productStructuredData = buildProductJsonLd(product, {
     color: var(--text-muted);
   }
 
-  .product-layout,
-  .detail-layout {
+  .product-layout {
     display: grid;
     gap: 1.4rem;
   }
@@ -374,7 +349,7 @@ const productStructuredData = buildProductJsonLd(product, {
   .product-search-card {
     display: grid;
     gap: 1rem;
-    margin-bottom: 1.4rem;
+    margin: 1.4rem 0;
     padding: 1.1rem;
     border: 1px solid var(--border);
     border-radius: 1.5rem;
@@ -384,7 +359,7 @@ const productStructuredData = buildProductJsonLd(product, {
 
   .gallery-panel,
   .buy-panel,
-  .detail-card {
+  .related-section {
     border: 1px solid var(--border);
     border-radius: 1.5rem;
     background: var(--white);
@@ -700,14 +675,12 @@ const productStructuredData = buildProductJsonLd(product, {
     line-height: 1.55;
   }
 
-  .detail-layout,
-  .support-section,
+  .product-detail-accordion-shell,
   .related-section {
     margin-top: 1.4rem;
   }
 
-  .detail-card,
-  .support-section {
+  .related-section {
     padding: 1.2rem;
   }
 
@@ -722,71 +695,6 @@ const productStructuredData = buildProductJsonLd(product, {
     letter-spacing: 0.12em;
     color: var(--text-muted);
     font-weight: 800;
-  }
-
-  .spec-table {
-    display: grid;
-    gap: 0.6rem;
-    margin: 0;
-  }
-
-  .spec-row {
-    display: grid;
-    gap: 0.35rem;
-    padding: 0.85rem 0.95rem;
-    border-radius: 1rem;
-    background: #f8fafc;
-    border: 1px solid rgb(226 232 240 / 0.92);
-  }
-
-  .spec-row dt {
-    font-size: 0.76rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    font-weight: 800;
-  }
-
-  .spec-row dd {
-    margin: 0;
-    font-weight: 700;
-  }
-
-  .description-copy :global(p:first-child) {
-    margin-top: 0;
-  }
-
-  .description-copy :global(p:last-child) {
-    margin-bottom: 0;
-  }
-
-  .description-copy :global(p),
-  .description-copy :global(li) {
-    color: var(--text-main);
-    line-height: 1.75;
-  }
-
-  .faq-list {
-    display: grid;
-    gap: 0.75rem;
-  }
-
-  .faq-list details {
-    padding: 0.95rem 1rem;
-    border-radius: 1rem;
-    border: 1px solid rgb(226 232 240 / 0.92);
-    background: #f8fafc;
-  }
-
-  .faq-list summary {
-    cursor: pointer;
-    font-weight: 800;
-  }
-
-  .faq-list p {
-    margin: 0.75rem 0 0;
-    color: var(--text-muted);
-    line-height: 1.65;
   }
 
   .related-section .section-head {
@@ -804,7 +712,7 @@ const productStructuredData = buildProductJsonLd(product, {
   .product-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    gap: clamp(0.85rem, 2vw, 1.25rem);
   }
 
   @media (min-width: 900px) {
@@ -813,8 +721,7 @@ const productStructuredData = buildProductJsonLd(product, {
       align-items: center;
     }
 
-    .product-layout,
-    .detail-layout {
+    .product-layout {
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
     }
 
@@ -849,6 +756,12 @@ const productStructuredData = buildProductJsonLd(product, {
 
     .product-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 420px) {
+    .product-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>

@@ -176,7 +176,7 @@ const tabs = [
   .products-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    gap: clamp(0.85rem, 2vw, 1.25rem);
   }
 
   .empty-state {
@@ -200,6 +200,12 @@ const tabs = [
   @media (min-width: 1120px) {
     .products-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 420px) {
+    .products-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
