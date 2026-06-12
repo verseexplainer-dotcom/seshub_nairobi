@@ -86,7 +86,11 @@ DROP POLICY IF EXISTS "profiles_self_insert" ON public.profiles;
 CREATE POLICY "profiles_self_insert"
   ON public.profiles FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND role = 'customer'
+    AND is_active = true
+  );
 
 DROP POLICY IF EXISTS "profiles_self_or_admin_update" ON public.profiles;
 CREATE POLICY "profiles_self_or_admin_update"
@@ -152,4 +156,3 @@ GRANT EXECUTE ON FUNCTION public.record_order_update(uuid, uuid, text, text, tex
 
 REVOKE ALL ON FUNCTION public.backfill_orders_from_order_intents() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.backfill_orders_from_order_intents() TO service_role;
-

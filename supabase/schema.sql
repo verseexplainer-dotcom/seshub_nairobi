@@ -70,6 +70,27 @@ AS $$
   SELECT public.current_profile_role() = 'admin';
 $$;
 
+CREATE OR REPLACE FUNCTION public.is_bootstrap_admin_email(email text)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public
+AS $$
+  SELECT lower(trim(coalesce(email, ''))) = 'sesicthub224@gmail.com';
+$$;
+
+CREATE OR REPLACE FUNCTION public.bootstrap_profile_role(email text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN public.is_bootstrap_admin_email(email) THEN 'admin'
+    ELSE 'customer'
+  END;
+$$;
+
 -- ─────────────────────────────────────────────────────────────
 -- 1. PRODUCTS
 -- ─────────────────────────────────────────────────────────────
@@ -348,15 +369,28 @@ BEGIN
     user_id,
     full_name,
     phone,
-    default_location
+    default_location,
+    role,
+    is_active
   )
   VALUES (
     NEW.id,
     nullif(NEW.raw_user_meta_data ->> 'full_name', ''),
     nullif(NEW.raw_user_meta_data ->> 'phone', ''),
-    nullif(NEW.raw_user_meta_data ->> 'default_location', '')
+    nullif(NEW.raw_user_meta_data ->> 'default_location', ''),
+    public.bootstrap_profile_role(NEW.email),
+    true
   )
-  ON CONFLICT (user_id) DO NOTHING;
+  ON CONFLICT (user_id) DO UPDATE
+  SET
+    role = CASE
+      WHEN public.is_bootstrap_admin_email(NEW.email) THEN 'admin'
+      ELSE public.profiles.role
+    END,
+    is_active = CASE
+      WHEN public.is_bootstrap_admin_email(NEW.email) THEN true
+      ELSE public.profiles.is_active
+    END;
 
   RETURN NEW;
 END;
@@ -380,7 +414,11 @@ DROP POLICY IF EXISTS "profiles_self_insert" ON public.profiles;
 CREATE POLICY "profiles_self_insert"
   ON public.profiles FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND role = 'customer'
+    AND is_active = true
+  );
 
 DROP POLICY IF EXISTS "profiles_self_or_admin_update" ON public.profiles;
 CREATE POLICY "profiles_self_or_admin_update"

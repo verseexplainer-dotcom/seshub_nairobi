@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import type { ProfileRecord, SessionLocals } from './app-types';
+import { applyBootstrapAdminAccess, getEffectiveUserRole } from './admin-access';
 import { buildPathWithMessage, getSafeRedirectPath, redirectResponse } from './auth-utils';
 import { createServerSupabaseClient } from './supabase-server';
 
@@ -42,7 +43,7 @@ export async function ensureUserProfile(
     .maybeSingle<ProfileRecord>();
 
   if (existingProfile) {
-    return existingProfile;
+    return applyBootstrapAdminAccess(user.email, existingProfile);
   }
 
   const seed = profileSeedFromUser(user);
@@ -53,7 +54,7 @@ export async function ensureUserProfile(
     .single<ProfileRecord>();
 
   if (insertedProfile) {
-    return insertedProfile;
+    return applyBootstrapAdminAccess(user.email, insertedProfile);
   }
 
   const { data: fallbackProfile } = await supabase
@@ -62,7 +63,7 @@ export async function ensureUserProfile(
     .eq('user_id', user.id)
     .maybeSingle<ProfileRecord>();
 
-  return fallbackProfile ?? null;
+  return applyBootstrapAdminAccess(user.email, fallbackProfile ?? null);
 }
 
 export async function getSessionContext(input: SessionContextInput) {
@@ -80,7 +81,7 @@ export async function getSessionContext(input: SessionContextInput) {
   }
 
   const profile = await ensureUserProfile(supabase, data.user);
-  const role = profile?.role ?? 'customer';
+  const role = getEffectiveUserRole(data.user.email, profile?.role);
 
   return {
     supabase,
