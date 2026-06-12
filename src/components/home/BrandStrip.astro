@@ -1,0 +1,129 @@
+---
+import { buildBrandFilterHref } from '../../lib/filters';
+import { getBrandLogoSource } from '../../lib/siteAssets';
+
+const publicSupabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const brands = ['HP', 'Dell', 'Lenovo', 'Asus', 'Apple', 'Samsung', 'Canon', 'Epson', 'Google Pixel', 'Tecno'];
+const brandItems = brands.map((brand) => ({
+  label: brand,
+  href: buildBrandFilterHref(brand, { sort: 'featured', in_stock: 1 }),
+  logo: getBrandLogoSource(brand, publicSupabaseUrl)
+}));
+const tickerBrands = [...brandItems, ...brandItems];
+const logoOnError = 'this.remove();';
+---
+
+<section class="brand-strip" aria-label="Shop popular brands">
+  <div class="brand-strip__label">Popular brands</div>
+  <div class="brand-strip__viewport">
+    <div class="brand-strip__track">
+      {tickerBrands.map((brand) => (
+        <a href={brand.href} class="brand-strip__item" aria-label={`Browse ${brand.label} products`} data-brand-logo>
+          {brand.logo && (
+            <img
+              src={brand.logo.src}
+              alt={`${brand.label} logo`}
+              loading="lazy"
+              decoding="async"
+              onerror={logoOnError}
+            />
+          )}
+          <span>{brand.label}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .brand-strip {
+    display: grid;
+    gap: 0.85rem;
+    overflow: hidden;
+    padding-block: 1rem;
+    border-block: 1px solid rgba(226, 232, 240, 0.82);
+    background: #ffffff;
+  }
+
+  .brand-strip__label {
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .brand-strip__viewport {
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  .brand-strip__track {
+    display: flex;
+    width: max-content;
+    gap: 0.75rem;
+    padding-inline: 1rem;
+    animation: brandTrack 36s linear infinite;
+  }
+
+  .brand-strip:hover .brand-strip__track {
+    animation-play-state: paused;
+  }
+
+  .brand-strip__item {
+    display: inline-grid;
+    place-items: center;
+    min-width: 8.6rem;
+    min-height: 4.15rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #111827;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .brand-strip__item img {
+    max-width: 5.7rem;
+    max-height: 2.2rem;
+    object-fit: contain;
+  }
+
+  .brand-strip__item img + span {
+    display: none;
+  }
+
+  @keyframes brandTrack {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (max-width: 680px) {
+    .brand-strip__track {
+      overflow-x: auto;
+      width: auto;
+      animation: none;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
+    }
+
+    .brand-strip__track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .brand-strip__item {
+      scroll-snap-align: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brand-strip__track {
+      animation: none;
+    }
+  }
+</style>

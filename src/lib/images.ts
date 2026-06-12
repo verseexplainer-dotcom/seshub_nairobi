@@ -1,6 +1,69 @@
-import { normalizeText } from './productPresentation';
-import { getSiteAssets } from './siteAssets';
 import type { CatalogProduct } from '../types/catalog';
+import { getSiteAssets } from './siteAssets';
+
+function normalizeText(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function encodeImagePath(path: string) {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
+function stripProductImagesPrefix(path: string) {
+  return path.replace(/^\/?(?:storage\/v1\/object\/public\/)?product-images\//, '');
+}
+
+function getKnownImageFolder(path: string) {
+  const normalizedPath = stripProductImagesPrefix(path)
+    .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/product-images\//i, '')
+    .replace(/^\/+/, '');
+  return normalizedPath.split('/')[0]?.toLowerCase() || '';
+}
+
+function normalizeCategory(value: unknown) {
+  return normalizeText(value).toLowerCase().replace(/[\s_-]+/g, ' ');
+}
+
+function imageFolderMatchesProduct(image: unknown, product: Pick<CatalogProduct, 'category'>) {
+  const source = normalizeText(image);
+  const category = normalizeCategory(product.category);
+  if (!source || !category) {
+    return true;
+  }
+
+  const folder = getKnownImageFolder(source);
+  if (!folder) {
+    return true;
+  }
+
+  const folderCategories: Record<string, string[]> = {
+    laptop: ['laptops', 'gaming laptops'],
+    laptops: ['laptops', 'gaming laptops'],
+    desktop: ['desktops'],
+    desktops: ['desktops'],
+    monitor: ['monitors'],
+    monitors: ['monitors'],
+    networking: ['networking'],
+    printer: ['printers'],
+    printers: ['printers'],
+    projector: ['projectors'],
+    projectors: ['projectors'],
+    smartphone: ['smartphones'],
+    smartphones: ['smartphones'],
+    software: ['software'],
+    software_box: ['software'],
+    tablet: ['tablets'],
+    tablets: ['tablets'],
+    ups: ['ups']
+  };
+
+  const allowedCategories = folderCategories[folder];
+  return !allowedCategories || allowedCategories.includes(category);
+}
 
 function parseImageInput(value: unknown) {
   if (Array.isArray(value)) {
@@ -30,11 +93,22 @@ function parseImageInput(value: unknown) {
   return [normalized];
 }
 
+function getPrioritizedImageCandidates(product: Pick<CatalogProduct, 'images' | 'image_overrides'>) {
+  const overrides = parseImageInput(product.image_overrides);
+  const images = parseImageInput(product.images);
+  const candidates = overrides.length > 0 ? overrides : images;
+  return Array.from(new Set(candidates));
+}
+
 export function getFallbackProductImage(publicSupabaseUrl?: string | undefined) {
   return getSiteAssets(publicSupabaseUrl).productPlaceholder.src;
 }
 
-export function resolveProductImage(image: unknown, publicSupabaseUrl?: string | undefined, fallbackImage?: string | undefined) {
+export function resolveProductImage(
+  image: unknown,
+  publicSupabaseUrl?: string | undefined,
+  fallbackImage?: string | undefined
+) {
   const fallback = normalizeText(fallbackImage) || getFallbackProductImage(publicSupabaseUrl);
   const source = normalizeText(image);
   const normalizedSupabaseUrl = normalizeText(publicSupabaseUrl).replace(/\/$/, '');
@@ -47,47 +121,69 @@ export function resolveProductImage(image: unknown, publicSupabaseUrl?: string |
     return source;
   }
 
-  if (source.startsWith('/product-images/')) {
-    if (!normalizedSupabaseUrl) {
-      return source;
+  if (
+    source.startsWith('/product-images/') ||
+    source.startsWith('product-images/') ||
+    source.startsWith('/storage/v1/object/public/product-images/') ||
+    source.startsWith('storage/v1/object/public/product-images/')
+  ) {
+    const normalizedImagePath = encodeImagePath(stripProductImagesPrefix(source));
+    if (!normalizedImagePath) {
+      return fallback;
     }
 
-    return `${normalizedSupabaseUrl}/storage/v1/object/public${source}`;
-  }
+    if (normalizedSupabaseUrl) {
+      return `${normalizedSupabaseUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`;
+    }
 
-  if (source.startsWith('/storage/v1/object/public/product-images/')) {
-    return normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${source}` : source;
+    return `/product-images/${normalizedImagePath}`;
   }
 
   if (source.startsWith('/')) {
     return source;
   }
 
+  const normalizedImagePath = encodeImagePath(source);
+
   if (!normalizedSupabaseUrl) {
-    return `/product-images/${source.replace(/^product-images\//, '')}`;
+    return `/product-images/${normalizedImagePath}`;
   }
 
-  return `${normalizedSupabaseUrl}/storage/v1/object/public/product-images/${source.replace(/^\/?(product-images\/)?/, '')}`;
+  return `${normalizedSupabaseUrl}/storage/v1/object/public/product-images/${normalizedImagePath}`;
 }
 
 export function getProductGallery(
-  product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
+  product: Pick<CatalogProduct, 'images' | 'image_overrides'> & Partial<Pick<CatalogProduct, 'category'>>,
   options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
 ) {
-  const overrides = parseImageInput(product.image_overrides);
-  const images = parseImageInput(product.images);
-  const candidates = overrides.length > 0 ? overrides : images;
+  const candidates = getPrioritizedImageCandidates(product)
+    .filter((image) => !product.category || imageFolderMatchesProduct(image, product as Pick<CatalogProduct, 'category'>));
+  const resolvedImages = candidates
+    .map((image) => resolveProductImage(image, options.publicSupabaseUrl, options.fallbackImage))
+    .filter((image): image is string => typeof image === 'string' && image.length > 0);
 
-  if (candidates.length === 0) {
+  if (resolvedImages.length === 0) {
     return [resolveProductImage('', options.publicSupabaseUrl, options.fallbackImage)];
   }
 
-  return candidates.map((image) => resolveProductImage(image, options.publicSupabaseUrl, options.fallbackImage));
+  return Array.from(new Set(resolvedImages));
 }
 
 export function getPrimaryImage(
-  product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
+  product: Pick<CatalogProduct, 'images' | 'image_overrides'> & Partial<Pick<CatalogProduct, 'category'>>,
   options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
 ) {
   return getProductGallery(product, options)[0] || getFallbackProductImage(options.publicSupabaseUrl);
+}
+
+export function hasResolvableProductImage(
+  product: Pick<CatalogProduct, 'images' | 'image_overrides'>,
+  options: { publicSupabaseUrl?: string | undefined; fallbackImage?: string | undefined } = {}
+) {
+  void options;
+  return getPrioritizedImageCandidates(product)
+    .some((image) => {
+      const source = normalizeText(image).toLowerCase();
+      return Boolean(source) && !source.includes('product-placeholder');
+    });
 }

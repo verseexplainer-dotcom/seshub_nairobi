@@ -1,0 +1,69 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { storefrontDetails } from '../lib/storefront';
+---
+
+<Layout
+  title="Privacy Policy"
+  description="How SES ICT HUB handles customer, order, analytics, messaging, and account data."
+  canonical="/privacy-policy"
+>
+  <section class="legal-page">
+    <div class="container legal-shell">
+      <p class="eyebrow">Privacy Policy</p>
+      <h1>How SES ICT HUB handles your information</h1>
+      <p class="lead">This policy explains how we collect and use information when you browse our store, contact us, sign in, place an order, or message us through Meta platforms such as Facebook, Instagram, Messenger, and WhatsApp.</p>
+
+      <article>
+        <h2>Information we collect</h2>
+        <p>We collect information you provide directly, including your name, phone number, email address, delivery area, order details, account profile details, support messages, and newsletter consent. We also collect technical information such as session identifiers, device/browser details, approximate location from request metadata, and website activity needed to run the storefront safely.</p>
+      </article>
+
+      <article>
+        <h2>Orders, delivery, and support</h2>
+        <p>We use order and contact information to confirm stock, prepare invoices or order records, arrange pickup or delivery, communicate payment expectations, provide warranty or return support, and respond to customer questions.</p>
+      </article>
+
+      <article>
+        <h2>Supabase authentication</h2>
+        <p>Customer accounts use Supabase authentication. Supabase may handle login sessions, account identifiers, email addresses, password reset flows, and profile information needed to keep your account available and secure.</p>
+      </article>
+
+      <article>
+        <h2>Meta, Messenger, WhatsApp, and Instagram</h2>
+        <p>If you contact us through Messenger, WhatsApp, Instagram, or Facebook, Meta may handle your profile, message, and interaction data according to Meta's own terms and privacy notices. We use those conversations to answer questions, confirm product availability, support orders, and follow up on customer service requests.</p>
+      </article>
+
+      <article>
+        <h2>Analytics, Pixel, and cookies</h2>
+        <p>We may use cookies, local storage, session identifiers, Meta Pixel, and server-side conversion events to understand site performance, measure ads, improve product discovery, and reduce checkout friction. Public tracking IDs may load in the browser only when configured. Private API tokens stay server-side.</p>
+      </article>
+
+      <article>
+        <h2>Third-party services</h2>
+        <p>Our storefront may use Meta/Facebook, Instagram, Supabase, Cloudflare, and related service providers for hosting, security, analytics, messaging, customer account access, and ecommerce operations.</p>
+      </article>
+
+      <article>
+        <h2>Retention and your rights</h2>
+        <p>We keep customer information only as long as needed for orders, support, security, accounting, legal compliance, and legitimate business records. You may request access, correction, or deletion by contacting us. Some order, payment, tax, warranty, fraud-prevention, and accounting records may need to be retained.</p>
+      </article>
+
+      <article>
+        <h2>Data deletion</h2>
+        <p>To request deletion, email <a href={`mailto:${storefrontDetails.email}`}>{storefrontDetails.email}</a> or visit <a href="/data-deletion">the data deletion page</a>. Include the email address or phone number used with SES ICT HUB and mention whether the request relates to website account data, Messenger, Instagram, or WhatsApp.</p>
+      </article>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .legal-page { padding: clamp(2rem, 5vw, 4rem) 0; }
+  .legal-shell { max-width: 880px; display: grid; gap: 1.2rem; }
+  h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; }
+  .lead { font-size: 1.08rem; color: var(--text-muted); line-height: 1.75; }
+  article { display: grid; gap: 0.45rem; padding-block: 0.35rem; }
+  article h2 { font-size: 1.18rem; color: var(--primary); }
+  article p { color: var(--text-muted); line-height: 1.72; }
+  a { color: var(--primary); font-weight: 800; }
+</style>

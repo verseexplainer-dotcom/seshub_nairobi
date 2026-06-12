@@ -48,6 +48,21 @@
   --transition-fast: 0.22s ease;
   --transition-slow: 0.36s ease;
 
+  --ses-blue: #155dfc;
+  --ses-blue-deep: #0b4ee8;
+  --ses-green: #16a34a;
+  --ses-green-deep: #15803d;
+  --ses-ink: #081122;
+  --ses-muted: #64748b;
+  --ses-line: #dbe5f3;
+  --ses-home-bg: #ffffff;
+  --ses-radius-md: 1rem;
+  --ses-radius-lg: 1.35rem;
+  --ses-radius-xl: 1.8rem;
+  --ses-shadow-sm: 0 14px 32px rgba(15, 23, 42, 0.07);
+  --ses-shadow-md: 0 22px 46px rgba(15, 23, 42, 0.1);
+  --ses-shadow-lg: 0 34px 76px rgba(15, 23, 42, 0.14);
+
   /* Legacy aliases used across the app */
   --color-accent: var(--color-primary);
   --color-accent-strong: var(--color-primary-strong);

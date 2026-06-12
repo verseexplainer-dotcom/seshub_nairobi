@@ -1,4 +1,18 @@
-export type StoreCategorySlug = 'laptops' | 'smartphones' | 'printers' | 'desktops' | 'accessories';
+import { getProductGallery, resolveProductImage } from './images';
+
+export type StoreCategorySlug =
+  | 'laptops'
+  | 'gaming-laptops'
+  | 'smartphones'
+  | 'printers'
+  | 'desktops'
+  | 'accessories'
+  | 'monitors'
+  | 'projectors'
+  | 'tablets'
+  | 'software'
+  | 'ups'
+  | 'networking';
 export type CatalogCategorySlug = StoreCategorySlug | 'all';
 
 export interface StoreCategoryMeta {
@@ -21,7 +35,7 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'laptops',
     label: 'Laptops',
-    dbValue: 'Laptops',
+    dbValue: 'laptops',
     intro: 'Laptops for work, school, and everyday use, with clear specs and honest stock updates.',
     heroEyebrow: 'Portable performance',
     heroDescription:
@@ -29,9 +43,19 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
     highlights: ['CPU and RAM filters', 'Warranty shown when available', 'Reach out on WhatsApp if you need help']
   },
   {
+    slug: 'gaming-laptops',
+    label: 'Gaming Laptops',
+    dbValue: 'gaming_laptops',
+    intro: 'Gaming laptops with dedicated graphics, high-refresh displays, and clear stock updates.',
+    heroEyebrow: 'Performance laptops',
+    heroDescription:
+      'Compare gaming laptops by CPU, GPU, RAM, storage, display, warranty, and price.',
+    highlights: ['GPU details surfaced', 'Performance specs shown clearly', 'Ask us about gaming needs']
+  },
+  {
     slug: 'desktops',
     label: 'Desktops',
-    dbValue: 'Desktops',
+    dbValue: 'desktops',
     intro: 'Desktops for office setups, business counters, school labs, and dependable everyday work.',
     heroEyebrow: 'Desk-ready performance',
     heroDescription:
@@ -41,7 +65,7 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'smartphones',
     label: 'Smartphones',
-    dbValue: 'Smartphones',
+    dbValue: 'smartphones',
     intro: 'Smartphones with fair pricing, honest condition labels, and trusted Kenya delivery and pickup options.',
     heroEyebrow: 'Everyday mobility',
     heroDescription:
@@ -51,7 +75,7 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'printers',
     label: 'Printers',
-    dbValue: 'Printers',
+    dbValue: 'printers',
     intro: 'Printers for school, office, and business use with clear prices and honest stock updates.',
     heroEyebrow: 'Reliable print output',
     heroDescription:
@@ -61,12 +85,66 @@ export const STOREFRONT_CATEGORIES: StoreCategoryMeta[] = [
   {
     slug: 'accessories',
     label: 'Accessories',
-    dbValue: 'Accessories',
+    dbValue: 'accessories',
     intro: 'Accessories and storage add-ons with clear pricing and straightforward stock updates.',
     heroEyebrow: 'Useful add-ons',
     heroDescription:
       "Browse accessories by brand and price, then message us on WhatsApp if you need help checking compatibility.",
     highlights: ['Good for storage and peripherals', 'Brand and price filters', 'Ask us about compatibility']
+  },
+  {
+    slug: 'monitors',
+    label: 'Monitors',
+    dbValue: 'monitors',
+    intro: 'Monitors for office, school, and home setups with clear size and price details.',
+    heroEyebrow: 'Display upgrades',
+    heroDescription: 'Compare monitors by brand, screen size, price, and stock availability.',
+    highlights: ['Screen details shown', 'Brand and price filters', 'Ask us about setup compatibility']
+  },
+  {
+    slug: 'projectors',
+    label: 'Projectors',
+    dbValue: 'projectors',
+    intro: 'Projectors for classrooms, offices, churches, and presentation spaces.',
+    heroEyebrow: 'Presentation-ready',
+    heroDescription: 'Compare projectors by brightness, resolution, brand, and price.',
+    highlights: ['Resolution and lamp details', 'Office and school options', 'Ask us about installation needs']
+  },
+  {
+    slug: 'tablets',
+    label: 'Tablets',
+    dbValue: 'tablets',
+    intro: 'Tablets and detachable devices for mobility, school, and light productivity.',
+    heroEyebrow: 'Portable screens',
+    heroDescription: 'Compare tablets by brand, storage, connectivity, condition, and price.',
+    highlights: ['Portable options', 'Connectivity details', 'Ask us about accessories']
+  },
+  {
+    slug: 'software',
+    label: 'Software',
+    dbValue: 'software',
+    intro: 'Software licenses and security products with clear device-count details.',
+    heroEyebrow: 'Licensed software',
+    heroDescription: 'Compare software packages by brand, device count, and license type.',
+    highlights: ['License details', 'Device counts shown', 'Ask us about activation support']
+  },
+  {
+    slug: 'ups',
+    label: 'UPS',
+    dbValue: 'ups',
+    intro: 'UPS backup power options for computers, offices, routers, and small business equipment.',
+    heroEyebrow: 'Backup power',
+    heroDescription: 'Compare UPS options by VA rating, brand, price, and availability.',
+    highlights: ['Capacity details', 'Office power backup', 'Ask us about compatibility']
+  },
+  {
+    slug: 'networking',
+    label: 'Networking',
+    dbValue: 'networking',
+    intro: 'Networking devices and connectivity equipment for home and office setups.',
+    heroEyebrow: 'Connectivity gear',
+    heroDescription: 'Compare networking products by brand, use case, price, and availability.',
+    highlights: ['Connectivity options', 'Setup-focused support', 'Ask us about compatibility']
   }
 ];
 
@@ -78,7 +156,31 @@ const CATEGORY_BY_VALUE = new Map(
   ])
 );
 const CATEGORY_VALUE_ALIASES = new Map<string, StoreCategorySlug>([
-  ['storage', 'accessories']
+  ['laptop', 'laptops'],
+  ['laptops', 'laptops'],
+  ['smartphone', 'smartphones'],
+  ['smartphones', 'smartphones'],
+  ['printer', 'printers'],
+  ['printers', 'printers'],
+  ['desktop', 'desktops'],
+  ['desktops', 'desktops'],
+  ['storage', 'accessories'],
+  ['gaming laptops', 'gaming-laptops'],
+  ['gaming_laptops', 'gaming-laptops'],
+  ['gaming-laptops', 'gaming-laptops'],
+  ['gaming laptop', 'gaming-laptops'],
+  ['monitor', 'monitors'],
+  ['monitors', 'monitors'],
+  ['projector', 'projectors'],
+  ['projectors', 'projectors'],
+  ['tablet', 'tablets'],
+  ['tablets', 'tablets'],
+  ['software box', 'software'],
+  ['software_box', 'software'],
+  ['software', 'software'],
+  ['ups', 'ups'],
+  ['network', 'networking'],
+  ['networking', 'networking']
 ]);
 
 export function normalizeText(value: unknown) {
@@ -164,7 +266,9 @@ export function getStoreCategoryQueryValues(value: unknown) {
         category.dbValue,
         category.dbValue.toLowerCase(),
         category.slug,
-        ...(category.slug === 'accessories' ? ['storage'] : [])
+        ...(category.slug === 'accessories' ? ['storage'] : []),
+        ...(category.slug === 'gaming-laptops' ? ['gaming laptops'] : []),
+        ...(category.slug === 'software' ? ['software box', 'software_box'] : [])
       ]
         .map((entry) => normalizeText(entry))
         .filter(Boolean)
@@ -173,14 +277,27 @@ export function getStoreCategoryQueryValues(value: unknown) {
 }
 
 export function matchesStoreCategoryValue(value: unknown, category: unknown) {
-  const normalizedValue = normalizeText(value).toLowerCase();
-  if (!normalizedValue) {
+  const normalizedValues = Array.isArray(value)
+    ? value.map((entry) => normalizeText(entry).toLowerCase())
+    : typeof value === 'object' && value !== null
+      ? [
+          ...(Array.isArray((value as Record<string, unknown>).categories)
+            ? (value as Record<string, unknown>).categories as unknown[]
+            : []),
+          (value as Record<string, unknown>).category,
+          (value as Record<string, unknown>).Category
+        ]
+          .map((entry) => normalizeText(entry).toLowerCase())
+      : [normalizeText(value).toLowerCase()];
+
+  const values = normalizedValues.filter(Boolean);
+  if (values.length === 0) {
     return false;
   }
 
   return getStoreCategoryQueryValues(category)
     .map((entry) => entry.toLowerCase())
-    .includes(normalizedValue);
+    .some((candidate) => values.includes(candidate));
 }
 
 export function getCategorySlug(value: unknown) {
@@ -254,7 +371,7 @@ export function getConditionMeta(value: unknown) {
   }
 
   if (normalized === 'refurbished') {
-    return { label: 'Refurbished', tone: 'refurbished' as const };
+    return { label: 'Ex-uk Grade A refurb', tone: 'refurbished' as const };
   }
 
   return { label: 'Verified condition', tone: 'verified' as const };
@@ -403,48 +520,16 @@ function parsePossibleImageArray(value: unknown) {
 export function getImageCandidates(product: Record<string, any>) {
   const overrides = parsePossibleImageArray(product?.image_overrides);
   const images = parsePossibleImageArray(product?.images);
-  return overrides.length > 0 ? overrides : images;
+  const candidates = overrides.length > 0 ? overrides : images;
+  return Array.from(new Set(candidates));
 }
 
 export function resolveProductImageUrl(image: unknown, publicSupabaseUrl: string, fallbackImage: string) {
-  const normalizedFallback = normalizeText(fallbackImage) || '/product-placeholder.svg';
-  const normalizedUrl = normalizeText(publicSupabaseUrl).replace(/\/$/, '');
-  const imagePath = normalizeText(image);
-
-  if (!imagePath) {
-    return normalizedFallback;
-  }
-
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
-  }
-
-  if (imagePath.startsWith('/product-images/')) {
-    return normalizedUrl ? `${normalizedUrl}/storage/v1/object/public${imagePath}` : imagePath;
-  }
-
-  if (imagePath.startsWith('/storage/v1/object/public/product-images/')) {
-    return normalizedUrl ? `${normalizedUrl}${imagePath}` : imagePath;
-  }
-
-  if (imagePath.startsWith('/')) {
-    return imagePath;
-  }
-
-  if (!normalizedUrl) {
-    return `/product-images/${imagePath.replace(/^product-images\//, '')}`;
-  }
-
-  return `${normalizedUrl}/storage/v1/object/public/product-images/${imagePath.replace(/^\/?(product-images\/)?/, '')}`;
+  return resolveProductImage(image, publicSupabaseUrl, fallbackImage);
 }
 
 export function getProductImageUrls(product: Record<string, any>, publicSupabaseUrl: string, fallbackImage: string) {
-  const candidates = getImageCandidates(product);
-  if (candidates.length === 0) {
-    return [resolveProductImageUrl('', publicSupabaseUrl, fallbackImage)];
-  }
-
-  return candidates.map((image) => resolveProductImageUrl(image, publicSupabaseUrl, fallbackImage));
+  return getProductGallery(product, { publicSupabaseUrl, fallbackImage });
 }
 
 export function hasExplicitChargerIncluded(product: Record<string, any>) {
@@ -533,7 +618,7 @@ export function getSpecTableRows(product: Record<string, any>) {
   if (condition.label) {
     rows.push({ label: 'Condition', value: condition.label });
   }
-  if (grade?.label) {
+  if (grade?.label && condition.label !== 'Ex-uk Grade A refurb') {
     rows.push({ label: 'Refurb grade', value: grade.label });
   }
 
@@ -547,7 +632,7 @@ export function stripMarketingWordsFromTitle(value: unknown) {
   }
 
   return raw
-    .replace(/\b(refurbished|brand[\s-]?new)\b/gi, '')
+    .replace(/\b(refurbished|ex[\s-]?uk\s+grade\s+a\s+refurb|brand[\s-]?new)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || raw;
 }
@@ -557,7 +642,7 @@ export function getProductPresentation(
   options: { publicSupabaseUrl?: string; fallbackImage?: string } = {}
 ) {
   const publicSupabaseUrl = normalizeText(options.publicSupabaseUrl);
-  const fallbackImage = normalizeText(options.fallbackImage) || '/product-placeholder.svg';
+  const fallbackImage = normalizeText(options.fallbackImage);
   const category = getStoreCategoryByValue(product?.category);
   const condition = getConditionMetaForProduct(product?.condition, product?.category);
   const grade = getRefurbGradeMeta(product?.refurb_grade, {
@@ -593,6 +678,6 @@ export function getProductPresentation(
     specRows,
     chargerIncluded: hasExplicitChargerIncluded(product),
     imageUrls,
-    primaryImageUrl: imageUrls[0] || fallbackImage
+    primaryImageUrl: imageUrls[0] || null
   };
 }

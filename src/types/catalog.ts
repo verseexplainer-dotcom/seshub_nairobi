@@ -3,6 +3,7 @@ export interface CatalogProduct {
   slug: string;
   title: string;
   category: string;
+  categories?: string[] | null;
   brand?: string | null;
   price_kes: number;
   compare_at_kes?: number | null;
@@ -39,7 +40,20 @@ export interface CatalogProduct {
 }
 
 export interface HomepageCategoryCount {
-  key: 'laptops' | 'smartphones' | 'printers' | 'desktops' | 'accessories' | 'storage';
+  key:
+    | 'laptops'
+    | 'gaming-laptops'
+    | 'smartphones'
+    | 'printers'
+    | 'desktops'
+    | 'accessories'
+    | 'storage'
+    | 'monitors'
+    | 'projectors'
+    | 'tablets'
+    | 'software'
+    | 'ups'
+    | 'networking';
   label: string;
   description: string;
   count: number;

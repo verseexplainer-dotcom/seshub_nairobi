@@ -1,0 +1,112 @@
+---
+const faqs = [
+  {
+    question: 'Do you deliver outside Nairobi?',
+    answer: 'Yes. SES ICT HUB can arrange delivery outside Nairobi through available courier options. Delivery cost and timing are confirmed before dispatch.'
+  },
+  {
+    question: 'What warranty is included?',
+    answer: 'Warranty depends on the item. Product pages and the sales team confirm whether a device includes 3, 6, or 12 months of support before you buy.'
+  },
+  {
+    question: 'Can I pay in installments?',
+    answer: 'Ask the team before checkout. Available payment arrangements depend on the item, location, and current store policy.'
+  },
+  {
+    question: 'Can I confirm stock before paying?',
+    answer: 'Yes. Send the product link on WhatsApp and the team will confirm live stock, final price, delivery options, and warranty details.'
+  }
+];
+---
+
+<section class="home-faq" aria-labelledby="home-faq-title">
+  <div class="home-faq__inner">
+    <div class="home-faq__head">
+      <p>Questions</p>
+      <h2 id="home-faq-title">Answers before you order.</h2>
+    </div>
+
+    <div class="home-faq__list">
+      {faqs.map((faq, index) => (
+        <details open={index === 0}>
+          <summary>{faq.question}</summary>
+          <p>{faq.answer}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .home-faq {
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+    background: #f8fafc;
+  }
+
+  .home-faq__inner {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 2.4rem);
+    width: min(100% - 2rem, 900px);
+    margin-inline: auto;
+  }
+
+  .home-faq__head {
+    display: grid;
+    gap: 0.45rem;
+    text-align: center;
+  }
+
+  .home-faq__head p {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .home-faq__head h2 {
+    color: #0b1220;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .home-faq__list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .home-faq details {
+    border: 1px solid rgba(203, 213, 225, 0.86);
+    border-radius: 0.8rem;
+    background: #ffffff;
+  }
+
+  .home-faq summary {
+    cursor: pointer;
+    padding: 1rem 1.1rem;
+    color: #0b1220;
+    font-weight: 900;
+    list-style: none;
+  }
+
+  .home-faq summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .home-faq summary::after {
+    content: '+';
+    float: right;
+    color: var(--color-primary);
+    font-size: 1.15rem;
+  }
+
+  .home-faq details[open] summary::after {
+    content: '-';
+  }
+
+  .home-faq details p {
+    padding: 0 1.1rem 1rem;
+    color: #64748b;
+    line-height: 1.68;
+  }
+</style>

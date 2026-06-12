@@ -1,0 +1,260 @@
+---
+type DetailRow = {
+  label: string;
+  value: string;
+};
+
+type FaqItem = {
+  question: string;
+  answer: string;
+};
+
+interface Props {
+  highlights?: DetailRow[];
+  specifications?: DetailRow[];
+  descriptionHtml?: string;
+  warranty?: string | null;
+  delivery?: string;
+  returns?: string;
+  faq?: FaqItem[];
+}
+
+const {
+  highlights = [],
+  specifications = [],
+  descriptionHtml = '',
+  warranty = null,
+  delivery = 'Nairobi delivery is available where possible, with pickup from our Moi Avenue shop. We confirm delivery cost and timing before dispatch.',
+  returns: returnsCopy = 'Returns apply for undisclosed functional defects within the stated return window. Message us quickly if anything is not as described.',
+  faq = []
+} = Astro.props as Props;
+---
+
+<section class="product-details-accordion" aria-label="Product details">
+  {highlights.length > 0 && (
+    <details class="ses-accordion__item" open>
+      <summary class="ses-accordion__summary">Product Highlights</summary>
+      <div class="ses-accordion__content">
+        <ul class="product-highlight-list" role="list">
+          {highlights.map((item) => (
+            <li>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </details>
+  )}
+
+  <details class="ses-accordion__item" open={highlights.length === 0}>
+    <summary class="ses-accordion__summary">Full Specifications</summary>
+    <div class="ses-accordion__content">
+      {specifications.length > 0 ? (
+        <dl class="product-spec-list">
+          {specifications.map((row) => (
+            <div>
+              <dt>{row.label}</dt>
+              <dd>{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p>Message us on WhatsApp and we will confirm the full specifications for you.</p>
+      )}
+    </div>
+  </details>
+
+  <details class="ses-accordion__item">
+    <summary class="ses-accordion__summary">Description</summary>
+    <div class="ses-accordion__content">
+      {descriptionHtml ? (
+        <div class="product-description" set:html={descriptionHtml} />
+      ) : (
+        <p>Message us on WhatsApp and we will confirm the details for you.</p>
+      )}
+    </div>
+  </details>
+
+  {warranty && (
+    <details class="ses-accordion__item">
+      <summary class="ses-accordion__summary">Warranty</summary>
+      <div class="ses-accordion__content">
+        <p>{warranty}. We will confirm the exact warranty terms with you before you buy.</p>
+      </div>
+    </details>
+  )}
+
+  <details class="ses-accordion__item">
+    <summary class="ses-accordion__summary">Delivery & Pickup</summary>
+    <div class="ses-accordion__content">
+      <p>{delivery}</p>
+    </div>
+  </details>
+
+  <details class="ses-accordion__item">
+    <summary class="ses-accordion__summary">Returns</summary>
+    <div class="ses-accordion__content">
+      <p>{returnsCopy}</p>
+    </div>
+  </details>
+
+  {faq.length > 0 && (
+    <details class="ses-accordion__item">
+      <summary class="ses-accordion__summary">FAQ / Support</summary>
+      <div class="ses-accordion__content">
+        <div class="product-faq-list">
+          {faq.map((item) => (
+            <div>
+              <h3>{item.question}</h3>
+              <p>{item.answer}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </details>
+  )}
+</section>
+
+<style>
+  .product-details-accordion {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 1.35rem;
+    background: var(--white);
+    box-shadow: 0 18px 44px rgb(15 23 42 / 0.06);
+  }
+
+  .ses-accordion__item {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ses-accordion__item:last-child {
+    border-bottom: 0;
+  }
+
+  .ses-accordion__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.4rem;
+    padding: 1rem 1.1rem;
+    color: var(--color-dark);
+    cursor: pointer;
+    font-weight: 900;
+    list-style: none;
+  }
+
+  .ses-accordion__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .ses-accordion__summary::after {
+    content: '+';
+    display: grid;
+    place-items: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgb(239 246 255);
+    color: var(--primary);
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .ses-accordion__item[open] > .ses-accordion__summary::after {
+    content: '-';
+  }
+
+  .ses-accordion__content {
+    padding: 0 1.1rem 1.1rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .ses-accordion__content p {
+    margin: 0;
+  }
+
+  .product-highlight-list,
+  .product-spec-list {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  .product-highlight-list {
+    list-style: none;
+  }
+
+  .product-highlight-list li,
+  .product-spec-list div {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid rgb(226 232 240 / 0.92);
+    border-radius: 1rem;
+    background: #f8fafc;
+  }
+
+  .product-highlight-list span,
+  .product-spec-list dt {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .product-highlight-list strong,
+  .product-spec-list dd {
+    margin: 0;
+    color: var(--text-main);
+    font-weight: 800;
+  }
+
+  .product-description :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .product-description :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .product-description :global(p),
+  .product-description :global(li) {
+    color: var(--text-main);
+    line-height: 1.75;
+  }
+
+  .product-faq-list {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .product-faq-list div {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .product-faq-list h3,
+  .product-faq-list p {
+    margin: 0;
+  }
+
+  .product-faq-list h3 {
+    color: var(--text-main);
+    font-size: 1rem;
+  }
+
+  @media (min-width: 720px) {
+    .product-highlight-list,
+    .product-spec-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

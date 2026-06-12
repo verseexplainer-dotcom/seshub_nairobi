@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
 import type { SessionLocals } from './app-types';
 import type { CatalogProduct, HomepageBrandCount, HomepageCategoryCount } from '../types/catalog';
 import { buildBrandFilterHref } from './filters';
-import { getProductGallery } from './images';
+import { hasResolvableProductImage } from './images';
 import { getCompareAtPrice } from './pricing';
 import { getCategorySlug, normalizeText, parsePositiveNumber } from './productPresentation';
-import { getRuntimeEnv } from './runtime';
 
 const LOW_STOCK_THRESHOLD = 3;
 const IMAGE_OVERRIDES_COLUMN = 'image_overrides';
@@ -59,6 +57,13 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
     accent: '#155dfc'
   },
   {
+    key: 'gaming-laptops',
+    label: 'Gaming Laptops',
+    description: 'Dedicated graphics and high-performance laptop options.',
+    href: '/category/gaming-laptops',
+    accent: '#7c3aed'
+  },
+  {
     key: 'smartphones',
     label: 'Smartphones',
     description: 'Daily-use phones with clear condition and stock updates.',
@@ -80,24 +85,60 @@ const HOME_CATEGORY_META: Array<Omit<HomepageCategoryCount, 'count'>> = [
     accent: '#4f46e5'
   },
   {
-    key: 'accessories',
-    label: 'Accessories',
-    description: 'Useful add-ons, peripherals, and finishing touches.',
-    href: '/category/accessories',
-    accent: '#ca8a04'
+    key: 'monitors',
+    label: 'Monitors',
+    description: 'Display upgrades for desks, schools, and offices.',
+    href: '/category/monitors',
+    accent: '#0891b2'
   },
   {
-    key: 'storage',
-    label: 'Storage',
-    description: 'SSDs, HDDs, flash storage, and portable backup options.',
-    href: '/category/accessories',
-    accent: '#0891b2'
+    key: 'projectors',
+    label: 'Projectors',
+    description: 'Presentation-ready projectors for office and learning spaces.',
+    href: '/category/projectors',
+    accent: '#9333ea'
+  },
+  {
+    key: 'ups',
+    label: 'UPS',
+    description: 'Backup power options for devices and office setups.',
+    href: '/category/ups',
+    accent: '#16a34a'
+  },
+  {
+    key: 'tablets',
+    label: 'Tablets',
+    description: 'Portable tablets and detachable devices.',
+    href: '/category/tablets',
+    accent: '#2563eb'
+  },
+  {
+    key: 'software',
+    label: 'Software',
+    description: 'Security and productivity software packages.',
+    href: '/category/software',
+    accent: '#dc2626'
+  },
+  {
+    key: 'networking',
+    label: 'Networking',
+    description: 'Connectivity devices for home and office networks.',
+    href: '/category/networking',
+    accent: '#0d9488'
   }
 ];
 
 const PREFERRED_HOME_BRANDS = ['HP', 'Dell', 'Lenovo', 'Apple', 'Samsung', 'Epson'];
 type CatalogRuntimeSource = { locals?: SessionLocals | null } | SessionLocals | null | undefined;
 let homepageImageOverridesAvailable: boolean | null = null;
+
+export interface CatalogSearchFilters {
+  query?: string | null;
+  category?: string | null;
+  condition?: string | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+}
 
 function toStringOrNull(value: unknown) {
   const normalized = normalizeText(value);
@@ -214,6 +255,9 @@ export function normalizeCatalogProduct(row: Record<string, unknown>): CatalogPr
     slug: normalizeText(row.slug),
     title: normalizeText(row.title),
     category: normalizeText(row.category),
+    categories: Array.isArray(row.categories)
+      ? row.categories.map((entry) => normalizeText(entry)).filter(Boolean)
+      : null,
     brand: toStringOrNull(row.brand),
     price_kes: Math.max(0, toNumberOrNull(row.price_kes) ?? 0),
     compare_at_kes: compareAt,
@@ -280,16 +324,14 @@ export function getConditionLabel(product: CatalogProduct) {
   }
 
   if (normalizeText(product.condition).toLowerCase() === 'refurbished') {
-    return 'Refurbished';
+    return 'Ex-uk Grade A refurb';
   }
 
   return '';
 }
 
 export function hasCatalogImage(product: CatalogProduct) {
-  const gallery = getProductGallery(product);
-  const primaryImage = gallery[0];
-  return typeof primaryImage === 'string' && !primaryImage.includes('product-placeholder');
+  return hasResolvableProductImage(product);
 }
 
 export function filterVisibleCatalogProducts(products: CatalogProduct[]) {
@@ -297,7 +339,11 @@ export function filterVisibleCatalogProducts(products: CatalogProduct[]) {
 }
 
 export function getCatalogCategoryKey(product: CatalogProduct) {
-  return getCategorySlug(product.category) || normalizeText(product.category).toLowerCase();
+  const categorySource = Array.isArray(product.categories) && product.categories.length > 0
+    ? product.categories[0]
+    : product.category;
+
+  return getCategorySlug(categorySource) || normalizeText(categorySource).toLowerCase();
 }
 
 export function isStorageProduct(product: CatalogProduct) {
@@ -367,49 +413,15 @@ export function getProductSpecChips(product: CatalogProduct, limit = 3) {
 }
 
 export async function getHomepageProducts(source?: CatalogRuntimeSource) {
-  const env = getRuntimeEnv(source);
-  const supabaseUrl = env.PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = env.PUBLIC_SUPABASE_ANON_KEY;
+  void source;
+  const { getAllProducts } = await import('./products');
+  return getAllProducts();
+}
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return [] as CatalogProduct[];
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  });
-
-  const fetchHomepageRows = async (selectClause: string) =>
-    supabase
-      .from('products')
-      .select(selectClause)
-      .order('in_stock', { ascending: false })
-      .order('featured_home', { ascending: false })
-      .order('featured_rank', { ascending: true, nullsFirst: false })
-      .order('updated_at', { ascending: false });
-
-  const { data, error } = await runProductsQuery(
-    fetchHomepageRows,
-    HOMEPAGE_PRODUCT_COLUMN_NAMES,
-    'Homepage catalog query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-  );
-
-  if (error) {
-    console.error('Homepage catalog query failed', {
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      message: error.message
-    });
-    return [] as CatalogProduct[];
-  }
-
-  const rows = (data || []) as unknown as Array<Record<string, unknown>>;
-
-  return filterVisibleCatalogProducts(normalizeCatalogProducts(rows));
+export async function searchCatalogProducts(source: CatalogRuntimeSource, filters: CatalogSearchFilters = {}) {
+  void source;
+  const { searchProducts } = await import('./products');
+  return searchProducts(filters);
 }
 
 export async function getCategoryCounts(products?: CatalogProduct[]) {

@@ -9,7 +9,22 @@ CREATE TABLE IF NOT EXISTS public.products (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   slug             text        NOT NULL,
   title            text        NOT NULL,
-  category         text        NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
+  category         text        NOT NULL CHECK (
+    lower(category) IN (
+      'laptops',
+      'gaming_laptops',
+      'desktops',
+      'printers',
+      'smartphones',
+      'accessories',
+      'monitors',
+      'projectors',
+      'tablets',
+      'software',
+      'ups',
+      'networking'
+    )
+  ),
   price_kes        numeric     NOT NULL CHECK (price_kes > 0),
   compare_at_kes   numeric,
   in_stock         boolean     NOT NULL DEFAULT true,
@@ -19,7 +34,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   refurb_grade     text        CHECK (refurb_grade IS NULL OR refurb_grade IN ('grade_a', 'grade_b', 'grade_c')),
   short_specs      text,
   description      text,
-  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12)),
+  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12, 24, 36)),
   images           jsonb       NOT NULL DEFAULT '[]'::jsonb,
   featured_home    boolean     NOT NULL DEFAULT false,
   featured_rank    numeric,

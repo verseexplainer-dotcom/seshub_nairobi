@@ -1,13 +1,16 @@
-import { defineConfig } from 'astro/config';
+import { defineConfig, sessionDrivers } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 
 // https://astro.build/config
 export default defineConfig({
     site: 'https://sesicthub.co.ke',
     output: 'server',
-    adapter: cloudflare(),
+    adapter: cloudflare({
+        configPath: './wrangler.build.jsonc',
+        imageService: 'compile'
+    }),
     session: {
-        driver: 'memory'
+        driver: sessionDrivers.memory()
     },
     build: {
         assets: '_assets'

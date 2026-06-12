@@ -1,0 +1,209 @@
+---
+const categories = [
+  { label: 'Laptops', value: 'laptops' },
+  { label: 'Smartphones', value: 'smartphones' },
+  { label: 'Printers', value: 'printers' },
+  { label: 'Desktops', value: 'desktops' }
+];
+
+const conditions = [
+  { label: 'Brand New', value: 'brand_new' },
+  { label: 'Ex-uk Grade A refurb', value: 'refurbished' }
+];
+
+const priceRanges = [
+  { label: 'Under 50K', value: '0-50000' },
+  { label: '50K-100K', value: '50000-100000' },
+  { label: '100K-200K', value: '100000-200000' },
+  { label: 'Above 200K', value: '200000-999999' }
+];
+---
+
+<form class="hero-search-form" action="/search" method="get">
+  <div class="search-row">
+    <label class="search-input-group" for="hero-search-q">
+      <span class="search-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </span>
+      <input
+        id="hero-search-q"
+        type="search"
+        class="search-input"
+        placeholder="Search laptops, phones, printers..."
+        aria-label="Search products"
+        autocomplete="off"
+        name="q"
+      />
+    </label>
+
+    <button type="submit" class="search-submit">
+      <span>Check availability</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-select">
+      <label for="category-filter">Category</label>
+      <select id="category-filter" name="category">
+        <option value="">All</option>
+        {categories.map((category) => <option value={category.value}>{category.label}</option>)}
+      </select>
+    </div>
+
+    <div class="filter-select">
+      <label for="condition-filter">Condition</label>
+      <select id="condition-filter" name="condition">
+        <option value="">All</option>
+        {conditions.map((condition) => <option value={condition.value}>{condition.label}</option>)}
+      </select>
+    </div>
+
+    <div class="filter-select">
+      <label for="price-filter">Price (KES)</label>
+      <select id="price-filter" name="price">
+        <option value="">All</option>
+        {priceRanges.map((range) => <option value={range.value}>{range.label}</option>)}
+      </select>
+    </div>
+  </div>
+</form>
+
+<style>
+  .hero-search-form {
+    display: grid;
+    gap: 0.8rem;
+    width: 100%;
+    margin-top: 1.15rem;
+  }
+
+  .search-row {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .search-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.25rem;
+    padding: 0.72rem 1rem;
+    border: 1px solid rgba(191, 219, 254, 0.92);
+    border-radius: var(--radius-pill);
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast),
+      transform var(--transition-fast);
+  }
+
+  .search-input-group:focus-within {
+    border-color: rgba(21, 93, 252, 0.55);
+    box-shadow: 0 14px 28px rgba(21, 93, 252, 0.12);
+  }
+
+  .search-icon {
+    display: inline-flex;
+    color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.98rem;
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .search-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3.2rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
+    color: #ffffff;
+    font-size: 0.92rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-sm);
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .search-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .filter-select {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .filter-select label {
+    color: var(--color-text-muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .filter-select select {
+    min-width: 0;
+    min-height: 2.95rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.98);
+    color: var(--color-text);
+    font-size: 0.92rem;
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .filter-select select:focus {
+    outline: none;
+    border-color: rgba(21, 93, 252, 0.5);
+    box-shadow: var(--focus-ring);
+  }
+
+  @media (min-width: 760px) {
+    .search-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+  }
+
+  @media (max-width: 759px) {
+    .filter-row {
+      grid-template-columns: 1fr;
+    }
+
+    .search-submit {
+      width: 100%;
+    }
+  }
+</style>

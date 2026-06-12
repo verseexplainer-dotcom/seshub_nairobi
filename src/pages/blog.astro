@@ -6,31 +6,39 @@ import { blogPosts } from '../lib/homepageContent';
 <Layout
   title="SES ICT HUB Journal"
   description="Buying guides, shop tips, and practical electronics advice for Nairobi shoppers and office teams."
+  canonical="/blog"
 >
-  <section class="blog-page section">
+  <section class="blog-index">
     <div class="container">
-      <div class="section-intro blog-page-intro">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <span aria-current="page">Blog</span>
+      </nav>
+
+      <div class="blog-hero">
         <p class="section-kicker">Journal</p>
-        <h1 class="section-title">Practical buying guides for electronics shoppers</h1>
-        <p class="section-copy">
-          Useful buying tips from our team. We will keep adding more guides here.
+        <h1>Practical buying guides for electronics shoppers.</h1>
+        <p>
+          Clear advice for comparing laptops, printers, phones, stock checks, warranty, and delivery before you order.
         </p>
       </div>
 
-      <div class="blog-page-grid">
-        {blogPosts.map((post) => (
-          <article class="blog-page-card surface-card" id={post.id}>
-            <div class="blog-page-meta">
-              <span>{post.category}</span>
-              <span>{post.date}</span>
-            </div>
-            <h2>{post.title}</h2>
-            <p>{post.excerpt}</p>
-            <div class="blog-page-body">
-              <p>
-                Need help choosing now? Message us on WhatsApp and one of our team will assist you.
-              </p>
-            </div>
+      <div class="blog-list" aria-label="Blog posts">
+        {blogPosts.map((post, index) => (
+          <article class={`blog-row ${index === 0 ? 'featured' : ''}`}>
+            <a href={post.href} class="blog-row-link" aria-label={`Read ${post.title}`}>
+              <div class="blog-row-meta">
+                <span>{post.category}</span>
+                <span>{post.date}</span>
+                <span>{post.readingMinutes} min read</span>
+              </div>
+              <div class="blog-row-main">
+                <h2>{post.title}</h2>
+                <p>{post.excerpt}</p>
+              </div>
+              <span class="blog-row-action">Read guide</span>
+            </a>
           </article>
         ))}
       </div>
@@ -39,44 +47,108 @@ import { blogPosts } from '../lib/homepageContent';
 </Layout>
 
 <style>
-  .blog-page-intro {
-    max-width: 48rem;
+  .blog-index {
+    padding: clamp(2rem, 5vw, 4.5rem) 0;
+    background:
+      linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(255, 255, 255, 1) 42%),
+      #ffffff;
   }
 
-  .blog-page-grid {
+  .breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1.6rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--color-primary);
+  }
+
+  .blog-hero {
+    max-width: 58rem;
+    margin-bottom: clamp(2rem, 5vw, 4rem);
+  }
+
+  .blog-hero h1 {
+    max-width: 14ch;
+    margin: 0.25rem 0 1rem;
+    font-size: clamp(2.4rem, 7vw, 5.6rem);
+    line-height: 0.95;
+    letter-spacing: 0;
+  }
+
+  .blog-hero p {
+    max-width: 42rem;
+    color: var(--color-text-muted);
+    font-size: clamp(1rem, 2vw, 1.2rem);
+  }
+
+  .blog-list {
     display: grid;
-    gap: 1rem;
+    border-top: 1px solid rgba(203, 213, 225, 0.85);
   }
 
-  .blog-page-card {
+  .blog-row {
+    border-bottom: 1px solid rgba(203, 213, 225, 0.85);
+  }
+
+  .blog-row-link {
     display: grid;
-    gap: 1rem;
-    padding: 1.35rem;
+    gap: 1.1rem;
+    padding: clamp(1.2rem, 3vw, 2rem) 0;
+    transition:
+      color var(--transition-fast),
+      transform var(--transition-fast);
   }
 
-  .blog-page-meta {
+  .blog-row-link:hover {
+    color: var(--color-primary);
+    transform: translateX(0.25rem);
+  }
+
+  .blog-row-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.65rem;
     color: var(--color-text-muted);
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
-  .blog-page-card p {
+  .blog-row-main {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .blog-row h2 {
+    margin: 0;
+    font-size: clamp(1.45rem, 3vw, 2.5rem);
+    line-height: 1.08;
+    letter-spacing: 0;
+  }
+
+  .blog-row p {
+    max-width: 48rem;
+    margin: 0;
     color: var(--color-text-muted);
   }
 
-  .blog-page-body {
-    padding-top: 0.9rem;
-    border-top: 1px solid rgba(229, 231, 235, 0.92);
+  .blog-row-action {
+    align-self: start;
+    color: var(--color-primary);
+    font-weight: 900;
   }
 
-  @media (min-width: 960px) {
-    .blog-page-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+  @media (min-width: 900px) {
+    .blog-row-link {
+      grid-template-columns: minmax(10rem, 0.8fr) minmax(0, 2fr) auto;
+      align-items: start;
     }
   }
 </style>

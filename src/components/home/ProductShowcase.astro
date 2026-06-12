@@ -1,0 +1,155 @@
+---
+import type { CatalogProduct } from '../../types/catalog';
+import ProductCard from '../ui/ProductCard.astro';
+
+interface ProductGroup {
+  id: string;
+  kicker: string;
+  title: string;
+  description: string;
+  href: string;
+  products: CatalogProduct[];
+}
+
+interface Props {
+  groups: ProductGroup[];
+  publicSupabaseUrl?: string | undefined;
+}
+
+const { groups, publicSupabaseUrl } = Astro.props as Props;
+const visibleGroups = groups.filter((group) => group.products.length > 0);
+---
+
+{visibleGroups.length > 0 && (
+  <section class="real-products" aria-labelledby="real-products-title">
+    <div class="real-products__inner">
+      <div class="real-products__intro">
+        <p>Featured products</p>
+        <h2 id="real-products-title">Real picks from current stock.</h2>
+      </div>
+
+      <div class="real-products__stack">
+        {visibleGroups.map((group) => (
+          <section class="real-products__group" aria-labelledby={`${group.id}-title`}>
+            <div class="real-products__head">
+              <div>
+                <p>{group.kicker}</p>
+                <h3 id={`${group.id}-title`}>{group.title}</h3>
+                <span>{group.description}</span>
+              </div>
+              <a href={group.href}>View all</a>
+            </div>
+
+            <div class="real-products__grid">
+              {group.products.map((product) => (
+                <ProductCard product={product} publicSupabaseUrl={publicSupabaseUrl} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .real-products {
+    background: #ffffff;
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+  }
+
+  .real-products__inner {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .real-products__intro {
+    display: grid;
+    gap: 0.45rem;
+    max-width: 48rem;
+  }
+
+  .real-products__intro p,
+  .real-products__head p {
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .real-products__intro h2 {
+    color: #0b1220;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 0.98;
+  }
+
+  .real-products__stack {
+    display: grid;
+    gap: clamp(2.25rem, 6vw, 4rem);
+  }
+
+  .real-products__group {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .real-products__head {
+    display: grid;
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .real-products__head div {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .real-products__head h3 {
+    color: #0b1220;
+    font-size: clamp(1.55rem, 4vw, 2.45rem);
+    line-height: 1;
+  }
+
+  .real-products__head span {
+    max-width: 42rem;
+    color: #64748b;
+  }
+
+  .real-products__head a {
+    display: inline-flex;
+    justify-self: start;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    border-radius: 999px;
+    color: #0b1220;
+    font-weight: 900;
+  }
+
+  .real-products__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.85rem, 2vw, 1.25rem);
+  }
+
+  @media (min-width: 720px) {
+    .real-products__head {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .real-products__head a {
+      justify-self: end;
+    }
+  }
+
+  @media (min-width: 1120px) {
+    .real-products__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+</style>

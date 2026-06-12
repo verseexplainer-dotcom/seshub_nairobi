@@ -1,0 +1,145 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProductCard from '../components/ui/ProductCard.astro';
+import { searchCatalogProducts } from '../lib/catalog';
+const rawQuery = Astro.url.searchParams.get('q')?.trim() || '';
+const query = rawQuery.toLowerCase();
+const category = Astro.url.searchParams.get('category')?.toLowerCase().trim() || '';
+const condition = Astro.url.searchParams.get('condition')?.toLowerCase().trim() || '';
+const priceRange = Astro.url.searchParams.get('price')?.trim() || '';
+const hasFilters = Boolean(query || category || condition || priceRange);
+const [minStr, maxStr] = priceRange.split('-');
+const minPrice = priceRange ? Number.parseInt(minStr || '0', 10) : null;
+const maxPrice = priceRange ? Number.parseInt(maxStr || String(Number.MAX_SAFE_INTEGER), 10) : null;
+
+let products = hasFilters
+  ? await searchCatalogProducts(Astro.locals, {
+      query,
+      category,
+      condition,
+      minPrice,
+      maxPrice
+    })
+  : [];
+
+// Sort by featured then price
+products = products.sort((a, b) => {
+  if (a.featured_home && !b.featured_home) return -1;
+  if (!a.featured_home && b.featured_home) return 1;
+  return (a.price_kes || 0) - (b.price_kes || 0);
+});
+
+const pageTitle = hasFilters 
+  ? `Search Results${rawQuery ? ` for "${rawQuery}"` : ''}${category ? ` in ${category}` : ''}`
+  : 'Search Products';
+---
+
+<Layout
+  title={pageTitle}
+  description="Search through our catalog of laptops, printers, projectors, UPS, monitors, software, tablets, and accessories in Kenya."
+  canonical="/search"
+>
+  <div class="search-results-page">
+    <div class="container">
+      <div class="search-header">
+        <h1>{pageTitle}</h1>
+        {hasFilters && (
+          <p class="search-meta">
+            Found {products.length} {products.length === 1 ? 'product' : 'products'}
+          </p>
+        )}
+      </div>
+
+      {products.length > 0 ? (
+        <div class="search-grid">
+          {products.map((product) => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+      ) : (
+        <div class="no-results">
+          {hasFilters ? (
+            <>
+              <p>No products matched your search.</p>
+              <p>Try a different brand, a wider price range, or fewer filters.</p>
+            </>
+          ) : (
+            <>
+              <p>Start with a product name, brand, or category to see matching items.</p>
+              <p>You can also use the quick search on the homepage to narrow things down fast.</p>
+            </>
+          )}
+          <a href={hasFilters ? '/search' : '/'} class="btn-link">{hasFilters ? 'Clear search' : '← Back to home'}</a>
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .search-results-page {
+    padding: 3rem 0;
+  }
+
+  .search-header {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .search-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .search-meta {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+  }
+
+  .search-grid {
+    display: grid;
+    gap: clamp(0.85rem, 2vw, 1.25rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: var(--radius-lg);
+  }
+
+  .no-results p {
+    margin: 0.5rem 0;
+    color: var(--color-text-muted);
+  }
+
+  .btn-link {
+    display: inline-block;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: background var(--transition-fast);
+  }
+
+  .btn-link:hover {
+    background: var(--color-primary-dark);
+  }
+
+  @media (min-width: 768px) {
+    .search-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .search-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+</style>

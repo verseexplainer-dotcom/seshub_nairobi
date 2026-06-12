@@ -70,6 +70,27 @@ AS $$
   SELECT public.current_profile_role() = 'admin';
 $$;
 
+CREATE OR REPLACE FUNCTION public.is_bootstrap_admin_email(email text)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public
+AS $$
+  SELECT lower(trim(coalesce(email, ''))) = 'sesicthub224@gmail.com';
+$$;
+
+CREATE OR REPLACE FUNCTION public.bootstrap_profile_role(email text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN public.is_bootstrap_admin_email(email) THEN 'admin'
+    ELSE 'customer'
+  END;
+$$;
+
 -- ─────────────────────────────────────────────────────────────
 -- 1. PRODUCTS
 -- ─────────────────────────────────────────────────────────────
@@ -77,7 +98,22 @@ CREATE TABLE IF NOT EXISTS public.products (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   slug             text        NOT NULL,
   title            text        NOT NULL,
-  category         text        NOT NULL CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories')),
+  category         text        NOT NULL CHECK (
+    lower(category) IN (
+      'laptops',
+      'gaming_laptops',
+      'desktops',
+      'printers',
+      'smartphones',
+      'accessories',
+      'monitors',
+      'projectors',
+      'tablets',
+      'software',
+      'ups',
+      'networking'
+    )
+  ),
   price_kes        numeric     NOT NULL CHECK (price_kes > 0),
   compare_at_kes   numeric,
   in_stock         boolean     NOT NULL DEFAULT true,
@@ -87,7 +123,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   refurb_grade     text        CHECK (refurb_grade IS NULL OR refurb_grade IN ('grade_a','grade_b','grade_c')),
   short_specs      text,
   description      text,
-  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12)),
+  warranty_months  numeric     CHECK (warranty_months IN (3, 6, 12, 24, 36)),
   images           jsonb       NOT NULL DEFAULT '[]'::jsonb,
   featured_home    boolean     NOT NULL DEFAULT false,
   featured_rank    numeric,
@@ -333,15 +369,28 @@ BEGIN
     user_id,
     full_name,
     phone,
-    default_location
+    default_location,
+    role,
+    is_active
   )
   VALUES (
     NEW.id,
     nullif(NEW.raw_user_meta_data ->> 'full_name', ''),
     nullif(NEW.raw_user_meta_data ->> 'phone', ''),
-    nullif(NEW.raw_user_meta_data ->> 'default_location', '')
+    nullif(NEW.raw_user_meta_data ->> 'default_location', ''),
+    public.bootstrap_profile_role(NEW.email),
+    true
   )
-  ON CONFLICT (user_id) DO NOTHING;
+  ON CONFLICT (user_id) DO UPDATE
+  SET
+    role = CASE
+      WHEN public.is_bootstrap_admin_email(NEW.email) THEN 'admin'
+      ELSE public.profiles.role
+    END,
+    is_active = CASE
+      WHEN public.is_bootstrap_admin_email(NEW.email) THEN true
+      ELSE public.profiles.is_active
+    END;
 
   RETURN NEW;
 END;
@@ -365,7 +414,11 @@ DROP POLICY IF EXISTS "profiles_self_insert" ON public.profiles;
 CREATE POLICY "profiles_self_insert"
   ON public.profiles FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND role = 'customer'
+    AND is_active = true
+  );
 
 DROP POLICY IF EXISTS "profiles_self_or_admin_update" ON public.profiles;
 CREATE POLICY "profiles_self_or_admin_update"

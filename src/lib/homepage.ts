@@ -66,10 +66,17 @@ export function countExplicitBrands(products: Array<Record<string, unknown>>) {
 }
 
 const CATEGORY_PRIORITY: Record<string, number> = {
-  laptops: 5,
-  smartphones: 4,
-  printers: 3,
-  desktops: 2,
+  laptops: 8,
+  'gaming-laptops': 7,
+  smartphones: 6,
+  printers: 5,
+  desktops: 4,
+  monitors: 3,
+  projectors: 3,
+  ups: 3,
+  tablets: 2,
+  software: 2,
+  networking: 2,
   accessories: 1
 };
 
@@ -204,35 +211,40 @@ function getHomepageCandidates(products: CatalogProduct[]) {
   return filterVisibleCatalogProducts(products);
 }
 
+function getMerchandisingCandidates(products: CatalogProduct[]) {
+  return getHomepageCandidates(products).filter(hasCatalogImage);
+}
+
 export function selectFeaturedProducts(products: CatalogProduct[], limit = 6) {
-  const ranked = sortByScore(getHomepageCandidates(products), scoreMerchandisingCandidate);
+  const ranked = sortByScore(getMerchandisingCandidates(products), scoreMerchandisingCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectNewInProducts(products: CatalogProduct[], limit = 6) {
-  const ranked = sortByScore(getHomepageCandidates(products), scoreNewInCandidate);
+  const ranked = sortByScore(getMerchandisingCandidates(products), scoreNewInCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectBestValueProducts(products: CatalogProduct[], limit = 6) {
-  const discounted = getHomepageCandidates(products).filter(hasDiscount);
-  const source = discounted.length >= Math.min(limit, 3) ? discounted : getHomepageCandidates(products);
+  const candidates = getMerchandisingCandidates(products);
+  const discounted = candidates.filter(hasDiscount);
+  const source = discounted.length >= Math.min(limit, 3) ? discounted : candidates;
   const ranked = sortByScore(source, scoreBestValueCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectPremiumProducts(products: CatalogProduct[], limit = 6) {
-  const ranked = sortByScore(getHomepageCandidates(products), scorePremiumCandidate);
+  const ranked = sortByScore(getMerchandisingCandidates(products), scorePremiumCandidate);
   return pickBalancedProducts(ranked, limit, 2);
 }
 
 export function selectDealsProducts(products: CatalogProduct[], limit = 3) {
-  const deals = getHomepageCandidates(products).filter((product) => isProductInStock(product) && hasDiscount(product));
+  const deals = getMerchandisingCandidates(products).filter((product) => isProductInStock(product) && hasDiscount(product));
   return sortByScore(deals, scoreBestValueCandidate).slice(0, limit);
 }
 
 export function buildUseCaseCollections(products: CatalogProduct[]) {
-  const allProducts = getHomepageCandidates(products);
+  const allProducts = getMerchandisingCandidates(products);
   const laptopProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops' && isProductInStock(product));
   const printerProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'printers' && isProductInStock(product));
   const smartphoneProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'smartphones' && isProductInStock(product));
@@ -259,8 +271,8 @@ export function buildUseCaseCollections(products: CatalogProduct[]) {
     },
     {
       id: 'best-refurbished-deals',
-      title: 'Best Refurbished Deals',
-      description: 'Value-focused refurbished machines with tested condition and honest pricing.',
+      title: 'Best Ex-uk Grade A refurb Deals',
+      description: 'Value-focused Ex-uk Grade A refurb machines with tested condition and honest pricing.',
       href: buildConditionFilterHref('refurbished', { sort: 'price_asc', in_stock: 1 }),
       products: sortByScore(refurbishedProducts, scoreBestValueCandidate).slice(0, 3)
     },
@@ -290,6 +302,6 @@ export function getInventorySummary(products: CatalogProduct[]) {
     liveCount: liveProducts.length,
     brandCount: countMerchandisingBrands(products),
     brandNewCount: liveProducts.filter((product) => getConditionLabel(product) === 'Brand New').length,
-    refurbishedCount: liveProducts.filter((product) => getConditionLabel(product) === 'Refurbished').length
+    refurbishedCount: liveProducts.filter((product) => normalizeText(product.condition).toLowerCase() === 'refurbished').length
   };
 }

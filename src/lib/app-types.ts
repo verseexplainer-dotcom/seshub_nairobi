@@ -25,6 +25,9 @@ export interface RuntimeEnv {
   PUBLIC_SUPABASE_ANON_KEY: string | undefined;
   PUBLIC_FALLBACK_IMAGE_URL?: string | undefined;
   PUBLIC_TURNSTILE_SITE_KEY?: string | undefined;
+  WHATSAPP_TOKEN?: string | undefined;
+  WHATSAPP_PHONE_NUMBER_ID?: string | undefined;
+  WHATSAPP_NOTIFY_TO?: string | undefined;
   SUPABASE_SERVICE_ROLE_KEY: string | undefined;
   TURNSTILE_SECRET_KEY?: string | undefined;
 }

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { getPrimaryImage, getProductGallery } from '../src/lib/images';
 import {
   getProductBadge,
   getProductBrand,
@@ -40,8 +41,18 @@ function createProduct(overrides: Record<string, unknown> = {}) {
 test('laptop presentation suppresses Grade B and Grade C badges', () => {
   const presentation = getProductPresentation(createProduct({ refurb_grade: 'grade_b' }));
 
-  assert.equal(presentation.condition.label, 'Refurbished');
+  assert.equal(presentation.condition.label, 'Ex-uk Grade A refurb');
   assert.equal(presentation.grade, null);
+  assert.equal(
+    presentation.specRows.some((row) => row.label === 'Refurb grade'),
+    false
+  );
+});
+
+test('Grade A refurb condition does not duplicate the grade in specs', () => {
+  const presentation = getProductPresentation(createProduct());
+
+  assert.equal(presentation.condition.label, 'Ex-uk Grade A refurb');
   assert.equal(
     presentation.specRows.some((row) => row.label === 'Refurb grade'),
     false
@@ -88,7 +99,7 @@ test('image overrides win over the base image array', () => {
   const presentation = getProductPresentation(
     createProduct({
       images: ['base-image.jpg'],
-      image_overrides: ['override-image.jpg']
+      image_overrides: ['folder/override image (2).jpg']
     }),
     {
       publicSupabaseUrl: 'https://project.supabase.co',
@@ -98,8 +109,124 @@ test('image overrides win over the base image array', () => {
 
   assert.equal(
     presentation.primaryImageUrl,
-    'https://project.supabase.co/storage/v1/object/public/product-images/override-image.jpg'
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg'
   );
+});
+
+test('shared image resolver prefers overrides and safely encodes filenames', () => {
+  const imageUrl = getPrimaryImage(
+    createProduct({
+      images: ['base-image.jpg'],
+      image_overrides: ['folder/override image (2).jpg']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  assert.equal(
+    imageUrl,
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg'
+  );
+});
+
+test('product galleries only use image_overrides when they exist', () => {
+  const gallery = getProductGallery(
+    createProduct({
+      images: ['stale-base-image.jpg'],
+      image_overrides: ['folder/override image (2).jpg', 'folder/override image.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+  const presentation = getProductPresentation(
+    createProduct({
+      images: ['stale-base-image.jpg'],
+      image_overrides: ['folder/override image (2).jpg', 'folder/override image.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  const expected = [
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image%20(2).jpg',
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/override%20image.webp'
+  ];
+
+  assert.deepEqual(gallery, expected);
+  assert.deepEqual(presentation.imageUrls, expected);
+});
+
+test('shared image resolver preserves absolute Supabase image URLs', () => {
+  const imageUrl = getPrimaryImage(
+    createProduct({
+      images: [
+        'https://jddjdebcuruzwxiwaqfq.supabase.co/storage/v1/object/public/product-images/dell-refurbished-ex-uk-latitude-5420-intel-core-i5-1135g7-11th-gen-16gb-ram-512gb-ssd-14-inch-hd-display-windows-11-pro-2.webp'
+      ]
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co',
+      fallbackImage: '/product-placeholder.svg'
+    }
+  );
+
+  assert.equal(
+    imageUrl,
+    'https://jddjdebcuruzwxiwaqfq.supabase.co/storage/v1/object/public/product-images/dell-refurbished-ex-uk-latitude-5420-intel-core-i5-1135g7-11th-gen-16gb-ram-512gb-ssd-14-inch-hd-display-windows-11-pro-2.webp'
+  );
+});
+
+test('shared image resolver promotes bucket paths to Supabase public URLs', () => {
+  const imageUrl = getPrimaryImage(
+    createProduct({
+      images: ['/product-images/folder/sample product.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co'
+    }
+  );
+  const storagePathUrl = getPrimaryImage(
+    createProduct({
+      images: ['/storage/v1/object/public/product-images/folder/sample product.webp']
+    }),
+    {
+      publicSupabaseUrl: 'https://project.supabase.co'
+    }
+  );
+
+  assert.equal(
+    imageUrl,
+    'https://project.supabase.co/storage/v1/object/public/product-images/folder/sample%20product.webp'
+  );
+  assert.equal(storagePathUrl, imageUrl);
+});
+
+test('missing product images resolve to the storefront fallback image', () => {
+  const imageUrl = getPrimaryImage(createProduct());
+  const presentation = getProductPresentation(createProduct());
+
+  assert.equal(imageUrl, '/product-placeholder.svg');
+  assert.deepEqual(presentation.imageUrls, ['/product-placeholder.svg']);
+  assert.equal(presentation.primaryImageUrl, '/product-placeholder.svg');
+});
+
+test('category-mismatched product images resolve to the storefront fallback image', () => {
+  const starlinkMini = createProduct({
+    title: 'Starlink mini available',
+    category: 'Networking',
+    brand: 'Starlink',
+    images: [
+      'https://project.supabase.co/storage/v1/object/public/product-images/ups/starlink_mini_available_ups.webp'
+    ]
+  });
+
+  assert.equal(getPrimaryImage(starlinkMini), '/product-placeholder.svg');
+  assert.deepEqual(getProductGallery(starlinkMini), ['/product-placeholder.svg']);
 });
 
 test('expanded storefront categories resolve by slug and database value', () => {
@@ -109,13 +236,20 @@ test('expanded storefront categories resolve by slug and database value', () => 
   assert.equal(getStoreCategoryByValue('Accessories')?.slug, 'accessories');
   assert.equal(getStoreCategoryByValue('storage')?.slug, 'accessories');
   assert.equal(getStoreCategoryByValue('laptops')?.slug, 'laptops');
+  assert.equal(getStoreCategoryByValue('gaming_laptops')?.slug, 'gaming-laptops');
+  assert.equal(getStoreCategoryByValue('Gaming Laptops')?.slug, 'gaming-laptops');
+  assert.equal(getStoreCategoryByValue('Projectors')?.slug, 'projectors');
+  assert.equal(getStoreCategoryByValue('UPS')?.slug, 'ups');
 });
 
 test('store category query values include canonical and imported lowercase forms', () => {
-  assert.deepEqual(getStoreCategoryQueryValues('laptops'), ['Laptops', 'laptops']);
-  assert.deepEqual(getStoreCategoryQueryValues('accessories'), ['Accessories', 'accessories', 'storage']);
+  assert.deepEqual(getStoreCategoryQueryValues('laptops'), ['laptops']);
+  assert.deepEqual(getStoreCategoryQueryValues('accessories'), ['accessories', 'storage']);
+  assert.deepEqual(getStoreCategoryQueryValues('gaming-laptops'), ['gaming_laptops', 'gaming-laptops', 'gaming laptops']);
   assert.equal(matchesStoreCategoryValue('Laptops', 'laptops'), true);
   assert.equal(matchesStoreCategoryValue('laptops', 'laptops'), true);
+  assert.equal(matchesStoreCategoryValue('gaming_laptops', 'gaming-laptops'), true);
+  assert.equal(matchesStoreCategoryValue('Gaming Laptops', 'gaming-laptops'), true);
   assert.equal(matchesStoreCategoryValue('storage', 'accessories'), true);
   assert.equal(matchesStoreCategoryValue('desktops', 'laptops'), false);
 });

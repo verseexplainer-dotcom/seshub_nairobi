@@ -1,26 +1,13 @@
-import { filterVisibleCatalogProducts, normalizeCatalogProducts, runProductsQuery } from '../lib/catalog';
 import { setPublicCacheHeaders } from '../lib/http-cache';
 import { STOREFRONT_CATEGORIES } from '../lib/productPresentation';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getAllProducts } from '../lib/products';
+import { blogPosts } from '../lib/homepageContent';
 
 export async function GET() {
-    const products = isSupabaseConfigured
-      ? await (async () => {
-          const { data } = await runProductsQuery(
-            (selectClause) => supabase.from('products').select(selectClause),
-            ['slug', 'title', 'price_kes', 'updated_at', 'images', 'image_overrides'],
-            'Sitemap query missing products.image_overrides; retrying without that column. Apply supabase/schema_sync_2026_03_08.sql to restore schema parity.'
-          );
-          const productRows = (data || []) as unknown as Array<Record<string, unknown>>;
-
-          return filterVisibleCatalogProducts(
-            normalizeCatalogProducts(productRows)
-          );
-        })()
-      : [];
+    const products = getAllProducts();
 
     const categories = [...STOREFRONT_CATEGORIES.map((category) => category.slug), 'all'];
-    const pages = ['', 'shop', 'cart', 'track', 'contact', 'faq'];
+    const pages = ['', 'shop', 'cart', 'track', 'contact', 'faq', 'blog'];
 
     const baseUrl = 'https://sesicthub.co.ke';
 
@@ -45,6 +32,13 @@ export async function GET() {
       <loc>${baseUrl}/product/${prod.slug}</loc>
       <lastmod>${prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</lastmod>
       <changefreq>weekly</changefreq>
+      <priority>0.6</priority>
+    </url>
+  `).join('')}
+  ${blogPosts.map(post => `
+    <url>
+      <loc>${baseUrl}${post.href}</loc>
+      <changefreq>monthly</changefreq>
       <priority>0.6</priority>
     </url>
   `).join('')}

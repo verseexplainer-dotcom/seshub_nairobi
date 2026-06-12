@@ -21,7 +21,7 @@ const logoOnError = "const mark=this.closest('.brand-mark'); if(mark){mark.datas
 <a href={href} class="brand-card" aria-label={`Browse ${brand} products`}>
   <span class={`brand-mark ${logo ? 'with-logo' : ''}`.trim()}>
     {logo && (
-      <img src={logo.src} alt="" loading="lazy" decoding="async" onerror={logoOnError} />
+      <img src={logo.src} alt={`${brand} logo`} loading="lazy" decoding="async" onerror={logoOnError} />
     )}
     <span class="brand-fallback">{initials || brand.slice(0, 1).toUpperCase()}</span>
   </span>

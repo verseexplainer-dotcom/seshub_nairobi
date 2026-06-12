@@ -160,7 +160,22 @@ $$;
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_category_check
-  CHECK (lower(category) IN ('laptops', 'desktops', 'printers', 'smartphones', 'accessories'));
+  CHECK (
+    lower(category) IN (
+      'laptops',
+      'gaming_laptops',
+      'desktops',
+      'printers',
+      'smartphones',
+      'accessories',
+      'monitors',
+      'projectors',
+      'tablets',
+      'software',
+      'ups',
+      'networking'
+    )
+  );
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_price_check
@@ -184,7 +199,7 @@ ALTER TABLE public.products
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_warranty_months_check
-  CHECK (warranty_months IS NULL OR warranty_months IN (3, 6, 12));
+  CHECK (warranty_months IS NULL OR warranty_months IN (3, 6, 12, 24, 36));
 
 ALTER TABLE public.products
   ADD CONSTRAINT products_image_overrides_json_check

@@ -30,7 +30,10 @@ export const mainShopLinks = STOREFRONT_CATEGORIES.map((category) => ({
 export const supportLinks = [
   { label: 'FAQ', href: '/faq' },
   { label: 'Track Order', href: '/track' },
-  { label: 'Contact', href: '/contact' }
+  { label: 'Contact', href: '/contact' },
+  { label: 'Privacy Policy', href: '/privacy-policy' },
+  { label: 'Terms', href: '/terms' },
+  { label: 'Data Deletion', href: '/data-deletion' }
 ];
 
 export function buildWhatsAppLink(message: string) {

@@ -48,8 +48,8 @@ const trustSignals = [
       <div class="signal-row" aria-label="Trust signals">
         {trustSignals.map((item) => (
           <article class={`signal-card ${item.featured ? 'featured' : ''}`.trim()}>
-            <span class="signal-media" aria-hidden="true">
-              <img src={item.image.src} alt="" loading="lazy" decoding="async" onerror={item.onError} />
+            <span class="signal-media">
+              <img src={item.image.src} alt={item.title} loading="lazy" decoding="async" onerror={item.onError} />
             </span>
             <span class="signal-copy">
               <strong>{item.title}</strong>

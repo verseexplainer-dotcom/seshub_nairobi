@@ -1,0 +1,55 @@
+---
+const trustItems = [
+  { icon: '✓', label: 'Ex-uk Grade A refurb & new stock' },
+  { icon: '↗', label: 'Fast delivery across Nairobi & Coast' },
+  { icon: '◌', label: 'Warranty & return support' },
+  { icon: 'KES', label: 'Flexible payments' }
+];
+---
+
+<section class="home-trust-bar" aria-label="SES ICT HUB trust highlights">
+  <div class="home-trust-bar__inner">
+    {trustItems.map((item) => (
+      <p><span>{item.icon}</span>{item.label}</p>
+    ))}
+  </div>
+</section>
+
+<style>
+  .home-trust-bar {
+    border-block: 1px solid rgba(226, 232, 240, 0.9);
+    background: #ffffff;
+  }
+
+  .home-trust-bar__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem clamp(1.4rem, 4vw, 3rem);
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+    padding-block: clamp(1rem, 2.5vw, 1.45rem);
+    text-align: center;
+  }
+
+  .home-trust-bar p {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #111827;
+    font-size: clamp(0.88rem, 1.8vw, 1rem);
+    font-weight: 900;
+  }
+
+  .home-trust-bar span {
+    display: inline-grid;
+    place-items: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 999px;
+    background: rgba(21, 93, 252, 0.1);
+    color: var(--color-primary);
+    font-size: 0.7rem;
+    font-weight: 900;
+  }
+</style>

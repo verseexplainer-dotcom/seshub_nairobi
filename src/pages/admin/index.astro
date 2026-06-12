@@ -4,6 +4,7 @@ import StatusPill from '../../components/StatusPill.astro';
 import { adminNavItems } from '../../lib/navigation';
 import { formatDateTime, formatKes, getFulfillmentStatusTone, titleCaseStatus } from '../../lib/order-utils';
 import { createAdminSupabaseClient } from '../../lib/supabase-admin';
+import { getAllProducts } from '../../lib/products';
 
 const adminSupabase = createAdminSupabaseClient(Astro.locals);
 const message = Astro.url.searchParams.get('message');
@@ -13,7 +14,6 @@ const [
   { count: newOrdersCount = 0 },
   { count: unpaidOrdersCount = 0 },
   { count: inProgressOrdersCount = 0 },
-  { count: outOfStockCount = 0 },
   { count: newLeadsCount = 0 },
   { count: newsletterCount = 0 },
   { data: recentOrdersData }
@@ -31,10 +31,6 @@ const [
     .select('*', { count: 'exact', head: true })
     .in('fulfillment_status', ['processing', 'ready', 'shipped']),
   adminSupabase
-    .from('products')
-    .select('*', { count: 'exact', head: true })
-    .eq('in_stock', false),
-  adminSupabase
     .from('order_intents')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'new'),
@@ -48,6 +44,7 @@ const [
     .limit(8)
 ]);
 const recentOrders = recentOrdersData ?? [];
+const outOfStockCount = getAllProducts().filter((product) => product.in_stock !== true).length;
 ---
 
 <PortalShell

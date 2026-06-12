@@ -38,10 +38,18 @@ export function errorResponse(
 }
 
 export function getRuntimeEnv(locals: unknown) {
-  return ((locals as { runtime?: { env?: Record<string, string | undefined> } })?.runtime?.env ?? {}) as Record<
-    string,
-    string | undefined
-  >;
+  let runtimeEnv: Record<string, string | undefined> = {};
+  try {
+    runtimeEnv = (locals as { runtime?: { env?: Record<string, string | undefined> } } | null)?.runtime?.env ?? {};
+  } catch {
+    runtimeEnv = {};
+  }
+  const buildEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
+
+  return {
+    ...buildEnv,
+    ...runtimeEnv
+  };
 }
 
 export function getPublicEnvValue(locals: unknown, key: string) {

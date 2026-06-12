@@ -3,6 +3,7 @@ node_modules/
 
 # build outputs
 dist/
+output/
 .astro/
 
 # environment variables
@@ -27,6 +28,16 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# local tool output
+.agents
+.codex
+.wrangler/
+.playwright-cli/
+.aidesigner/*
+!.aidesigner/.gitkeep
+
 # local catalog image staging
 .catalog-assets/
 public/product-images/
+PRODUCT_DATA_DROP/
+PRODUCT_IMAGE_DROP/

@@ -1,71 +1,70 @@
 ---
 import '../styles/home.css';
 import Layout from '../layouts/Layout.astro';
-import AnnouncementStrip from '../components/home/AnnouncementStrip.astro';
-import CategoryQuickLinks from '../components/home/CategoryQuickLinks.astro';
-import CustomerActionBanner from '../components/home/CustomerActionBanner.astro';
-import DealsBand from '../components/home/DealsBand.astro';
-import FeaturedProductsGrid from '../components/home/FeaturedProductsGrid.astro';
-import HeroShowcase from '../components/home/HeroShowcase.astro';
-import LatestGuidesPreview from '../components/home/LatestGuidesPreview.astro';
-import RefurbishedVsBrandNew from '../components/home/RefurbishedVsBrandNew.astro';
-import ShopByBrand from '../components/home/ShopByBrand.astro';
-import TrustHighlights from '../components/home/TrustHighlights.astro';
-import UseCaseCollections from '../components/home/UseCaseCollections.astro';
+import HomeHero from '../components/home/HomeHero.astro';
+import FeaturedCategories from '../components/home/FeaturedCategories.astro';
+import FeaturedDeals from '../components/home/FeaturedDeals.astro';
 import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
-import { getBrandCounts, getCategoryCounts, getDealsProducts, getHomepageFeaturedProducts, getHomepageProducts } from '../lib/catalog';
-import { setPublicCacheHeaders } from '../lib/http-cache';
-import { blogPosts } from '../lib/homepageContent';
-import { buildUseCaseCollections, getInventorySummary, selectBestValueProducts, selectNewInProducts, selectPremiumProducts } from '../lib/homepage';
-import { getRuntimeEnv } from '../lib/runtime';
+import BrandStrip from '../components/home/BrandStrip.astro';
+import SplitPromoBanners from '../components/home/SplitPromoBanners.astro';
+import Testimonials from '../components/Testimonials.astro';
+import Newsletter from '../components/Newsletter.astro';
+import { getCatalogCategoryKey, getHomepageProducts } from '../lib/catalog';
+import { homepageTestimonials } from '../lib/homepageContent';
+import { selectBestValueProducts, selectDealsProducts, selectFeaturedProducts } from '../lib/homepage';
+import type { CatalogProduct } from '../types/catalog';
 
-setPublicCacheHeaders(Astro.response.headers, Astro.request);
+const publicSupabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const catalogProducts = await getHomepageProducts(Astro.locals);
+const laptopProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops');
+const smartphoneProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'smartphones');
+const printerProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'printers');
+const featuredDealSeeds = [
+  ...selectDealsProducts(catalogProducts, 12),
+  ...selectBestValueProducts(laptopProducts, 6),
+  ...selectBestValueProducts(smartphoneProducts, 3),
+  ...selectBestValueProducts(printerProducts, 3)
+];
+const fallbackFeaturedDeals = [
+  ...selectFeaturedProducts(catalogProducts, 16)
+];
+const featuredDeals = pickUniqueProducts([...featuredDealSeeds, ...fallbackFeaturedDeals], 12);
 
-const runtimeEnv = getRuntimeEnv(Astro.locals);
-const products = await getHomepageProducts(Astro.locals);
-const featuredProducts = await getHomepageFeaturedProducts(products);
-const categoryCounts = await getCategoryCounts(products);
-const brandCounts = (await getBrandCounts(products)).slice(0, 6);
-const dealsProducts = await getDealsProducts(products);
-const newInProducts = selectNewInProducts(products);
-const bestValueProducts = selectBestValueProducts(products);
-const premiumProducts = selectPremiumProducts(products);
-const useCaseCollections = buildUseCaseCollections(products);
-const inventorySummary = getInventorySummary(products);
+function pickUniqueProducts(products: CatalogProduct[], limit: number) {
+  const seen = new Set<string>();
+  const picked: CatalogProduct[] = [];
+
+  for (const product of products) {
+    const key = product.slug || product.id || product.title;
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    picked.push(product);
+    if (picked.length === limit) {
+      break;
+    }
+  }
+
+  return picked;
+}
 ---
 
 <Layout
-  title="Affordable laptops, printers, phones, and desktops in Kenya"
-  description="Browse live laptops, smartphones, printers, desktops, and accessories from SES ICT HUB with clear pricing, warranty-backed listings, and easy WhatsApp support."
+  title="Laptops, desktops, printers, and tech deals in Kenya"
+  description="Shop current laptops, printers, desktops, smartphones, and office tech from SES ICT HUB with clear prices, support, and delivery across Kenya."
   canonical="/"
   hideAnnouncementStrip
 >
-  <div class="homepage-shell">
-    <HeroShowcase
-      products={featuredProducts.slice(0, 4)}
-      liveCount={inventorySummary.liveCount}
-      brandCount={inventorySummary.brandCount}
-      publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
-    />
-    <AnnouncementStrip />
-    <CategoryQuickLinks items={categoryCounts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
-    <TrustHighlights />
-    <FeaturedProductsGrid
-      featured={featuredProducts}
-      newIn={newInProducts}
-      bestValue={bestValueProducts}
-      premium={premiumProducts}
-      publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL}
-    />
-    <RefurbishedVsBrandNew
-      brandNewCount={inventorySummary.brandNewCount}
-      refurbishedCount={inventorySummary.refurbishedCount}
-    />
-    <DealsBand products={dealsProducts} publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
-    <ShopByBrand brands={brandCounts} />
-    <UseCaseCollections collections={useCaseCollections} />
-    <WhyBuyFromSES publicSupabaseUrl={runtimeEnv.PUBLIC_SUPABASE_URL} />
-    <LatestGuidesPreview posts={blogPosts} />
-    <CustomerActionBanner />
+  <div class="home-page">
+    <HomeHero />
+    <FeaturedCategories />
+    <WhyBuyFromSES />
+    <FeaturedDeals products={featuredDeals} publicSupabaseUrl={publicSupabaseUrl} />
+    <BrandStrip />
+    <SplitPromoBanners />
+    <Testimonials items={homepageTestimonials} />
+    <Newsletter />
   </div>
 </Layout>

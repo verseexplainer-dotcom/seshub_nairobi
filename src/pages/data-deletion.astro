@@ -1,0 +1,54 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { storefrontDetails } from '../lib/storefront';
+---
+
+<Layout
+  title="Data Deletion"
+  description="How SES ICT HUB customers can request deletion of website, Messenger, Instagram, and WhatsApp-related data."
+  canonical="/data-deletion"
+>
+  <section class="legal-page">
+    <div class="container legal-shell">
+      <p class="eyebrow">Data Deletion</p>
+      <h1>Request deletion of your SES ICT HUB data</h1>
+      <p class="lead">You can request deletion of customer account, contact, support, and Meta-connected interaction records held by SES ICT HUB.</p>
+
+      <article>
+        <h2>How to request deletion</h2>
+        <p>Email <a href={`mailto:${storefrontDetails.email}`}>{storefrontDetails.email}</a> with the subject <strong>Data deletion request</strong>. Include the email address or phone number used on the website and any order reference if available.</p>
+      </article>
+
+      <article>
+        <h2>Meta-connected support</h2>
+        <p>If your request relates to Messenger, Instagram, or WhatsApp, mention the platform in your email. We may ask for details needed to identify the matching conversation before processing deletion.</p>
+      </article>
+
+      <article>
+        <h2>Processing time</h2>
+        <p>We aim to review deletion requests within 7 business days after identity and account details are confirmed. Complex requests may take longer where order, warranty, payment, or security records need review.</p>
+      </article>
+
+      <article>
+        <h2>Records we may retain</h2>
+        <p>Some information may remain where needed for legal, accounting, tax, fraud-prevention, warranty, dispute, or legitimate business record purposes. Where full deletion is not possible, we will limit retained information to what is necessary.</p>
+      </article>
+
+      <article>
+        <h2>Machine-readable endpoint</h2>
+        <p>Meta and support tools can also read deletion instructions at <a href="/api/data-deletion">/api/data-deletion</a>.</p>
+      </article>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .legal-page { padding: clamp(2rem, 5vw, 4rem) 0; }
+  .legal-shell { max-width: 880px; display: grid; gap: 1.2rem; }
+  h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; }
+  .lead { font-size: 1.08rem; color: var(--text-muted); line-height: 1.75; }
+  article { display: grid; gap: 0.45rem; padding-block: 0.35rem; }
+  article h2 { font-size: 1.18rem; color: var(--primary); }
+  article p { color: var(--text-muted); line-height: 1.72; }
+  a { color: var(--primary); font-weight: 800; }
+</style>
