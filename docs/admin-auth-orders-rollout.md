@@ -68,9 +68,9 @@ Before testing email signup and password reset:
 
 Examples:
 
-- `http://localhost:4321/auth/callback`
-- `https://your-preview-domain/auth/callback`
-- `https://your-production-domain/auth/callback`
+- `http://localhost:4321/api/auth/callback`
+- `https://your-preview-domain/api/auth/callback`
+- `https://your-production-domain/api/auth/callback`
 
 Recommended minimum:
 

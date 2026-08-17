@@ -6,13 +6,16 @@ export const prerender = false;
 
 export const GET: APIRoute = async (context) => {
   const code = context.url.searchParams.get('code');
+  const type = context.url.searchParams.get('type');
   const next = getSafeRedirectPath(context.url.searchParams.get('next'), '/account');
+  const errorDescription = context.url.searchParams.get('error_description');
+  const failurePath = type === 'recovery' ? '/auth/reset-password' : '/auth/login';
 
-  if (!code) {
+  if (errorDescription || !code) {
     return redirectResponse(
       context.request,
-      buildPathWithMessage('/auth/login', {
-        error: 'The confirmation link is missing or expired.'
+      buildPathWithMessage(failurePath, {
+        error: errorDescription || 'This link is missing, invalid, or expired. Request a new one.'
       })
     );
   }
@@ -23,7 +26,7 @@ export const GET: APIRoute = async (context) => {
   if (error) {
     return redirectResponse(
       context.request,
-      buildPathWithMessage('/auth/login', {
+      buildPathWithMessage(failurePath, {
         error: error.message
       })
     );

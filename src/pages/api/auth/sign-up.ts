@@ -1,14 +1,9 @@
 import type { APIRoute } from 'astro';
 import { absoluteUrl, buildPathWithMessage, getSafeRedirectPath, redirectResponse } from '../../../lib/auth-utils';
 import { ensureUserProfile } from '../../../lib/server-auth';
-import { createAdminSupabaseClient } from '../../../lib/supabase-admin';
 import { createServerSupabaseClient } from '../../../lib/supabase-server';
 
 export const prerender = false;
-
-function isConfirmationEmailDeliveryError(error: { message?: string } | null | undefined) {
-  return /sending confirmation email/i.test(error?.message || '');
-}
 
 function buildUserMetadata(fullName: string, phone: string, defaultLocation: string) {
   return {
@@ -25,19 +20,21 @@ export const POST: APIRoute = async (context) => {
   const phone = String(formData.get('phone') || '').trim();
   const defaultLocation = String(formData.get('default_location') || '').trim();
   const password = String(formData.get('password') || '');
+  const confirmPassword = String(formData.get('confirm_password') || '');
   const next = getSafeRedirectPath(formData.get('next'), '/account');
 
-  if (!fullName || !email || password.length < 8) {
+  if (!fullName || !email || password.length < 8 || password !== confirmPassword) {
     return redirectResponse(
       context.request,
       buildPathWithMessage('/auth/sign-up', {
-        error: 'Name, email, and an 8 character password are required.',
+        error: 'Enter your name and email, then use matching passwords of at least 8 characters.',
         next
       })
     );
   }
 
   const callbackUrl = new URL('/api/auth/callback', context.request.url);
+  callbackUrl.searchParams.set('type', 'signup');
   callbackUrl.searchParams.set('next', next);
 
   const supabase = createServerSupabaseClient(context);
@@ -52,55 +49,23 @@ export const POST: APIRoute = async (context) => {
   });
 
   if (error) {
-    if (isConfirmationEmailDeliveryError(error)) {
-      try {
-        const adminSupabase = createAdminSupabaseClient(context);
-        const { error: createError } = await adminSupabase.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata: userMetadata
-        });
-
-        if (!createError || /already.*registered|already.*exists/i.test(createError.message)) {
-          const signInResult = await supabase.auth.signInWithPassword({ email, password });
-
-          if (signInResult.data.user && !signInResult.error) {
-            const profile = await ensureUserProfile(supabase, signInResult.data.user);
-            const destination =
-              next === '/account' && (profile?.role === 'staff' || profile?.role === 'admin')
-                ? '/admin'
-                : next;
-
-            return redirectResponse(context.request, destination);
-          }
-
-          return redirectResponse(
-            context.request,
-            buildPathWithMessage('/auth/login', {
-              message: 'Your account was created. Sign in to continue.',
-              next
-            })
-          );
-        }
-      } catch {
-        return redirectResponse(
-          context.request,
-          buildPathWithMessage('/auth/sign-up', {
-            error:
-              'We could not send the confirmation email. Please contact SES ICT HUB so we can finish your account setup.',
-            next
-          })
-        );
-      }
-    }
-
     return redirectResponse(
       context.request,
       buildPathWithMessage('/auth/sign-up', {
-        error: isConfirmationEmailDeliveryError(error)
-          ? 'We could not send the confirmation email. Please contact SES ICT HUB so we can finish your account setup.'
-          : error.message,
+        error: error.message,
+        next
+      })
+    );
+  }
+
+  // Supabase deliberately returns an obfuscated user for an existing confirmed
+  // account when email confirmation is enabled. An empty identities array is the
+  // documented signal that no new identity was created.
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return redirectResponse(
+      context.request,
+      buildPathWithMessage('/auth/login', {
+        message: 'An account already exists for this email. Sign in or reset your password.',
         next
       })
     );

@@ -36,7 +36,10 @@ export function resolvePublicSupabaseAnonKey(env: PublicSupabaseEnvSource) {
 }
 
 export function getBuildRuntimeEnv(): RuntimeEnv {
-  const env = import.meta.env as Partial<RuntimeEnv>;
+  // Astro defines import.meta.env at build/runtime, while direct Node tests do
+  // not. Treat the missing object as an empty build-time environment so the
+  // Cloudflare runtime values remain the source of truth.
+  const env = (import.meta.env ?? {}) as Partial<RuntimeEnv>;
 
   return {
     PUBLIC_SUPABASE_URL: resolvePublicSupabaseUrl(env),

@@ -20,7 +20,7 @@ export const POST: APIRoute = async (context) => {
   const supabase = createServerSupabaseClient(context);
   const redirectTo = absoluteUrl(
     context.request,
-    '/api/auth/callback?next=/auth/reset-password'
+    '/api/auth/callback?type=recovery&next=/auth/reset-password'
   );
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -31,7 +31,7 @@ export const POST: APIRoute = async (context) => {
     context.request,
     buildPathWithMessage('/auth/reset-password', {
       [error ? 'error' : 'message']:
-        error?.message || 'Check your email for the password reset link.'
+        error?.message || 'If an account exists for that email, we sent a password reset link.'
     })
   );
 };

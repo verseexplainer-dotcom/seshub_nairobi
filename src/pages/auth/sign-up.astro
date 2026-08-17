@@ -116,6 +116,19 @@ const features = [
           <small>Use at least 8 characters. A unique password is best.</small>
         </div>
 
+        <div class="form-field">
+          <label for="confirm_password">Confirm password</label>
+          <input
+            id="confirm_password"
+            name="confirm_password"
+            type="password"
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="Enter the same password again"
+            required
+          />
+        </div>
+
         <button type="submit" class="pill-button primary auth-submit">Create Account</button>
       </form>
 
