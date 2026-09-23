@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { POST } from '../src/pages/api/checkout/whatsapp';
+import { getProductBySlug } from '../src/lib/products';
 
 const originalFetch = globalThis.fetch;
 
@@ -11,7 +12,7 @@ const validCart = [
     slug: 'dell-6430-core-i7-3rd-gen-8gb-500gb'
   }
 ];
-const validCartTotalKes = 14000;
+const validCartTotalKes = getProductBySlug(validCart[0]!.slug)!.price_kes;
 
 function createTurnstileSuccess(action: string) {
   return new Response(JSON.stringify({ success: true, action }), {
@@ -257,7 +258,7 @@ test('checkout sends configured WhatsApp order notification', async (t) => {
   assert.equal(notification?.body?.type, 'text');
   assert.match(notification?.body?.text?.body, /SES-20260319-00003/);
   assert.match(notification?.body?.text?.body, /Jane Doe/);
-  assert.match(notification?.body?.text?.body, /KES 14,000/);
+  assert.match(notification?.body?.text?.body, new RegExp(`KES ${new Intl.NumberFormat('en-KE').format(validCartTotalKes)}`));
 });
 
 test('checkout forwards the signed-in user to order creation', async (t) => {
