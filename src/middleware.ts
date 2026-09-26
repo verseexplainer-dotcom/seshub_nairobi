@@ -2,6 +2,7 @@ import type { SessionLocals } from './lib/app-types';
 import { defineMiddleware } from 'astro:middleware';
 import { buildPathWithMessage, redirectResponse } from './lib/auth-utils';
 import { hasSupabaseAuthCookie } from './lib/http-cache';
+import { hasPublicSupabaseConfig } from './lib/runtime';
 import { getSessionContext } from './lib/server-auth';
 
 const ACCOUNT_PREFIX = '/account';
@@ -53,6 +54,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   if (!hasSessionCookie) {
+    return next();
+  }
+
+  if (!hasPublicSupabaseConfig(locals)) {
+    if (path.startsWith(ACCOUNT_PREFIX) || path.startsWith(ADMIN_PREFIX) || isAdminApi) {
+      return redirectResponse(
+        context.request,
+        buildPathWithMessage(LOGIN_PATH, {
+          error: 'Sign-in is unavailable in this local preview. Configure Supabase credentials to continue.'
+        })
+      );
+    }
+
     return next();
   }
 

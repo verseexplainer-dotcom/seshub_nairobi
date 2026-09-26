@@ -71,6 +71,11 @@ export function getRuntimeEnv(source?: RuntimeSource): RuntimeEnv {
   };
 }
 
+export function hasPublicSupabaseConfig(source?: RuntimeSource) {
+  const env = getRuntimeEnv(source);
+  return Boolean(env.PUBLIC_SUPABASE_URL && env.PUBLIC_SUPABASE_ANON_KEY);
+}
+
 export function requireRuntimeValue(
   env: RuntimeEnv,
   key: keyof RuntimeEnv
