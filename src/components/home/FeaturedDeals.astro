@@ -1,6 +1,7 @@
 ---
 import type { CatalogProduct } from '../../types/catalog';
 import ProductCard from '../ui/ProductCard.astro';
+import { getCatalogCategoryKey } from '../../lib/catalog';
 
 interface Props {
   products: CatalogProduct[];
@@ -9,38 +10,43 @@ interface Props {
 
 const { products, publicSupabaseUrl } = Astro.props as Props;
 const visibleProducts = products.slice(0, 12);
-const labels = [
-  'Deal pick',
-  'Best value',
-  'Laptop deal',
-  'New arrival',
-  'Phone pick',
-  'Printer deal',
-  'Office pick',
-  'Fast mover',
-  'Best seller',
-  'Work pick',
-  'Budget pick',
-  'Featured'
-];
+const categoryLabels: Record<string, { pill: string; badge: string }> = {
+  laptops: { pill: 'Laptops', badge: 'Laptop' },
+  smartphones: { pill: 'Smartphones', badge: 'Smartphone' },
+  printers: { pill: 'Printers', badge: 'Printer' },
+  desktops: { pill: 'Desktops', badge: 'Desktop' }
+};
+const filterCategories = Object.keys(categoryLabels).filter((category) =>
+  visibleProducts.some((product) => getCatalogCategoryKey(product) === category)
+);
 ---
 
 {visibleProducts.length > 0 && (
-  <section class="featured-deals" aria-labelledby="featured-deals-title">
+  <section class="featured-deals" aria-labelledby="featured-deals-title" data-featured-deals>
     <div class="featured-deals__inner">
       <div class="featured-deals__head">
         <div>
           <p>Featured deals</p>
           <h2 id="featured-deals-title">Deals worth checking now.</h2>
-          <span>Current laptops, phones, printers, and office picks from live stock.</span>
+          <span>Current listed deals. Confirm availability before ordering.</span>
         </div>
-        <a href="/shop?sort=featured&in_stock=1">View all deals</a>
+        <a href="/shop?sort=featured&in_stock=1">Browse Shop</a>
       </div>
 
+      {filterCategories.length > 1 && (
+        <div class="featured-deals__filters" aria-label="Filter featured deals by category">
+          <button type="button" data-deal-filter="all" aria-pressed="true">All</button>
+          {filterCategories.map((category) => (
+            <button type="button" data-deal-filter={category} aria-pressed="false">{categoryLabels[category]?.pill || category}</button>
+          ))}
+        </div>
+      )}
+      <p class="sr-only" role="status" aria-live="polite" data-filter-status></p>
+
       <div class="featured-deals__grid">
-        {visibleProducts.map((product, index) => (
-          <div class="featured-deals__item">
-            <span>{labels[index] || 'Featured'}</span>
+        {visibleProducts.map((product) => (
+          <div class="featured-deals__item" data-deal-category={getCatalogCategoryKey(product)}>
+            <span>{categoryLabels[getCatalogCategoryKey(product)]?.badge || 'Featured'}</span>
             <ProductCard product={product} publicSupabaseUrl={publicSupabaseUrl} />
           </div>
         ))}
@@ -48,6 +54,24 @@ const labels = [
     </div>
   </section>
 )}
+
+<script>
+  document.querySelectorAll('[data-featured-deals]').forEach((section) => {
+    const buttons = Array.from(section.querySelectorAll<HTMLButtonElement>('[data-deal-filter]'));
+    const items = Array.from(section.querySelectorAll<HTMLElement>('[data-deal-category]'));
+    const status = section.querySelector<HTMLElement>('[data-filter-status]');
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const filter = button.dataset.dealFilter || 'all';
+      buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      let visible = 0;
+      items.forEach((item) => {
+        item.hidden = filter !== 'all' && item.dataset.dealCategory !== filter;
+        if (!item.hidden) visible += 1;
+      });
+      if (status) status.textContent = `Showing ${visible} ${visible === 1 ? 'deal' : 'deals'}.`;
+    }));
+  });
+</script>
 
 <style>
   .featured-deals {
@@ -61,6 +85,12 @@ const labels = [
     width: min(calc(100% - 2 * var(--storefront-gutter)), var(--storefront-content-width));
     margin-inline: auto;
   }
+
+  .featured-deals__filters { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem; scrollbar-width: thin; }
+  .featured-deals__filters button { flex: 0 0 auto; min-height: 2.75rem; padding: 0.6rem 1rem; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #0b1220; font-weight: 800; cursor: pointer; }
+  .featured-deals__filters button[aria-pressed='true'] { border-color: #155dfc; background: #155dfc; color: #fff; }
+  .featured-deals__filters button:focus-visible { outline: 3px solid #36f4a4; outline-offset: 2px; }
+  .featured-deals__item[hidden] { display: none; }
 
   .featured-deals__head {
     display: grid;

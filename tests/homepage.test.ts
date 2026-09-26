@@ -4,11 +4,13 @@ import {
   buildHomepageTestimonials,
   buildUseCaseCollections,
   countExplicitBrands,
+  getHomepageCategoryStartingPrices,
   selectBestValueProducts,
   selectDealsProducts,
   selectFeaturedProducts,
   selectNewInProducts,
-  selectPremiumProducts
+  selectPremiumProducts,
+  selectHomepageDeals
 } from '../src/lib/homepage';
 import type { CatalogProduct } from '../src/types/catalog';
 
@@ -43,6 +45,40 @@ function createProduct(overrides: Partial<CatalogProduct> = {}): CatalogProduct 
 test('homepage testimonials stay hidden when there are no approved rows', () => {
   assert.deepEqual(buildHomepageTestimonials([]), []);
   assert.deepEqual(buildHomepageTestimonials(undefined), []);
+});
+
+test('homepage deals reserve space for available categories and keep true discounts', () => {
+  const laptops = Array.from({ length: 12 }, (_, index) => createProduct({
+    id: `laptop-${index}`,
+    slug: `laptop-${index}`,
+    featured_rank: index + 1
+  }));
+  const printers = Array.from({ length: 3 }, (_, index) => createProduct({
+    id: `printer-${index}`,
+    slug: `printer-${index}`,
+    category: 'Printers',
+    featured_rank: index + 20
+  }));
+  const unavailable = createProduct({ id: 'phone', slug: 'phone', category: 'Smartphones', in_stock: false });
+  const selected = selectHomepageDeals([...laptops, ...printers, unavailable]);
+
+  assert.equal(selected.length, 12);
+  assert.equal(selected.filter((product) => product.category === 'Printers').length, 3);
+  assert.equal(selected.some((product) => product.slug === 'phone'), false);
+  assert.equal(new Set(selected.map((product) => product.slug)).size, selected.length);
+});
+
+test('category starting prices use available catalog prices only', () => {
+  const prices = getHomepageCategoryStartingPrices([
+    createProduct({ id: 'l1', slug: 'l1', price_kes: 42000 }),
+    createProduct({ id: 'l2', slug: 'l2', price_kes: 25000 }),
+    createProduct({ id: 'l3', slug: 'l3', price_kes: 10000, in_stock: false }),
+    createProduct({ id: 'p1', slug: 'p1', category: 'Printers', price_kes: 27000 })
+  ]);
+
+  assert.equal(prices.laptops, 25000);
+  assert.equal(prices.printers, 27000);
+  assert.equal(prices.smartphones, undefined);
 });
 
 test('homepage testimonials dedupe duplicate approved rows and cap output', () => {

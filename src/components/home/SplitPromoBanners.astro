@@ -21,10 +21,7 @@ const promos = [
     copy: 'Performance-focused laptops and desktops for design, engineering, accounting, and heavier office workloads.',
     href: '/search?q=zbook',
     cta: 'View workstations',
-    image: {
-      src: 'https://jddjdebcuruzwxiwaqfq.supabase.co/storage/v1/object/public/site-assets/banner-zbook-workstations.webp.webp',
-      fallback: siteAssets.homeBanners.zbookWorkstations.fallback
-    },
+    image: siteAssets.homeBanners.zbookWorkstations,
     alt: 'Workstation computers and ZBook options at SES ICT HUB',
     imageSide: 'right',
     tone: 'light',
@@ -54,12 +51,14 @@ const promos = [
         <a href={promo.href} class="split-promo__media" aria-label={promo.title}>
           <img
             src={promo.image.src}
+            srcset={promo.image.srcSet}
+            sizes="(min-width: 1280px) 1200px, 100vw"
             alt={promo.alt}
             width="1920"
             height="1080"
             loading="lazy"
             decoding="async"
-            onerror={buildImageOnError(promo.image.fallback, fallbackImage)}
+            onerror={`this.removeAttribute('srcset');${buildImageOnError(promo.image.fallback, fallbackImage)}`}
           />
           <span class="split-promo__shade" aria-hidden="true"></span>
           <span class="split-promo__copy">

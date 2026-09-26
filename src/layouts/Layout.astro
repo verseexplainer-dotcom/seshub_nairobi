@@ -13,6 +13,7 @@ interface Props {
   ogType?: 'website' | 'product' | 'article' | undefined;
   canonical?: string | undefined;
   hideAnnouncementStrip?: boolean | undefined;
+  structuredData?: Record<string, unknown> | undefined;
 }
 
 const {
@@ -22,7 +23,8 @@ const {
   imageAlt,
   ogType = 'website',
   canonical,
-  hideAnnouncementStrip = false
+  hideAnnouncementStrip = false,
+  structuredData
 } = Astro.props;
 
 const canonicalURL = new URL(canonical || Astro.url.pathname, Astro.site || 'https://sesicthub.co.ke');
@@ -82,6 +84,7 @@ const faviconVersion = '20260322';
     <meta name="twitter:description" content={safeDescription} />
     <meta name="twitter:image" content={canonicalImage} />
     <meta name="twitter:image:alt" content={safeImageAlt} />
+    {structuredData && <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData).replace(/</g, '\\u003c')} />}
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

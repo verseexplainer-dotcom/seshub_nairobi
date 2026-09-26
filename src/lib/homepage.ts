@@ -243,6 +243,36 @@ export function selectDealsProducts(products: CatalogProduct[], limit = 3) {
   return sortByScore(deals, scoreBestValueCandidate).slice(0, limit);
 }
 
+const HOME_DEAL_CATEGORIES = ['laptops', 'smartphones', 'printers', 'desktops'];
+
+export function selectHomepageDeals(products: CatalogProduct[], limit = 12) {
+  const deals = selectDealsProducts(products, products.length);
+  const seen = new Set<string>();
+  const picked: CatalogProduct[] = [];
+  const add = (product: CatalogProduct) => {
+    const key = product.slug || product.id || product.title;
+    if (!key || seen.has(key) || picked.length >= limit) return;
+    seen.add(key);
+    picked.push(product);
+  };
+
+  for (const category of HOME_DEAL_CATEGORIES) {
+    deals.filter((product) => getCatalogCategoryKey(product) === category).slice(0, 3).forEach(add);
+  }
+  deals.forEach(add);
+  return picked;
+}
+
+export function getHomepageCategoryStartingPrices(products: CatalogProduct[]) {
+  const prices: Record<string, number> = {};
+  for (const product of products) {
+    if (!isProductInStock(product) || product.price_kes <= 0) continue;
+    const category = getCatalogCategoryKey(product);
+    prices[category] = Math.min(prices[category] ?? Infinity, product.price_kes);
+  }
+  return prices;
+}
+
 export function buildUseCaseCollections(products: CatalogProduct[]) {
   const allProducts = getMerchandisingCandidates(products);
   const laptopProducts = allProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops' && isProductInStock(product));
@@ -254,7 +284,7 @@ export function buildUseCaseCollections(products: CatalogProduct[]) {
   const collections: HomepageUseCaseCollection[] = [
     {
       id: 'student-laptops',
-      title: 'Best Laptops for Students',
+      title: 'Student Laptops',
       description: 'Portable picks with practical RAM, storage, and fair pricing for study and daily work.',
       href: buildCategoryFilterHref('laptops', { sort: 'price_asc', in_stock: 1 }),
       products: sortByScore(
@@ -267,12 +297,15 @@ export function buildUseCaseCollections(products: CatalogProduct[]) {
       title: 'Office Setup Essentials',
       description: 'Mix desktops, printers, and reliable accessories for counters, teams, and small offices.',
       href: buildListingHref({ sort: 'featured', in_stock: 1 }),
-      products: sortByScore(officeProducts, scoreMerchandisingCandidate).slice(0, 3)
+      products: [
+        ...sortByScore(printerProducts, scoreMerchandisingCandidate).slice(0, 1),
+        ...sortByScore(officeProducts.filter((product) => getCatalogCategoryKey(product) !== 'printers'), scoreMerchandisingCandidate).slice(0, 2)
+      ].slice(0, 3)
     },
     {
       id: 'best-refurbished-deals',
-      title: 'Best Ex-uk Grade A refurb Deals',
-      description: 'Value-focused Ex-uk Grade A refurb machines with tested condition and honest pricing.',
+      title: 'Refurbished Picks',
+      description: 'Listed refurbished devices with practical specs and clear pricing.',
       href: buildConditionFilterHref('refurbished', { sort: 'price_asc', in_stock: 1 }),
       products: sortByScore(refurbishedProducts, scoreBestValueCandidate).slice(0, 3)
     },
@@ -285,8 +318,8 @@ export function buildUseCaseCollections(products: CatalogProduct[]) {
     },
     {
       id: 'popular-smartphones',
-      title: 'Popular Smartphones',
-      description: 'Phone picks shoppers ask for most when they need dependable daily-use devices.',
+      title: 'Smartphones',
+      description: 'Currently listed phones with prices and condition details.',
       href: buildCategoryFilterHref('smartphones', { sort: 'featured', in_stock: 1 }),
       products: sortByScore(smartphoneProducts, scoreNewInCandidate).slice(0, 3)
     }

@@ -21,13 +21,13 @@ const slides = [
     focal: '66% center'
   },
   {
-    id: 'desktops',
-    eyebrow: 'Desktop setups',
-    badge: 'Office-ready bundles',
-    title: 'Build a faster desk setup.',
-    copy: 'Desktops and workstation options for counters, offices, schools, and teams that need reliable daily machines.',
-    href: '/category/desktops?sort=featured&in_stock=1',
-    cta: 'Shop desktops',
+    id: 'office',
+    eyebrow: 'Office setups',
+    badge: 'Practical office picks',
+    title: 'Build a better desk setup.',
+    copy: 'Compare listed laptops and printers for offices, schools, and teams that need reliable daily equipment.',
+    href: '/shop?sort=featured&in_stock=1',
+    cta: 'Browse office tech',
     image: siteAssets.homeHero.desktops,
     fallback: siteAssets.homeHero.desktopsAlt.fallback,
     alt: 'Desktop computers and office setups available from SES ICT HUB',
@@ -60,13 +60,15 @@ const slides = [
       <img
         class="commerce-hero__image"
         src={slide.image.src}
+        srcset={slide.image.srcSet}
+        sizes="100vw"
         alt={slide.alt}
         width="1920"
         height="1080"
         loading={index === 0 ? 'eager' : 'lazy'}
         decoding="async"
         fetchpriority={index === 0 ? 'high' : 'auto'}
-        onerror={buildImageOnError(slide.fallback, finalFallbackImage)}
+        onerror={`this.removeAttribute('srcset');${buildImageOnError(slide.fallback, finalFallbackImage)}`}
       />
       <div class="commerce-hero__shade" aria-hidden="true"></div>
 
@@ -76,16 +78,9 @@ const slides = [
           <h1 id={index === 0 ? 'home-hero-title' : undefined}>{slide.title}</h1>
           <p class="commerce-hero__text">{slide.copy}</p>
 
-          <div class="commerce-hero__offer" aria-label="Current offer window">
+          <div class="commerce-hero__offer" aria-label="Shopping highlights">
             <span>{slide.badge}</span>
-            <div class="commerce-hero__countdown" data-home-countdown>
-              <strong data-countdown-hours>00</strong>
-              <em>h</em>
-              <strong data-countdown-minutes>00</strong>
-              <em>m</em>
-              <strong data-countdown-seconds>00</strong>
-              <em>s</em>
-            </div>
+            <span>Pickup available at our Moi Avenue shop</span>
           </div>
 
           <div class="commerce-hero__actions">
@@ -117,7 +112,6 @@ const slides = [
     document.querySelectorAll('[data-home-hero]').forEach((root) => {
       const slides = Array.from(root.querySelectorAll('[data-hero-slide]'));
       const controls = Array.from(root.querySelectorAll('[data-hero-control]'));
-      const countdowns = Array.from(root.querySelectorAll('[data-home-countdown]'));
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       let currentIndex = 0;
       let carouselTimer: number | undefined;
@@ -166,38 +160,6 @@ const slides = [
       root.addEventListener('focusin', stopCarousel);
       root.addEventListener('focusout', startCarousel);
 
-      const getNextDeadline = () => {
-        const now = new Date();
-        const deadline = new Date(now);
-        deadline.setHours(20, 0, 0, 0);
-
-        if (deadline.getTime() <= now.getTime()) {
-          deadline.setDate(deadline.getDate() + 1);
-        }
-
-        return deadline;
-      };
-
-      const updateCountdowns = () => {
-        const remaining = Math.max(0, getNextDeadline().getTime() - Date.now());
-        const totalSeconds = Math.floor(remaining / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        countdowns.forEach((countdown) => {
-          const hoursEl = countdown.querySelector('[data-countdown-hours]');
-          const minutesEl = countdown.querySelector('[data-countdown-minutes]');
-          const secondsEl = countdown.querySelector('[data-countdown-seconds]');
-
-          if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
-          if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
-          if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
-        });
-      };
-
-      updateCountdowns();
-      window.setInterval(updateCountdowns, 1000);
       startCarousel();
     });
   </script>
@@ -298,8 +260,7 @@ const slides = [
     gap: 0.7rem;
   }
 
-  .commerce-hero__offer > span,
-  .commerce-hero__countdown {
+  .commerce-hero__offer > span {
     display: inline-flex;
     align-items: center;
     min-height: 2.45rem;
@@ -314,24 +275,6 @@ const slides = [
     color: #ffffff;
     font-size: 0.82rem;
     font-weight: 850;
-  }
-
-  .commerce-hero__countdown {
-    gap: 0.2rem;
-    padding: 0.5rem 0.8rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .commerce-hero__countdown strong {
-    color: #ffffff;
-    font-size: 0.96rem;
-  }
-
-  .commerce-hero__countdown em {
-    color: rgba(255, 255, 255, 0.68);
-    font-size: 0.75rem;
-    font-style: normal;
-    font-weight: 800;
   }
 
   .commerce-hero__actions {
@@ -451,8 +394,7 @@ const slides = [
       gap: 0.5rem;
     }
 
-    .commerce-hero__offer > span,
-    .commerce-hero__countdown {
+    .commerce-hero__offer > span {
       min-height: 2.25rem;
     }
 
@@ -462,14 +404,12 @@ const slides = [
       font-size: 0.76rem;
     }
 
-    .commerce-hero__countdown {
-      padding: 0.45rem 0.68rem;
-    }
-
     .commerce-hero__actions {
       width: min(100%, 20rem);
       justify-content: center;
       gap: 0.55rem;
+      box-sizing: border-box;
+      padding-right: 3.8rem;
     }
 
     .commerce-hero__button {

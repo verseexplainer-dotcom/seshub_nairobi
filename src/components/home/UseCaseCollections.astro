@@ -16,8 +16,8 @@ const { collections } = Astro.props as Props;
     <div class="container">
       <SectionHeading
         eyebrow="Shop By Need"
-        title="Intent-led shortcuts for common buying situations."
-        description="These collections are derived from real products and current listing data instead of handcrafted marketing pages."
+        title="Find a device for the job."
+        description="Browse practical picks from current catalog listings."
       />
 
       <div class="grid">
@@ -28,7 +28,7 @@ const { collections } = Astro.props as Props;
                 <h3>{collection.title}</h3>
                 <p>{collection.description}</p>
               </div>
-              <Button href={collection.href} variant="ghost" size="sm">Open</Button>
+              <Button href={collection.href} variant="ghost" size="sm">Browse</Button>
             </div>
 
             <div class="collection-products">

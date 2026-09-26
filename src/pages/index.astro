@@ -7,48 +7,40 @@ import FeaturedDeals from '../components/home/FeaturedDeals.astro';
 import WhyBuyFromSES from '../components/home/WhyBuyFromSES.astro';
 import BrandStrip from '../components/home/BrandStrip.astro';
 import SplitPromoBanners from '../components/home/SplitPromoBanners.astro';
+import HomeFaq from '../components/home/HomeFaq.astro';
+import RefurbishedVsBrandNew from '../components/home/RefurbishedVsBrandNew.astro';
+import UseCaseCollections from '../components/home/UseCaseCollections.astro';
 import Testimonials from '../components/Testimonials.astro';
 import Newsletter from '../components/Newsletter.astro';
-import { getCatalogCategoryKey, getHomepageProducts } from '../lib/catalog';
+import { getHomepageProducts } from '../lib/catalog';
 import { homepageTestimonials } from '../lib/homepageContent';
-import { selectBestValueProducts, selectDealsProducts, selectFeaturedProducts } from '../lib/homepage';
-import type { CatalogProduct } from '../types/catalog';
+import { buildUseCaseCollections, getHomepageCategoryStartingPrices, getInventorySummary, selectHomepageDeals } from '../lib/homepage';
+import { storefrontDetails } from '../lib/storefront';
 
 const publicSupabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const catalogProducts = await getHomepageProducts(Astro.locals);
-const laptopProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'laptops');
-const smartphoneProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'smartphones');
-const printerProducts = catalogProducts.filter((product) => getCatalogCategoryKey(product) === 'printers');
-const featuredDealSeeds = [
-  ...selectDealsProducts(catalogProducts, 12),
-  ...selectBestValueProducts(laptopProducts, 6),
-  ...selectBestValueProducts(smartphoneProducts, 3),
-  ...selectBestValueProducts(printerProducts, 3)
-];
-const fallbackFeaturedDeals = [
-  ...selectFeaturedProducts(catalogProducts, 16)
-];
-const featuredDeals = pickUniqueProducts([...featuredDealSeeds, ...fallbackFeaturedDeals], 12);
-
-function pickUniqueProducts(products: CatalogProduct[], limit: number) {
-  const seen = new Set<string>();
-  const picked: CatalogProduct[] = [];
-
-  for (const product of products) {
-    const key = product.slug || product.id || product.title;
-    if (!key || seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    picked.push(product);
-    if (picked.length === limit) {
-      break;
-    }
-  }
-
-  return picked;
-}
+const featuredDeals = selectHomepageDeals(catalogProducts);
+const categoryStartingPrices = getHomepageCategoryStartingPrices(catalogProducts);
+const collections = buildUseCaseCollections(catalogProducts);
+const inventory = getInventorySummary(catalogProducts);
+const storeStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Store',
+  name: storefrontDetails.brandName,
+  url: 'https://sesicthub.co.ke/',
+  telephone: storefrontDetails.phone,
+  email: storefrontDetails.email,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Tembo Cooperative House, 3rd Floor, Room 1, Moi Avenue, Opposite Bihi Towers',
+    addressLocality: 'Nairobi',
+    addressCountry: 'KE'
+  },
+  openingHoursSpecification: [
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '09:00', closes: '19:00' },
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Saturday', opens: '09:00', closes: '17:00' }
+  ]
+};
 ---
 
 <Layout
@@ -56,15 +48,33 @@ function pickUniqueProducts(products: CatalogProduct[], limit: number) {
   description="Shop current laptops, printers, desktops, smartphones, and office tech from SES ICT HUB with clear prices, support, and delivery across Kenya."
   canonical="/"
   hideAnnouncementStrip
+  structuredData={storeStructuredData}
 >
   <div class="home-page">
+    <form class="home-mobile-search" action="/search" role="search">
+      <label for="home-search">Search products</label>
+      <div><input id="home-search" name="q" type="search" placeholder="Search the catalog" /><button type="submit">Search</button></div>
+    </form>
     <HomeHero />
-    <FeaturedCategories />
     <WhyBuyFromSES />
+    <FeaturedCategories startingPrices={categoryStartingPrices} />
     <FeaturedDeals products={featuredDeals} publicSupabaseUrl={publicSupabaseUrl} />
+    <UseCaseCollections collections={collections} />
     <BrandStrip />
     <SplitPromoBanners />
+    <RefurbishedVsBrandNew brandNewCount={inventory.brandNewCount} refurbishedCount={inventory.refurbishedCount} />
+    <HomeFaq />
     <Testimonials items={homepageTestimonials} />
     <Newsletter />
   </div>
 </Layout>
+
+<style>
+  .home-mobile-search { display: grid; gap: 0.45rem; padding: 1rem var(--storefront-gutter); background: #fff; }
+  .home-mobile-search label { color: #0b1220; font-weight: 800; }
+  .home-mobile-search div { display: flex; gap: 0.5rem; }
+  .home-mobile-search input { min-width: 0; flex: 1; min-height: 3rem; padding: 0.7rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 0.7rem; font-size: 1rem; }
+  .home-mobile-search button { min-height: 3rem; padding: 0.7rem 1rem; border: 0; border-radius: 0.7rem; background: #155dfc; color: #fff; font-weight: 800; }
+  .home-mobile-search :is(input, button):focus-visible { outline: 3px solid #36f4a4; outline-offset: 2px; }
+  @media (min-width: 681px) { .home-mobile-search { display: none; } }
+</style>

@@ -1,30 +1,41 @@
 ---
 import { buildImageOnError, getSiteAssets } from '../../lib/siteAssets';
 
+interface Props { startingPrices: Record<string, number>; }
+const { startingPrices } = Astro.props as Props;
+const startingPriceLabel = (key: string) => {
+  const price = startingPrices[key];
+  return price ? `From KES ${new Intl.NumberFormat('en-KE').format(price)}` : 'Check availability';
+};
+
 const siteAssets = getSiteAssets(import.meta.env.PUBLIC_SUPABASE_URL);
 const fallbackImage = '/product-placeholder.svg';
 
 const categories = [
   {
     title: 'Laptops',
+    key: 'laptops',
     href: '/category/laptops',
     image: siteAssets.categoryCards.laptops,
     alt: 'Laptop category at SES ICT HUB'
   },
   {
     title: 'Printers',
+    key: 'printers',
     href: '/category/printers',
     image: siteAssets.categoryCards.printers,
     alt: 'Printer category at SES ICT HUB'
   },
   {
     title: 'Smartphones',
+    key: 'smartphones',
     href: '/category/smartphones',
     image: siteAssets.categoryCards.smartphones,
     alt: 'Smartphone category at SES ICT HUB'
   },
   {
     title: 'Desktops',
+    key: 'desktops',
     href: '/category/desktops',
     image: siteAssets.categoryCards.desktops,
     alt: 'Desktop category at SES ICT HUB'
@@ -54,6 +65,7 @@ const categories = [
             />
           </span>
           <span>{category.title}</span>
+          <small class="category-strip__price">{startingPriceLabel(category.key)}</small>
         </a>
       ))}
     </div>
@@ -116,6 +128,8 @@ const categories = [
     text-align: center;
     scroll-snap-align: center;
   }
+
+  .category-strip__price { color: #475569; font-size: 0.78rem; font-weight: 600; line-height: 1.25; }
 
   .category-strip__media {
     display: grid;

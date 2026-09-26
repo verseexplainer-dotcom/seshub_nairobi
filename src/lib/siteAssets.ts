@@ -57,7 +57,8 @@ const BRAND_LOGO_FILENAMES = {
   hp: 'brands/hp-brand.webp',
   lenovo: 'brands/lenovo-brand.webp',
   pixel: 'brands/pixel-brand.webp',
-  samsung: 'brands/Samsung-brand-.webp'
+  samsung: 'brands/Samsung-brand-.webp',
+  tecno: 'brands/tecno-brand.webp'
 } as const;
 
 type BrandLogoKey = keyof typeof BRAND_LOGO_FILENAMES;
@@ -105,6 +106,10 @@ function normalizeBrandLogoKey(brand: string | null | undefined): BrandLogoKey |
     return 'pixel';
   }
 
+  if (normalized.includes('tecno')) {
+    return 'tecno';
+  }
+
   return null;
 }
 
@@ -113,6 +118,14 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
   const base = normalizedSupabaseUrl ? `${normalizedSupabaseUrl}${SITE_ASSETS_BUCKET_PATH}` : null;
   const siteAsset = (filename: string) => buildAssetSource(filename, LOCAL_SITE_ASSETS_PATH, base);
   const remoteSiteAsset = (filename: string) => buildAssetSource(filename, LOCAL_SITE_ASSETS_PATH, base, { preferRemote: true });
+  const responsiveSiteAsset = (filename: string) => {
+    const source = siteAsset(filename);
+    const stem = filename.replace(/\.webp$/, '');
+    return {
+      ...source,
+      srcSet: `${siteAsset(`${stem}-720.webp`).src} 720w, ${siteAsset(`${stem}-1280.webp`).src} 1280w, ${source.src} 1920w`
+    };
+  };
   const productPlaceholder = base
     ? {
         src: `${base}/${PRODUCT_FALLBACK_PLACEHOLDER}`,
@@ -135,11 +148,11 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
       tertiary: siteAsset('hero-printers.webp')
     },
     homeHero: {
-      laptops: siteAsset('hero-laptops3.webp'),
+      laptops: responsiveSiteAsset('hero-laptops3.webp'),
       laptopsAlt: siteAsset('hero lenovo laptops.webp'),
-      desktops: siteAsset('hero-desktops.webp'),
+      desktops: responsiveSiteAsset('hero-desktops.webp'),
       desktopsAlt: siteAsset('hero-desktops1.webp'),
-      printers: siteAsset('hero-printers.webp'),
+      printers: responsiveSiteAsset('hero-printers.webp'),
       accessories: siteAsset('hero-laptop and accessories.webp')
     },
     categoryCards: {
@@ -151,9 +164,9 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
       accessories: siteAsset('product-placeholder.webp')
     },
     homeBanners: {
-      businessLaptops: siteAsset('banner-business-laptops.webp'),
-      zbookWorkstations: siteAsset('banner-zbook-workstations.webp'),
-      officeSetup: siteAsset('banner-office-setup.webp')
+      businessLaptops: responsiveSiteAsset('banner-business-laptops.webp'),
+      zbookWorkstations: responsiveSiteAsset('banner-zbook-workstations.webp'),
+      officeSetup: responsiveSiteAsset('banner-office-setup.webp')
     },
     homeLifestyle: {
       primary: siteAsset('lifestyle-series.webp'),
@@ -178,7 +191,8 @@ export function getSiteAssets(publicSupabaseUrl?: string) {
       hp: siteAsset(BRAND_LOGO_FILENAMES.hp),
       lenovo: siteAsset(BRAND_LOGO_FILENAMES.lenovo),
       pixel: siteAsset(BRAND_LOGO_FILENAMES.pixel),
-      samsung: siteAsset(BRAND_LOGO_FILENAMES.samsung)
+      samsung: siteAsset(BRAND_LOGO_FILENAMES.samsung),
+      tecno: siteAsset(BRAND_LOGO_FILENAMES.tecno)
     },
     campaigns: {
       cashOnDelivery: remoteSiteAsset('cash-on-delivery-ses-brand.webp')
