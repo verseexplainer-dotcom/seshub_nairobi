@@ -7,6 +7,9 @@
 dist
 node_modules
 output
+PRODUCT_DATA_DROP
+PRODUCT_IMAGE_DROP
+.catalog-assets
 venv
 
 .env

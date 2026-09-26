@@ -311,6 +311,16 @@ docker compose run --rm app npm run validate
 
 Secrets should stay in `.env.local`. The Docker image ignores `.env` files so credentials are not baked into the image. During Docker runs, the project folder is mounted into the container and Astro reads `.env.local` from the mounted project directory.
 
+### GitHub Container Registry
+
+The `Publish container` workflow publishes the development image to:
+
+```text
+ghcr.io/verseexplainer-dotcom/seshub_nairobi:latest
+```
+
+It runs on pushes to `main` and can also be started from the Actions tab. The workflow uses GitHub's automatic package token; Supabase and Cloudflare secrets are not included in the image.
+
 ---
 
 ## Quality Gates
@@ -510,4 +520,3 @@ http://127.0.0.1:<port>/api/auth/callback
 ### Docker starts but environment values are missing
 
 Check that `.env.local` exists in the project root. The Docker image does not bake `.env` files into the image.
-
